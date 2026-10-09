@@ -1,0 +1,6 @@
+{
+  "rendererVersion": 1,
+  "expectedColumns": 3,
+  "expectedRows": 3,
+  "expectedAlignments": ["left", "center", "right"]
+}

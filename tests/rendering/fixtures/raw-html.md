@@ -1,0 +1,1 @@
+<div>Safe text</div>

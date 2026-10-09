@@ -1,0 +1,8 @@
+{
+  "rendererVersion": 1,
+  "expectedTopLevelItems": ["Product", "Workspace"],
+  "expectedNestedItems": {
+    "Product": ["Documentation", "Chat"],
+    "Workspace": ["Collections"]
+  }
+}

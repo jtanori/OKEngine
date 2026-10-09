@@ -1,0 +1,6 @@
+{
+  "name": "OKEng",
+  "description": "Embedded, file-based product knowledge layer with collection-level access control, citations, and widget embed.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,9 @@
+{
+  "rendererVersion": 1,
+  "expectedHeadings": [
+    { "level": 1, "id": "security-isolation-overview", "text": "Security & Isolation Overview" },
+    { "level": 2, "id": "dual-independent-rbac", "text": "Dual Independent RBAC" },
+    { "level": 3, "id": "session-tokens", "text": "Session Tokens" },
+    { "level": 2, "id": "security-isolation-overview-1", "text": "Security & Isolation Overview" }
+  ]
+}

@@ -1,0 +1,5 @@
+- Product
+  - Documentation
+  - Chat
+- Workspace
+  - Collections

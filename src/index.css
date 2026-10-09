@@ -1,0 +1,102 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: var(--bg-canvas);
+  --color-paper: var(--bg-canvas);
+  --color-surface: var(--bg-surface);
+  --color-elevated: var(--bg-elevated);
+  --color-subtle: var(--bg-subtle);
+
+  --color-ink: var(--text-primary);
+  --color-ink-secondary: var(--text-secondary);
+  --color-ink-muted: var(--text-muted);
+
+  --color-line: var(--border-default);
+  --color-line-strong: var(--border-strong);
+
+  --color-accent: var(--accent-primary);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-subtle: var(--accent-subtle);
+
+  --color-success: var(--color-success);
+  --color-success-subtle: var(--color-success-subtle);
+  --color-warning: var(--color-warning);
+  --color-warning-subtle: var(--color-warning-subtle);
+  --color-danger: var(--color-danger);
+  --color-danger-subtle: var(--color-danger-subtle);
+
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  --text-2xs: 0.625rem;
+  --text-2xs--line-height: 0.875rem;
+  --text-xs: 0.75rem;
+  --text-xs--line-height: 1rem;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.25rem;
+
+  --radius-xs: 3px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+}
+
+:root {
+  /* ==========================================================================
+     UI-01 & 01_ui_foundation.md: Canonical Design System Token Layer (DS-*)
+     Single source of truth for all colors, typography, radii, and elevation.
+     ========================================================================== */
+  --bg-canvas: #F8F7F4;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #FAF9F6;
+  --bg-subtle: #F4F4F0;
+
+  --text-primary: #171717;
+  --text-secondary: #6B6B67;
+  --text-muted: #8C8B85;
+
+  --border-default: #DEDDD8;
+  --border-strong: #C7C6C0;
+
+  --accent-primary: #1D4ED8;
+  --accent-hover: #1E40AF;
+  --accent-subtle: #EFF6FF;
+
+  --color-success: #15803D;
+  --color-success-subtle: #F0FDF4;
+  --color-warning: #B45309;
+  --color-warning-subtle: #FFFBEB;
+  --color-danger: #B91C1C;
+  --color-danger-subtle: #FEF2F2;
+
+  /* Embed Theme Variable Contract (EMBED-02) */
+  --okeng-accent: var(--accent-primary);
+  --okeng-surface: var(--bg-surface);
+  --okeng-text: var(--text-primary);
+  --okeng-muted: var(--text-secondary);
+  --okeng-border: var(--border-default);
+  --okeng-radius: 4px;
+  --okeng-chat-width: 420px;
+}
+
+body {
+  background-color: var(--bg-canvas);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-default);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
