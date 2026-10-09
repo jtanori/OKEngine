@@ -6,7 +6,7 @@ export const INITIAL_WORKSPACE: Workspace = {
   slug: 'okeng',
   publicKey: 'pk_live_ok_7739a8204b',
   signingSecret: 'sk_live_sec_okeng_prod_9921',
-  knowledgeVersion: 185,
+  knowledgeVersion: 187,
   createdAt: '2026-09-15T08:00:00Z',
 };
 
@@ -416,8 +416,8 @@ export const INITIAL_DOCUMENTS: KnowledgeDocument[] = [
       url: '/docs/getting-started',
     },
     createdAt: '2026-09-15T08:35:00Z',
-    updatedAt: '2026-10-09T08:00:00Z',
-    indexedAt: '2026-10-09T08:01:00Z',
+    updatedAt: '2026-10-09T16:10:00Z',
+    indexedAt: '2026-10-09T16:11:00Z',
     chunkCount: 4,
     language: 'en',
     languageConfidence: 0.99,
@@ -426,43 +426,39 @@ export const INITIAL_DOCUMENTS: KnowledgeDocument[] = [
       es: {
         language: 'es',
         status: 'AVAILABLE',
-        sourceVersion: 185,
+        sourceVersion: 187,
         title: 'Descripción General de OKEng',
         summary:
-          'OKEng es una capa de conocimiento integrable y consciente de los permisos que organiza archivos Markdown (.md) y de texto (.txt) en colecciones (everyone, members, admins), filtra el acceso antes de la búsqueda y devuelve respuestas fundamentadas con citas de documentos reales.',
+          'OKEng es un asistente de conocimiento integrable que responde preguntas de sus usuarios directamente desde su documentación Markdown (.md) y de texto (.txt), verificando permisos por colección antes de buscar y citando cada fuente.',
         steps: [
-          'Suba archivos Markdown (.md) o de texto (.txt) a su espacio de trabajo OKEng.',
-          'Organice el contenido en colecciones con visibilidad everyone, members o admins.',
-          'OKEng evalúa la identidad y filtra las colecciones autorizadas estrictamente antes de la recuperación (pre-retrieval).',
-          'El asistente integrable devuelve respuestas precisas con citas de fuentes verificables y acciones de siguiente paso.',
+          'Centralice guías públicas, documentación de clientes y manuales internos en un solo espacio de trabajo.',
+          'Organice sus archivos en colecciones con acceso para visitantes (everyone), clientes (members) o administradores (admins).',
+          'Ofrezca respuestas directas con citas verificables al documento fuente y rechace temas no documentados sin inventar.',
         ],
         content:
-          '# Descripción General de OKEng\n\n¿Qué es OKEng y cómo funciona OKEng? OKEng conecta sus archivos Markdown y colecciones con un motor de recuperación determinista que verifica permisos antes de buscar y cita cada documento fuente.',
-        updatedAt: '2026-10-09T08:00:00Z',
+          '# Descripción General de OKEng\n\n¿Qué es OKEng y cómo funciona OKEng? OKEng conecta sus archivos Markdown (.md) y colecciones con un asistente integrable que verifica permisos antes de buscar y cita cada documento fuente.',
+        updatedAt: '2026-10-09T16:10:00Z',
       },
     },
     content: `# OKEng Product Overview
 
-What is OKEng, what problem does it solve, and how does OKEng work? OKEng is an embeddable, permission-aware product knowledge layer designed for software teams. It gives your users grounded answers with verifiable source citations by filtering collections before retrieval and scoring authorized Markdown and text chunks.
+What is OKEng, what problem does it solve, and how does OKEng work? OKEng is an embeddable product knowledge assistant that turns your product documentation into accurate, source-cited answers for your users and team.
 
-## The Problem OKEng Solves
-Software teams store public product documentation, customer setup guides, and internal runbooks across scattered tools. Traditional chat widgets either expose everything publicly or require rebuilding complex identity and permission rules from scratch. OKEng solves this by making collections the pre-retrieval authorization boundary.
+- **Stop scattering knowledge across tools**: Keep public help guides, customer documentation, and internal runbooks organized in a single workspace.
+- **Eliminate guessed or fabricated answers**: Standard chatbots guess when a topic is missing; OKEng answers strictly from your approved collection documents, links to the exact source file, and declines unknown questions honestly.
+- **Protect private docs automatically**: Visitors, signed-in customers, and internal staff only receive answers from the collection tiers they are allowed to read.
 
 ## What Can I Do with OKEng Today?
-Today you can use OKEng to:
-- Upload Markdown (\`.md\`) and plain-text (\`.txt\`) documentation files or author Markdown directly in the workspace editor.
-- Organize documents into collections with \`everyone\`, \`members\`, or \`admins\` visibility tiers.
-- Configure Embeds bound to specific collections and test effective scope in the Workspace Test Console.
-- Answer user questions using deterministic or extractive compilation (plus optional Gemini generative streaming when configured on the server) with verifiable source citations and next-step links.
-
-## How OKEng Works
-OKEng follows a strict, auditable five-stage pipeline:
-\`Files → Collections → Pre-Retrieval Authorization → Contextual Retrieval → Grounded Answer + Citations\`
+Which features and file types are supported in OKEng right now? Here is what you can build and manage with OKEng today:
+- **Upload or write documentation**: Import Markdown (\`.md\`), plain-text (\`.txt\`), \`.json\`, or \`.csv\` files, or write articles directly in the built-in Markdown editor with live preview.
+- **Publish a \`/docs\` hub & chat assistant**: Launch a searchable documentation portal or add the floating assistant (\`/widget.js\` or inline embed) to your website or app in English and Spanish.
+- **Guide users with next-step actions**: Attach verified action links (such as \`/signup\` or setup guides) to any document so answers lead users straight to the right page.
+- **Preview & test before launch**: Use the Workspace Test Console and Host Simulator to test how different user roles and page routes experience your assistant before going live.
 
 ## Core Principles
-1. **The customer owns identity; OKEng owns knowledge authorization.** Your backend authenticates users and signs a short-lived HS256 identity assertion.
-2. **Authorization happens strictly before retrieval.** Unauthorized collections are excluded before BM25 scoring or prompt construction (\`EffectiveScope = EmbedBoundCollections ∩ RoleAuthorizedCollections\`).
-3. **Source-first answers.** Every answer cites the exact OKEng source documents used. If the information is not in the authorized corpus, OKEng states so plainly rather than improvising.
+1. **Your app owns sign-in; OKEng handles document access.** Pass a signed HS256 role assertion when embedding the assistant to unlock \`members\` or \`admins\` collections alongside \`everyone\` docs.
+2. **Permissions apply before search.** Restricted collections are filtered out before BM25 retrieval (\`EffectiveScope = EmbedBoundCollections ∩ RoleAuthorizedCollections\`).
+3. **Source-first answers.** Every answer cites the exact OKEng source documents used, and missing topics are never fabricated.
 `,
   },
   {
@@ -519,25 +515,28 @@ An Embed binds a workspace and collection scope to a live inline assistant, an i
       url: '/docs/embedding',
     },
     createdAt: '2026-09-15T08:45:00Z',
-    updatedAt: '2026-10-09T08:00:00Z',
-    indexedAt: '2026-10-09T08:01:00Z',
+    updatedAt: '2026-10-09T16:10:00Z',
+    indexedAt: '2026-10-09T16:11:00Z',
     chunkCount: 5,
     content: `# Frequently Asked Questions
 
 ## What is OKEng, and what problem does it solve?
-OKEng is a file-based, permission-aware knowledge layer that lets you upload Markdown (\`.md\`) and plain-text (\`.txt\`) product documentation, organize it into clearance-scoped collections (\`everyone\`, \`members\`, \`admins\`), and embed a source-cited assistant inside your application or website.
+OKEng is an embeddable product knowledge assistant that turns your documentation into accurate, source-cited answers—solving the problem of scattered help docs and chatbots that guess or expose private internal content.
+- **Centralize scattered documentation**: Keep public help guides, customer docs, and internal runbooks organized in one workspace.
+- **Answers backed by real sources**: Every response retrieves strictly from your approved collection documents and links to the source file instead of guessing.
+- **Built-in audience permissions**: Visitors, signed-in customers, and internal admins only receive answers from collections they are authorized to read.
 
 ## How does OKEng differ from a normal documentation site?
-A normal documentation site is static and typically all-public or all-private. OKEng combines deterministic article rendering with an embeddable retrieval engine that dynamically filters which bound collections a user can query based on a signed host identity assertion.
+A normal documentation site is static and typically all-public or all-private. OKEng combines a clean documentation portal with an embeddable assistant that automatically filters which collections a user can search based on their role.
 
 ## Can I restrict documents to certain users?
-Yes. Place restricted documents into a collection with visibility set to \`members\` or \`admins\`. When your backend signs a short-lived HS256 identity assertion for the current user, OKEng resolves the intersection of the user's verified role and the Embed's bound collections before retrieval.
+Yes. Place restricted documents into a collection with visibility set to \`members\` or \`admins\`. When your backend signs a short-lived HS256 identity assertion for the current user, OKEng unlocks only the collections that match the user's role before searching.
 
 ## How does the file ingestion process work?
-When you upload a Markdown or text file or save a document in the editor, OKEng validates the filename and content, extracts headings and sections, chunks the text with line-range metadata, and indexes it immediately for retrieval.
+When you upload a Markdown or text file or save a document in the editor, OKEng validates the filename and content, splits the article by headings, and indexes it immediately for search and citations.
 
 ## What happens when the available documents do not answer a question?
-When no authorized document meets the relevance threshold—or when the topic only exists in a restricted collection outside the caller's effective scope—OKEng never guesses or reveals restricted titles. It returns a conservative fallback stating that the information was not found in the available documentation.
+When no authorized document meets the relevance threshold—or when the topic only exists in a restricted collection outside the caller's scope—OKEng never guesses or fabricates an answer. It states clearly that the information was not found in the available documentation.
 `,
   },
   {
@@ -589,8 +588,8 @@ Every form, search field, Markdown frontmatter input, and \`next_step\` action C
       url: '/signup',
     },
     createdAt: '2026-09-16T10:00:00Z',
-    updatedAt: '2026-10-09T08:00:00Z',
-    indexedAt: '2026-10-09T08:01:00Z',
+    updatedAt: '2026-10-09T16:10:00Z',
+    indexedAt: '2026-10-09T16:11:00Z',
     chunkCount: 3,
     language: 'en',
     languageConfidence: 0.99,
@@ -599,31 +598,31 @@ Every form, search field, Markdown frontmatter input, and \`next_step\` action C
       es: {
         language: 'es',
         status: 'AVAILABLE',
-        sourceVersion: 185,
+        sourceVersion: 187,
         title: 'Primeros Pasos con OKEng',
         summary:
-          'OKEng le brinda una forma estructurada de organizar su documentación en archivos Markdown (.md) y de texto (.txt) y hacerla disponible con control de acceso previo a la búsqueda.',
+          'Configure su espacio de trabajo OKEng, organice sus documentos en colecciones e integre el asistente en su sitio web o aplicación en cinco pasos.',
         steps: [
           'Cree una cuenta en /signup o inicie sesión en su Espacio de Trabajo OKEng.',
-          'Cree una Colección y elija el nivel de visibilidad (everyone, members o admins).',
-          'Suba archivos Markdown (.md) o de texto (.txt) o redáctelos en el editor y verifique el estado Ready.',
-          'Verifique en la Consola de Pruebas simulando roles y alcances efectivos.',
-          'Configure e instale el Embed en su sitio web o aplicación host.',
+          'Cree una Colección y elija quién puede leerla (everyone, members o admins).',
+          'Suba archivos Markdown (.md) o de texto (.txt) o redáctelos en el editor hasta que estén en estado Ready.',
+          'Pruebe las respuestas y citas por rol en la Consola de Pruebas.',
+          'Copie el código de instalación desde Embed Studio para agregar el asistente a su sitio.',
         ],
         content: '# Primeros Pasos con OKEng\n\nSiga estos 5 pasos para configurar su espacio y publicar su primer Embed.',
-        updatedAt: '2026-10-09T08:00:00Z',
+        updatedAt: '2026-10-09T16:10:00Z',
       },
     },
     content: `# Getting Started
 
-What are the steps to get started with OKEng, and what is the fastest way to set up a workspace and launch an Embed? OKEng gives you a structured five-step workflow to organize documentation and expose it through deterministic docs pages and an embeddable assistant.
+What are the steps to get started with OKEng, and what is the fastest way to set up a workspace and launch an Embed? You can set up an OKEng workspace, organize your documentation into collections, and embed an assistant on your site in five simple steps:
 
 ## Fastest Way to Get Started (Step-by-Step)
-1. **Create or open a Workspace**: Create a workspace account at \`/signup\` or sign in at \`/login\` to open the OKEng workspace console.
-2. **Create a Collection**: Choose an access visibility tier (\`everyone\`, \`members\`, or \`admins\`) that matches who should read those documents.
-3. **Upload or author Markdown & text files**: Upload \`.md\` or \`.txt\` files or write Markdown directly in the built-in editor. Confirm the document status reaches \`Ready\`.
-4. **Verify in the Test Console**: Simulate \`Everyone\`, \`Members\`, and \`Admins\` identities in the Workspace Test Console to verify pre-retrieval collection filtering and source citations.
-5. **Configure & install your Embed**: Bind your target collections to an Embed, verify installation proofs, and add the integration snippet or \`/widget.js\` loader to your host application.
+1. **Create or open a Workspace**: Sign up at \`/signup\` or sign in at \`/login\` to open your OKEng workspace console.
+2. **Create a Collection**: Choose who can read the collection (\`everyone\`, \`members\`, or \`admins\`).
+3. **Upload or write your docs**: Upload \`.md\`, \`.txt\`, \`.json\`, or \`.csv\` files, or write articles in the built-in Markdown editor until their status is \`Ready\`.
+4. **Test answers by role**: Use the Workspace Test Console to preview answers and source citations as a visitor, member, or admin.
+5. **Embed on your website or app**: Copy the installation snippet or \`/widget.js\` loader from Embed Studio and add it to your site.
 `,
   },
   {
@@ -697,17 +696,19 @@ Every private workspace request verifies:
       url: '/docs/access-control',
     },
     createdAt: '2026-09-16T10:10:00Z',
-    updatedAt: '2026-10-09T08:00:00Z',
-    indexedAt: '2026-10-09T08:01:00Z',
+    updatedAt: '2026-10-09T16:10:00Z',
+    indexedAt: '2026-10-09T16:11:00Z',
     chunkCount: 3,
     content: `# Collections & Visibility Boundaries
 
-How do collections and visibility work in OKEng? Collections are the primary knowledge organization and authorization boundary. Rather than managing brittle per-document ACLs, you assign documents to collections and configure each collection's visibility tier.
+How do collections and visibility work in OKEng? Collections group your documents by audience and control who can access them before any search happens, while page context boosts the most relevant articles for the screen the user is viewing.
 
 ## Collection Visibility Tiers
-- **Everyone (\`everyone\`)**: Public knowledge. Accessible to anonymous visitors and all authenticated users when bound to an Embed.
-- **Members (\`members\`)**: Authenticated customer or employee knowledge. Requires a verified HS256 identity assertion with role \`member\` (normalized from \`customer\`, \`employee\`, \`member\`, or \`user\`) or \`admin\`.
-- **Admins (\`admins\`)**: Restricted administrative or internal knowledge. Requires a verified HS256 identity assertion with role \`admin\` (or \`manager\`).
+How do collections, visibility tiers, and host context control what an Embed can retrieve? Each collection uses one of three visibility tiers so users only receive answers from documents they are authorized to read:
+- **Everyone (\`everyone\`)**: Public documentation and FAQs open to all website visitors.
+- **Members (\`members\`)**: Customer and product guides available only to signed-in users verified by your app.
+- **Admins (\`admins\`)**: Internal runbooks and operational docs restricted strictly to administrative team members.
+- **Page-aware relevance**: Passing the user's current page URL prioritizes documents relevant to that screen without ever bypassing collection permissions.
 
 ## Effective Scope: Role Authorization Intersected with Embed Binding
 Access is governed by both the caller's verified identity role and the collections bound to the target Embed (\`EffectiveScope = EmbedBoundCollections ∩ RoleAuthorizedCollections\`). Even a valid \`member\` or \`admin\` identity cannot query a collection that the target Embed does not bind.
@@ -818,12 +819,16 @@ How does OKEng ingest and index documentation? The OKEng ingestion pipeline tran
       url: '/docs/collections',
     },
     createdAt: '2026-09-16T10:30:00Z',
-    updatedAt: '2026-10-09T08:00:00Z',
-    indexedAt: '2026-10-09T08:01:00Z',
+    updatedAt: '2026-10-09T16:00:00Z',
+    indexedAt: '2026-10-09T16:01:00Z',
     chunkCount: 4,
     content: `# Retrieval, Context & Source Attribution
 
-How does OKEng answer questions using my documentation, how do citations help me verify an answer, and how does host context influence retrieval? OKEng retrieval is strictly source-bound and permission-filtered prior to scoring: it filters collections to the caller's authorized scope, scores heading-segmented Markdown chunks using lexical BM25 ranking and route-context boosts, and compiles a grounded answer with verifiable source citations and line ranges.
+How does OKEng answer questions using my documentation, how do citations help me verify an answer, and how does host context influence retrieval? OKEng answers questions strictly from the documentation collections the current user is allowed to access, ranking relevant sections with BM25 and attaching clickable source citations to every response.
+
+- **Section-level matching**: OKEng splits your Markdown files by heading into focused chunks so answers pull the exact section that addresses the user's question.
+- **Clickable source citations**: Every answer lists the source document and collection used so readers can open the full article and verify the details.
+- **No guessing on missing topics**: If a question is not covered in your available documentation, OKEng states clearly that the information was not found instead of making up an answer.
 
 ## Pre-Retrieval Filtering & Grounded Answer Pipeline
 \`\`\`text
@@ -832,7 +837,7 @@ Verified Identity → Effective Collection Scope (Role ∩ Embed) → Score Auth
 When a question arrives, OKEng filters the corpus to documents in the caller's authorized collection scope, ranks sections using lexical BM25 and heading/intent boosts, and compiles a grounded response from the top-scoring sections.
 
 ## How Citations Help Verify Every Answer
-Every answer generated by OKEng includes structured source citations (\`title\`, \`filename\`, \`collectionId\`, \`snippet\`, and relevance score). Citations allow readers and operators to verify exactly which authorized document and section produced the answer and click through to read the full source article.
+Every answer generated by OKEng includes structured source citations (\`title\`, \`filename\`, \`collectionId\`, \`snippet\`, and line range). Citations allow readers and operators to verify exactly which authorized document and section produced the answer and click through to read the full source article.
 
 ## How Host Context Influences Retrieval
 The host application can pass the user's active route (\`currentUrl\`, such as \`/docs/embedding\` or \`/docs/access-control\`) to the OKEng Embed. OKEng uses this host context and configured \`routeRules\` to boost route-relevant chunks and pinned documents **strictly within** the already-authorized collection scope. Host context improves relevance ranking but never grants access to unauthorized collections.

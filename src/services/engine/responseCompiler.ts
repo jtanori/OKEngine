@@ -279,26 +279,35 @@ export function compileKnowledgeResponse(options: {
   }
 
   // Select content from either native AST or verified structured translation (Case A or Case B)
+  const stripLeadingQuestionPrompt = (text: string): string => {
+    const trimmed = text.trim();
+    const match = trimmed.match(
+      /^(?:what|how|why|where|which|when|who|can|does|is|are|do|¿)[^?]*\?\s+(.+)$/i
+    );
+    return match && match[1].trim().length > 0 ? match[1].trim() : trimmed;
+  };
+
   const displayTitle = availableTranslation ? availableTranslation.title : doc.title;
   const displaySection = availableTranslation
     ? availableTranslation.title
     : sec.heading;
-  const leadParagraph = availableTranslation
+  const rawLeadParagraph = availableTranslation
     ? availableTranslation.summary
     : sec.paragraphs[0] || doc.summary || `See ${doc.title} (${doc.filename}).`;
+  const leadParagraph = stripLeadingQuestionPrompt(rawLeadParagraph);
+  const sectionHasOwnList = sec.steps.length > 0 || sec.bullets.length > 0;
   const steps = availableTranslation?.steps?.length
     ? availableTranslation.steps
-    : sec.steps.length > 0
+    : sectionHasOwnList
     ? sec.steps
-    : doc.steps.slice(0, 6);
+    : doc.steps.slice(0, 5);
   const bullets = availableTranslation?.bullets?.length
     ? availableTranslation.bullets
-    : sec.bullets.length > 0
+    : sectionHasOwnList
     ? sec.bullets
-    : doc.bullets.slice(0, 5);
-  const warnings = sec.warnings.length > 0 ? sec.warnings : doc.warnings.slice(0, 2);
-  const codeBlocks =
-    sec.codeBlocks.length > 0 ? sec.codeBlocks.slice(0, 1) : doc.codeBlocks.slice(0, 1);
+    : doc.bullets.slice(0, 4);
+  const warnings = sec.warnings.length > 0 ? sec.warnings : [];
+  const codeBlocks = sec.codeBlocks.length > 0 ? sec.codeBlocks.slice(0, 1) : [];
 
   const answerType: DeterministicAnswerType =
     detectedType === 'procedure' && steps.length === 0 ? 'definition' : detectedType;
@@ -357,7 +366,7 @@ export function compileKnowledgeResponse(options: {
   const out: string[] = [];
   const headerTitle =
     displaySection && displaySection !== displayTitle
-      ? `${displayTitle} — ${displaySection}`
+      ? displaySection
       : displayTitle;
 
   out.push(`### ${headerTitle}`);

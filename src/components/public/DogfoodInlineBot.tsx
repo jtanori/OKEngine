@@ -21,6 +21,19 @@ import { validatePlainText } from '../../services/formSecurity';
 
 export type HostSimulatedIdentity = 'anonymous' | 'member' | 'admin';
 
+export interface DogfoodQueryResultSummary {
+  question: string;
+  answer: string;
+  sources: SourceCitation[];
+  nextStep: DocumentNextStep | null;
+  answerType?: string;
+  retrievalMode?: string;
+  effectiveCollectionIds?: string[];
+  hostIdentityMode: HostSimulatedIdentity;
+  hostCurrentUrl: string;
+  errorState: string | null;
+}
+
 export interface DogfoodInlineBotProps {
   embedId: 'EMB-PUBLIC-HOME' | 'EMB-PUBLIC-DOCS' | 'EMB-PUBLIC-LEGAL';
   title?: string;
@@ -29,8 +42,14 @@ export interface DogfoodInlineBotProps {
   hostIdentityMode?: HostSimulatedIdentity;
   hostCurrentUrl?: string;
   hostContextLabel?: string;
-  externalTriggerQuestion?: { question: string; nonce: number } | null;
+  externalTriggerQuestion?: {
+    question: string;
+    nonce: number;
+    overrideIdentityMode?: HostSimulatedIdentity;
+    overrideCurrentUrl?: string;
+  } | null;
   onActiveQuestionChange?: (question: string | null) => void;
+  onQueryResult?: (result: DogfoodQueryResultSummary) => void;
   onSelectCitationSlug?: (slug: string) => void;
   onNavigateUrl?: (url: string) => void;
 }
@@ -45,6 +64,7 @@ export const DogfoodInlineBot: React.FC<DogfoodInlineBotProps> = ({
   hostContextLabel,
   externalTriggerQuestion,
   onActiveQuestionChange,
+  onQueryResult,
   onSelectCitationSlug,
   onNavigateUrl,
 }) => {
@@ -212,6 +232,13 @@ export const DogfoodInlineBot: React.FC<DogfoodInlineBotProps> = ({
       const decoder = new TextDecoder();
       let buffer = '';
 
+      let accumulatedAnswer = '';
+      let resolvedSources: SourceCitation[] = [];
+      let resolvedNextStep: DocumentNextStep | null = null;
+      let resolvedAnswerType: string | undefined;
+      let resolvedRetrievalMode: string | undefined;
+      let resolvedEffectiveCollections: string[] | undefined;
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -226,20 +253,31 @@ export const DogfoodInlineBot: React.FC<DogfoodInlineBotProps> = ({
           try {
             const payload = JSON.parse(line.substring(6));
             if (payload.type === 'metadata') {
+              if (payload.answerPlan) {
+                resolvedAnswerType = payload.answerPlan.answerType;
+                resolvedRetrievalMode = payload.answerPlan.retrievalMode;
+              }
+              if (Array.isArray(payload.effectiveCollectionIds)) {
+                resolvedEffectiveCollections = payload.effectiveCollectionIds;
+              }
               if (Array.isArray(payload.sources)) {
+                resolvedSources = payload.sources;
                 setSources(payload.sources);
                 if (payload.nextStep) {
+                  resolvedNextStep = payload.nextStep;
                   setNextStep(payload.nextStep);
                 } else if (payload.sources.length > 0) {
                   const topDoc = readyDocs.find(
                     (d) => d.id === payload.sources[0].docId
                   );
                   if (topDoc?.nextStep) {
+                    resolvedNextStep = topDoc.nextStep;
                     setNextStep(topDoc.nextStep);
                   }
                 }
               }
             } else if (payload.type === 'chunk' && payload.text) {
+              accumulatedAnswer += payload.text;
               setAnswer((prev) => prev + payload.text);
             }
           } catch {
@@ -247,14 +285,35 @@ export const DogfoodInlineBot: React.FC<DogfoodInlineBotProps> = ({
           }
         }
       }
+
+      onQueryResult?.({
+        question: trimmed,
+        answer: accumulatedAnswer,
+        sources: resolvedSources,
+        nextStep: resolvedNextStep,
+        answerType: resolvedAnswerType,
+        retrievalMode: resolvedRetrievalMode,
+        effectiveCollectionIds: resolvedEffectiveCollections,
+        hostIdentityMode: activeIdentityMode,
+        hostCurrentUrl: activeCurrentUrl,
+        errorState: null,
+      });
     } catch {
       // PUBLIC-01 §42: Failure isolation — chat errors never crash the host page
-      setErrorState(
-        t(
-          'public.bot.error_unavailable',
-          'Chat service is temporarily unavailable. Public documentation remains accessible.'
-        )
+      const fallbackMsg = t(
+        'public.bot.error_unavailable',
+        'Chat service is temporarily unavailable. Public documentation remains accessible.'
       );
+      setErrorState(fallbackMsg);
+      onQueryResult?.({
+        question: trimmed,
+        answer: '',
+        sources: [],
+        nextStep: null,
+        hostIdentityMode: activeIdentityMode,
+        hostCurrentUrl: activeCurrentUrl,
+        errorState: fallbackMsg,
+      });
     } finally {
       setIsStreaming(false);
     }
@@ -264,7 +323,11 @@ export const DogfoodInlineBot: React.FC<DogfoodInlineBotProps> = ({
     if (externalTriggerQuestion && externalTriggerQuestion.question) {
       setQuestion(externalTriggerQuestion.question);
       setInputError(null);
-      executeQuery(externalTriggerQuestion.question);
+      executeQuery(
+        externalTriggerQuestion.question,
+        externalTriggerQuestion.overrideIdentityMode,
+        externalTriggerQuestion.overrideCurrentUrl
+      );
     }
   }, [externalTriggerQuestion?.nonce]);
 

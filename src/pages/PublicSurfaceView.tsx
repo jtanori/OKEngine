@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   BookOpen,
   ArrowRight,
@@ -11,6 +11,7 @@ import {
   FolderKanban,
   Code2,
   Shield,
+  MessageSquare,
 } from 'lucide-react';
 import { authService } from '../services/auth';
 import { store } from '../services/store';
@@ -26,16 +27,9 @@ import {
 } from '../components/ui';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { DocumentNav, DocumentNavGroup } from '../components/DocumentNav';
-import {
-  DogfoodInlineBot,
-  HostSimulatedIdentity,
-} from '../components/public/DogfoodInlineBot';
+import { DogfoodInlineBot } from '../components/public/DogfoodInlineBot';
+import { HomepageGuidedTour } from '../components/public/HomepageGuidedTour';
 import { DocArticleRenderer } from '../components/public/DocArticleRenderer';
-import {
-  getEmbedCollectionIds,
-  resolveEmbedAuthorization,
-  clearanceLabelToEmbedIdentity,
-} from '../services/embedAuthorization';
 import { useI18n } from '../i18n/I18nContext';
 import { scrollViewportToTop } from '../app/router';
 import {
@@ -103,70 +97,15 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
   const [isContactSubmitting, setIsContactSubmitting] = useState(false);
   const [contactSent, setContactSent] = useState(false);
 
-  // Homepage Dogfooding Host Environment Inputs (PAGE-PUB-01 / PUBLIC-01 & PUBLIC-02)
-  const [homeIdentityMode, setHomeIdentityMode] =
-    useState<HostSimulatedIdentity>('anonymous');
-  const [homeContextRoute, setHomeContextRoute] = useState<
-    '/' | '/docs/embedding' | '/docs/access-control'
-  >('/');
-  const [activeHomeQuestion, setActiveHomeQuestion] = useState<string | null>(null);
-  const [externalHomeTrigger, setExternalHomeTrigger] = useState<{
-    question: string;
+  // Homepage Floating Guided Tour trigger state (PAGE-PUB-01)
+  const heroTourButtonRef = useRef<HTMLButtonElement | null>(null);
+  const [heroTourOpenRequest, setHeroTourOpenRequest] = useState<{
     nonce: number;
   } | null>(null);
 
   const currentUser = authService.getCurrentUser();
   const isAuthenticated = Boolean(currentUser);
   const personas = authService.getPersonas();
-
-  // Derive Homepage Embed pre-retrieval collection eligibility directly from resolveEmbedAuthorization
-  const homeEmbed = store.getPublicEmbed('EMB-PUBLIC-HOME');
-  const allWorkspaceCollections = store.getCollections();
-  const homeEmbedCollectionIds = useMemo(
-    () => getEmbedCollectionIds(homeEmbed),
-    [homeEmbed]
-  );
-  const homeResolvedIdentity = useMemo(
-    () =>
-      clearanceLabelToEmbedIdentity(
-        homeIdentityMode === 'admin'
-          ? 'admin'
-          : homeIdentityMode === 'member'
-          ? 'member'
-          : 'anonymous'
-      ),
-    [homeIdentityMode]
-  );
-  const homeAuthorizationScope = useMemo(
-    () =>
-      resolveEmbedAuthorization(
-        homeResolvedIdentity,
-        homeEmbedCollectionIds,
-        allWorkspaceCollections
-      ),
-    [homeResolvedIdentity, homeEmbedCollectionIds, allWorkspaceCollections]
-  );
-  const homeAuthorizedSet = useMemo(
-    () => new Set(homeAuthorizationScope.collectionIds),
-    [homeAuthorizationScope]
-  );
-
-  const homeContextLabel = useMemo(() => {
-    if (homeContextRoute === '/docs/embedding') {
-      return t('public.host.ctx_embeds', 'OKEng / Embeds');
-    }
-    if (homeContextRoute === '/docs/access-control') {
-      return t('public.host.ctx_security', 'OKEng / Access control');
-    }
-    return t('public.host.ctx_home', 'Homepage · Product overview');
-  }, [homeContextRoute, t]);
-
-  const roleSuggestedQuestion = useMemo(() => {
-    if (homeIdentityMode === 'admin') {
-      return 'How does the pre-retrieval authorization and cache pipeline work?';
-    }
-    return 'How do I configure customer authentication and host context?';
-  }, [homeIdentityMode]);
 
   useEffect(() => {
     setPage(initialPage);
@@ -620,207 +559,30 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
               <Text as="p" variant="body" tone="secondary" className="leading-relaxed">
                 {t('public.hero.subtitle')}
               </Text>
-              <div className="flex items-center gap-3 pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-2">
+                <button
+                  ref={heroTourButtonRef}
+                  type="button"
+                  data-testid="hero-what-is-okeng-cta"
+                  onClick={() => setHeroTourOpenRequest({ nonce: Date.now() })}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-ink text-surface rounded-xs text-xs font-medium hover:bg-ink/90 transition-colors cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{t('public.tour.hero_primary_cta', 'What is OKEng?')}</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
                 <Button
-                  variant="primary"
+                  variant="secondary"
                   onClick={() =>
                     currentUser ? onEnterWorkspace('okeng') : navigatePublicPage('login')
                   }
                 >
                   <span>{t('public.hero.cta_start')}</span>
-                  <ArrowRight className="w-4 h-4" />
                 </Button>
                 <Button variant="secondary" onClick={() => navigatePublicPage('docs')}>
                   <BookOpen className="w-4 h-4" />
                   <span>{t('public.hero.cta_docs')}</span>
                 </Button>
-              </div>
-            </section>
-
-            {/* Single Live OKEng Homepage Assistant (EMB-PUBLIC-HOME) + Adjacent Host Environment Bar */}
-            <section className="space-y-3">
-              <DogfoodInlineBot
-                embedId="EMB-PUBLIC-HOME"
-                title={t('public.bot.home_title')}
-                subtitle={t('public.bot.home_subtitle')}
-                hostIdentityMode={homeIdentityMode}
-                hostCurrentUrl={homeContextRoute}
-                hostContextLabel={homeContextLabel}
-                externalTriggerQuestion={externalHomeTrigger}
-                onActiveQuestionChange={setActiveHomeQuestion}
-                suggestedQuestions={[
-                  'What is OKEng?',
-                  'How does OKEng work?',
-                  'How do Embeds work?',
-                  'How does OKEng protect private knowledge?',
-                  'How does contextual retrieval work?',
-                  '¿Cómo funciona OKEng?',
-                ]}
-                onSelectCitationSlug={handleCitationNavigate}
-                onNavigateUrl={handleEmbedNavigateUrl}
-              />
-
-              {/* Adjacent Host Environment Bar (Host-Supplied Identity & Context Controls) */}
-              <div className="bg-surface border border-line rounded-sm px-5 py-3.5 space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  {/* Host Identity Switcher */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <Text variant="caption" tone="secondary" className="font-medium">
-                      {t('public.host.identity_label', 'Identity:')}
-                    </Text>
-                    <SegmentedTabs<HostSimulatedIdentity>
-                      size="xs"
-                      variant="ink"
-                      ariaLabel={t('public.host.identity_label', 'Identity')}
-                      activeId={homeIdentityMode}
-                      onChange={(nextMode) => setHomeIdentityMode(nextMode)}
-                      options={[
-                        {
-                          id: 'anonymous',
-                          label: t('public.host.identity_visitor', 'Visitor'),
-                        },
-                        {
-                          id: 'member',
-                          label: t('public.host.identity_member', 'Member'),
-                        },
-                        {
-                          id: 'admin',
-                          label: t('public.host.identity_admin', 'Admin'),
-                        },
-                      ]}
-                    />
-                  </div>
-
-                  {/* Host Context Switcher */}
-                  <div className="flex flex-wrap items-center gap-2.5">
-                    <Text variant="caption" tone="secondary" className="font-medium">
-                      {t('public.host.context_label', 'Context:')}
-                    </Text>
-                    <SegmentedTabs<'/' | '/docs/embedding' | '/docs/access-control'>
-                      size="xs"
-                      variant="surface"
-                      ariaLabel={t('public.host.context_label', 'Context')}
-                      activeId={homeContextRoute}
-                      onChange={(nextRoute) => setHomeContextRoute(nextRoute)}
-                      options={[
-                        {
-                          id: '/',
-                          label: t('public.host.ctx_home', 'Homepage · Product overview'),
-                        },
-                        {
-                          id: '/docs/embedding',
-                          label: t('public.host.ctx_embeds', 'OKEng / Embeds'),
-                        },
-                        {
-                          id: '/docs/access-control',
-                          label: t('public.host.ctx_security', 'OKEng / Access control'),
-                        },
-                      ]}
-                    />
-                  </div>
-                </div>
-
-                {/* Canonical Collection Access Matrix (Derived strictly from resolveEmbedAuthorization) */}
-                <div className="pt-2.5 border-t border-line flex flex-wrap items-center justify-between gap-3 text-2xs">
-                  <div
-                    role="status"
-                    aria-live="polite"
-                    className="flex flex-wrap items-center gap-2 font-mono"
-                  >
-                    <span className="text-ink-secondary font-sans">
-                      {t('public.host.access_label', 'Accessible collections:')}
-                    </span>
-                    <span
-                      className={
-                        homeAuthorizedSet.has('COL-PUBLIC') &&
-                        homeAuthorizedSet.has('COL-DOCS')
-                          ? 'text-ink font-semibold'
-                          : 'text-ink-muted'
-                      }
-                    >
-                      {t('public.host.col_public_docs', 'Public Docs')}{' '}
-                      {homeAuthorizedSet.has('COL-PUBLIC') &&
-                      homeAuthorizedSet.has('COL-DOCS')
-                        ? '✓'
-                        : '✗'}
-                    </span>
-                    <span aria-hidden="true" className="text-ink-muted">
-                      ·
-                    </span>
-                    <span
-                      className={
-                        homeAuthorizedSet.has('COL-LEGAL')
-                          ? 'text-ink font-semibold'
-                          : 'text-ink-muted'
-                      }
-                    >
-                      {t('public.host.col_legal', 'Legal')}{' '}
-                      {homeAuthorizedSet.has('COL-LEGAL') ? '✓' : '✗'}
-                    </span>
-                    <span aria-hidden="true" className="text-ink-muted">
-                      ·
-                    </span>
-                    <span
-                      className={
-                        homeAuthorizedSet.has('COL-CUSTOMER')
-                          ? 'text-accent font-semibold'
-                          : 'text-ink-muted'
-                      }
-                    >
-                      {t('public.host.col_customer', 'Customer Docs')}{' '}
-                      {homeAuthorizedSet.has('COL-CUSTOMER') ? '✓' : '✗'}
-                    </span>
-                    <span aria-hidden="true" className="text-ink-muted">
-                      ·
-                    </span>
-                    <span
-                      className={
-                        homeAuthorizedSet.has('COL-INTERNAL')
-                          ? 'text-accent font-semibold'
-                          : 'text-ink-muted'
-                      }
-                    >
-                      {t('public.host.col_admin', 'Admin Docs')}{' '}
-                      {homeAuthorizedSet.has('COL-INTERNAL') ? '✓' : '✗'}
-                    </span>
-                  </div>
-
-                  {/* Quick Verification Actions for Current Identity */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    {activeHomeQuestion && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setExternalHomeTrigger({
-                            question: activeHomeQuestion,
-                            nonce: Date.now(),
-                          })
-                        }
-                        className="px-2.5 py-1 bg-ink text-surface rounded-xs font-medium hover:bg-ink/90 transition-colors cursor-pointer whitespace-nowrap"
-                      >
-                        {t('public.host.rerun_as', 'Re-run question as')}{' '}
-                        {homeIdentityMode === 'admin'
-                          ? t('public.host.identity_admin', 'Admin')
-                          : homeIdentityMode === 'member'
-                          ? t('public.host.identity_member', 'Member')
-                          : t('public.host.identity_visitor', 'Visitor')}
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setExternalHomeTrigger({
-                          question: roleSuggestedQuestion,
-                          nonce: Date.now(),
-                        })
-                      }
-                      className="px-2.5 py-1 bg-elevated hover:bg-subtle border border-line rounded-xs text-ink transition-colors cursor-pointer whitespace-nowrap"
-                    >
-                      {t('public.host.try_role_q', 'Ask with current access:')}{' '}
-                      <span className="font-medium">“{roleSuggestedQuestion}”</span>
-                    </button>
-                  </div>
-                </div>
               </div>
             </section>
 
@@ -831,7 +593,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
               </Text>
               <Card padding="lg">
                 <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
-                  <div className="space-y-1 border-l-2 border-ink pl-3">
+                  <div className="space-y-1">
                     <Text variant="mono" tone="secondary">
                       {t('public.pipeline.step1_tag')}
                     </Text>
@@ -842,7 +604,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
                       {t('public.pipeline.step1_desc')}
                     </Text>
                   </div>
-                  <div className="space-y-1 border-l-2 border-ink pl-3">
+                  <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
                     <Text variant="mono" tone="secondary">
                       {t('public.pipeline.step2_tag')}
                     </Text>
@@ -853,7 +615,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
                       {t('public.pipeline.step2_desc')}
                     </Text>
                   </div>
-                  <div className="space-y-1 border-l-2 border-ink pl-3">
+                  <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
                     <Text variant="mono" tone="secondary">
                       {t('public.pipeline.step3_tag')}
                     </Text>
@@ -864,7 +626,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
                       {t('public.pipeline.step3_desc')}
                     </Text>
                   </div>
-                  <div className="space-y-1 border-l-2 border-ink pl-3">
+                  <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
                     <Text variant="mono" tone="secondary">
                       {t('public.pipeline.step4_tag')}
                     </Text>
@@ -964,6 +726,14 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
                 </Button>
               </div>
             </Card>
+
+            {/* Floating Conversational Guided Tour (EMB-PUBLIC-HOME) */}
+            <HomepageGuidedTour
+              openFromHeroRequest={heroTourOpenRequest}
+              heroButtonRef={heroTourButtonRef}
+              onSelectCitationSlug={handleCitationNavigate}
+              onNavigateUrl={handleEmbedNavigateUrl}
+            />
           </div>
         )}
 

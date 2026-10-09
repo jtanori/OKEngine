@@ -46,8 +46,21 @@ import {
   CLOCK_SKEW_TOLERANCE_SECONDS,
   EmbedRuntimeSession,
 } from './src/services/embedAuthorization.js';
+import {
+  clearPublicHomepageDemoCache,
+  handlePublicHomepageDemoChatStream,
+  handlePublicHomepageDemoContext,
+  validatePublicDemoRegistries,
+} from './server/demo/publicHomepageDemoAuthorization.js';
 
 dotenv.config();
+
+const demoRegistryValidation = validatePublicDemoRegistries();
+if (!demoRegistryValidation.valid) {
+  throw new Error(
+    `[STARTUP] Public demo registry validation failed: ${demoRegistryValidation.errors.join('; ')}`
+  );
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -519,6 +532,7 @@ app.get('/api/cache/metrics', (req, res) => {
 
 app.post('/api/cache/invalidate', async (req, res) => {
   const wsId = String(req.body?.workspaceId || 'okeng');
+  clearPublicHomepageDemoCache();
   const result = await cacheService.invalidateWorkspace(wsId);
   res.json({
     workspaceId: wsId,
@@ -527,8 +541,25 @@ app.post('/api/cache/invalidate', async (req, res) => {
   });
 });
 
+// Stateless Public Homepage Demo Context & EffectiveScope Status Endpoint
+app.post('/api/demo/homepage-context', async (req, res) => {
+  await handlePublicHomepageDemoContext(req, res);
+});
+
 // Server-side Grounded Answer Streaming via Server-Sent Events (SSE)
 app.post('/api/chat/stream', async (req, res) => {
+  // P0-01 Non-Bypassable Public Homepage Demo Routing:
+  // Every request targeting EMB-PUBLIC-HOME or supplying demoPreset or mode === 'public_homepage_demo'
+  // is handled strictly by handlePublicHomepageDemoChatStream (never falling through to general chat logic).
+  if (
+    req.body?.embedId === 'EMB-PUBLIC-HOME' ||
+    req.body?.demoPreset !== undefined ||
+    req.body?.mode === 'public_homepage_demo'
+  ) {
+    await handlePublicHomepageDemoChatStream(req, res);
+    return;
+  }
+
   const startTime = Date.now();
   const {
     question: rawQuestion,
@@ -568,11 +599,12 @@ app.post('/api/chat/stream', async (req, res) => {
   const token = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : req.body.token;
 
   // Server-side workspace signing secret lookup (never from token-controlled fields)
+  const expectedWsId = workspaceId || 'okeng';
   const serverSigningSecret =
     process.env.OKENG_SIGNING_SECRET ||
-    INITIAL_WORKSPACE.signingSecret ||
-    'sk_live_sec_acme_prod_9921';
-  const expectedWsId = workspaceId || 'okeng';
+    (expectedWsId === 'acme-cloud'
+      ? 'sk_live_sec_acme_prod_9921'
+      : INITIAL_WORKSPACE.signingSecret || 'sk_live_sec_acme_prod_9921');
   const targetEmbedId: string | undefined = req.body?.embedId;
 
   let resolvedIdentity: EmbedIdentity = { kind: 'anonymous' };

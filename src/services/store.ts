@@ -282,13 +282,12 @@ class Store {
       return col;
     });
 
-    const minKnowledgeVersion = Math.max(
-      persistedWorkspace.knowledgeVersion || 1,
-      INITIAL_WORKSPACE.knowledgeVersion
-    );
+    const persistedKv = persistedWorkspace.knowledgeVersion ?? 1;
+    const seedKv = INITIAL_WORKSPACE.knowledgeVersion ?? 1;
+    const minKnowledgeVersion = Math.max(persistedKv, seedKv);
     const nextKnowledgeVersion =
-      didUpgradeCanonicalSeeds && persistedWorkspace.knowledgeVersion >= INITIAL_WORKSPACE.knowledgeVersion
-        ? persistedWorkspace.knowledgeVersion + 1
+      didUpgradeCanonicalSeeds && persistedKv >= seedKv
+        ? persistedKv + 1
         : minKnowledgeVersion;
 
     const workspace: Workspace =

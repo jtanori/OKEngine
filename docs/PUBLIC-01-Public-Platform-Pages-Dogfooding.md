@@ -57,13 +57,12 @@ OKEng Workspace (ws_okeng_01)
       └── COL-INTERNAL (Admin Docs, visibility = admins)                  ──┘
 ```
 
-### Homepage Mixed-Access Dogfooding & Host Environment Bar (`PAGE-PUB-01` & `PUBLIC-02`)
-* **Single Live Mixed-Access Embed (`EMB-PUBLIC-HOME`)**: Powers the `/` homepage Hero and binds `['COL-PUBLIC', 'COL-DOCS', 'COL-LEGAL', 'COL-CUSTOMER', 'COL-INTERNAL']` with `useCurrentPage: true`, `useHostUserContext: true`, and deterministic `routeRules` for `/`, `/docs/embedding`, and `/docs/access-control`.
-* **External Host Environment Bar (`Identity` & `Context`)**: Directly below the Hero Embed, the homepage provides host-supplied controls (`Identity: [ Visitor ] [ Member ] [ Admin ]` and `Context: [ Homepage · Product overview ] [ OKEng / Embeds ] [ OKEng / Access control ]`).
-* **Strict Pre-Retrieval Security Boundary (`Identity → Authorization → Effective Collection Scope → Retrieval → Answer/Citations/CTA`)**:
-  - When `Visitor` (`anonymous`) is active, no token is sent and `resolveEmbedAuthorization` restricts retrieval strictly to `everyone` collections (`Public Docs ✓ · Legal ✓ · Customer Docs ✗ · Admin Docs ✗`).
-  - When `Member` or `Admin` is selected, the host page requests a real short-lived HMAC-SHA256 assertion from `/api/auth/token/sign` (`role: 'member' | 'admin'`, `workspace_id: 'ws_okeng_01'`, `embed_id: 'EMB-PUBLIC-HOME'`) and passes it via `Bearer` token to `/api/chat/stream` (`mode: 'embed'`).
-  - Both server-side retrieval and the displayed `✓/✗` collection matrix derive exclusively from `resolveEmbedAuthorization(resolvedIdentity, embedCollectionIds, collections)`.
+### Homepage Floating Guided Tour & Server-Only Demo Authorization (`PAGE-PUB-01` & `PUBLIC-04`)
+* **Single Floating Mixed-Access Assistant (`EMB-PUBLIC-HOME` via `HomepageGuidedTour.tsx`)**: Launched from the Hero CTA (`"What is OKEng?"`) or bottom-right floating launcher (`role="dialog"`, `aria-modal="true"`). Binds `['COL-PUBLIC', 'COL-DOCS', 'COL-LEGAL', 'COL-CUSTOMER', 'COL-INTERNAL']` with a 3-tier conversational layout (`PRIMARY — TOUR`, `NEXT — PROGRESSION`, `SECONDARY — ASK`) and no inline duplicate chat or permanent engineering console on the homepage.
+* **Collapsed Demo Settings Drawer (`Identity` & `Context`)**: Inside the floating assistant header (`[Demo settings]`), visitors can inspect or switch server-validated demo presets (`Visitor`, `Member`, `Admin`) and context routes (`/`, `/docs/embedding`, `/docs/access-control`) with atomic `pendingSettingsOpId` commit semantics (`POST /api/demo/homepage-context`).
+* **Non-Bypassable Pre-Retrieval Security Boundary (`server/demo/publicHomepageDemoAuthorization.ts`)**:
+  - In `POST /api/chat/stream`, any request with `embedId === 'EMB-PUBLIC-HOME'`, `demoPreset !== undefined`, or `mode === 'public_homepage_demo'` routes unconditionally into `handlePublicHomepageDemoChatStream`. Caller-supplied JWTs, roles, signing secrets, or document arrays are rejected with `400` before retrieval.
+  - Eligible documents $D$ are narrowed before chunk scoring via 6-point verification (`workspaceId === 'ws_okeng_01'`, `EffectiveScope = B ∩ R`, `PUBLIC_DEMO_DOCUMENT_OWNERSHIP_MAP`, and `PUBLIC_DEMO_SOURCE_POLICY`), cached under a policy-versioned key (`demoPolicyVersion` + `narrowedDocumentFingerprint`), and validated for grounded citation provenance (`serverOutcome: 'grounded' | 'refused' | 'failed'`).
 
 ---
 
@@ -71,9 +70,8 @@ OKEng Workspace (ws_okeng_01)
 
 All public product explanations, documentation articles, legal policies, and customer/admin showcase guides are backed by canonical Markdown documents inside the `OKEng` workspace (`ws_okeng_01`):
 
-### Public Product Knowledge (`COL-PUBLIC` — `visibility = everyone`, 5 documents)
-* `01 product-overview.md` (`doc_pub_01`, English — What is OKEng, core architecture, capabilities & limits, `nextStep: /docs/getting-started`)
-* `01-es descripcion-general.md` (`doc_pub_es_01`, Spanish — Qué es OKEng, capacidades actuales y límites verificados, `nextStep: /docs/getting-started`)
+### Public Product Knowledge (`COL-PUBLIC` — `visibility = everyone`, 4 documents; `doc_pub_01` includes `translations.es`)
+* `01 product-overview.md` (`doc_pub_01`, English + embedded Spanish `translations.es` — What is OKEng, core architecture, capabilities & limits, `nextStep: /docs/getting-started`)
 * `02 product-concepts.md` (`doc_pub_02`, Core entities: Workspaces, Collections, Documents, Chunks, Embeds, Citations & Next Steps, `nextStep: /docs/collections`)
 * `03 faq.md` (`doc_pub_03`, Public FAQ: capabilities today, missing-topic refusal, presentation modes, getting started, `nextStep: /docs/getting-started`)
 * `04 security-overview.md` (`doc_pub_04`, Pre-retrieval `EffectiveScope` intersection, 4-case token boundary, input/file safety, `nextStep: /docs/access-control`)
@@ -82,10 +80,10 @@ All public product explanations, documentation articles, legal policies, and cus
 * `05 getting-started.md` (`doc_docs_05`, 4-step quickstart from workspace creation to Embed installation, `nextStep: /signup`)
 * `06 workspaces.md` (`doc_docs_06`, Multi-tenant isolation, roles, signing secrets & `knowledgeVersion`, `nextStep: /docs/collections`)
 * `07 collections.md` (`doc_docs_07`, Visibility tiers `everyone` / `members` / `admins` & `EffectiveScope = TargetScope ∩ IdentityAuthorizedCollections`, `nextStep: /docs/access-control`)
-* `08 files.md` (`doc_docs_08`, Native `.md`/`.txt` ingestion vs. bounded `.pdf`/`.docx` extraction metadata, 10 MB limit & filename safety, `nextStep: /docs/ingestion`)
+* `08 files.md` (`doc_docs_08`, Native `.md`/`.txt` ingestion + structured `.json`/`.csv` upload support in `UploadDropzone.tsx`, filename & script safety, `nextStep: /docs/ingestion`)
 * `09 markdown.md` (`doc_docs_09`, Heading-aware authoring & `nextStep` frontmatter contract, `nextStep: /docs/retrieval`)
-* `10 ingestion.md` (`doc_docs_10`, Heading-aware chunking up to ~900 chars, line-range tracking & `knowledgeVersion` cache invalidation, `nextStep: /docs/retrieval`)
-* `11 retrieval.md` (`doc_docs_11`, BM25 lexical ranking, route/language boosts, compilation modes, citations & missing-topic honesty, `nextStep: /docs/embedding`)
+* `10 ingestion.md` (`doc_docs_10`, Heading-aware chunking, line-range tracking & `knowledgeVersion` cache invalidation, `nextStep: /docs/retrieval`)
+* `11 retrieval.md` (`doc_docs_11`, BM25 lexical ranking, route/language boosts, compilation modes, citations & missing-topic honesty, `nextStep: /docs/collections`)
 * `12 access-control.md` (`doc_docs_12`, Dual RBAC model, 4-case identity/token verification & pre-retrieval `EffectiveScope`, `nextStep: /docs/embedding`)
 * `13 embedding.md` (`doc_docs_13`, Public/Protected/Mixed-Access embeds, signed `HS256` tokens & live vs. simulator presentation modes, `nextStep: /docs/getting-started`)
 * `14 troubleshooting.md` (`doc_docs_14`, Token expiry/signature diagnostics & Test Console verification, `nextStep: /docs/getting-started`)
@@ -127,7 +125,7 @@ All public product explanations, documentation articles, legal policies, and cus
   - **Stronger Heading Typography**: Collection headings use `font-sans text-xs font-semibold tracking-tight text-ink` with tabular document counts (`tabular-nums`).
   - **Auto-Select First Item on Expand**: Expanding a collapsed collection automatically selects and renders the first document in that collection.
 * **Visibility Scoping in `/docs`**:
-  - **Everyone (`anonymous` & `authenticated`)**: Can browse Product Guides (`COL-DOCS`), Public Product Knowledge (`COL-PUBLIC`), and Legal & Trust Policies (`COL-LEGAL`).
+  - **Everyone (`anonymous` & `authenticated`)**: Can browse Product Guides (`COL-DOCS`, 11 docs), Public Product Knowledge (`COL-PUBLIC`, 4 docs), and Legal & Trust Policies (`COL-LEGAL`, 3 docs) — 18 public documents total.
   - **Authenticated Users Only**: The **Engineering Specifications (`COL-INTERNAL` / `/docs` spec corpus)** collection group is included in the `/docs` collapsible sidebar **only when the user is authenticated**.
 * **Deterministic Scroll-to-Top Navigation**:
   - Navigating between any public page, documentation article, citation chip, or footer link immediately resets window and container scroll positions to `(0, 0)`.
@@ -155,29 +153,47 @@ All public product explanations, documentation articles, legal policies, and cus
 
 ---
 
-# 9. Homepage Guided Tour Readiness Contract & Verified Capability Boundary (`PAGE-PUB-01`)
+# 9. Homepage Floating Guided Tour Contract & Verified Capability Boundary (`PAGE-PUB-01`)
 
-> **Scope Boundary (Preparation & Readiness Gate Only)**: This section defines the verified capability claims, acceptable authoritative source sets, and the 5-stage Homepage Guided Tour content contract verified by `tests/readiness/homepage-tour-readiness.test.ts`. No guided-tour UI component is implemented in this readiness phase.
+> **Implementation & Verification (`src/data/homepageTourContract.ts`, `server/demo/publicHomepageDemoAuthorization.ts`, `src/services/homepageDemoStreamAdapter.ts`, `src/services/homepageTourController.ts`, `src/components/public/HomepageGuidedTour.tsx`, `tests/readiness/homepage-tour-readiness.test.ts`)**: `HomepageGuidedTour` on `PAGE-PUB-01` renders a single floating conversational assistant (`EMB-PUBLIC-HOME`) governed by `APPROVED_HOMEPAGE_TOUR_CONTRACT` (`5` stages) and `CANONICAL_HOMEPAGE_CAPABILITY_INVENTORY` (`13` entries), backed by the non-bypassable server-only `server/demo/publicHomepageDemoAuthorization.ts` boundary. The homepage no longer renders a duplicate inline assistant or permanent environment bar; `/docs` (`EMB-PUBLIC-DOCS`) remains completely isolated.
 
-### 9.1 Verified & Bounded `Limited` Capability Rules for Public Claims
-Every public claim in `COL-PUBLIC`, `COL-DOCS`, and the homepage tour contract MUST adhere to the verified implementation boundary:
-* **File Ingestion (`Limited` — Bounded Claim Required)**: Browser `FileReader.readAsText()` natively ingests `.md` and `.txt` files up to `10 MB`; `.pdf` and `.docx` uploads are accepted in the workspace uploader (`UploadDropzone.tsx`) with bounded extraction metadata rather than a server-side binary OCR/PDF parser.
-* **Retrieval Engine (`Verified` + Bounded `Limited` Generative Mode)**: Heading-aware Markdown chunking (`knowledgeParser.ts`, up to ~900 chars with 1-indexed `lineStart`–`lineEnd`), custom BM25 lexical scoring (`k1 = 1.2`, `b = 0.75`) with route-context (`+0.35`) and language (`+0.08`) boosts, and deterministic/extractive compilation (`responseCompiler.ts`) are `Verified` offline; optional Gemini `generative` synthesis via `/api/chat/stream` is a bounded `Limited` capability requiring `GEMINI_API_KEY` and falling back deterministically when unconfigured.
-* **Embed Presentation Modes (`Verified` Live vs. Bounded `Limited` Simulator Modes)**: `inline` (homepage `EMB-PUBLIC-HOME`) and `documentation` (`/docs` `EMB-PUBLIC-DOCS`) are live on public surfaces; `/widget.js` provides a standalone drop-in floating launcher and drawer for external host pages; all six modes (`widget`, `panel`, `fullscreen`, `inline`, `documentation`, `contextual`) are configurable in the Workspace Embed Studio (`/workspaces/okeng/embeds`) and previewable in the Host Simulator (`/workspaces/okeng/embeds/preview`).
-* **Excluded Claims (`Partial` / `Planned` / `Unverified` — Never Presented as Shipped)**: Dense vector embeddings / HNSW vector databases, automated web crawlers or 3P SaaS sync connectors (Notion/Confluence/Google Drive), binary PDF OCR, and automated public domain CORS enforcement are not implemented and MUST NOT be claimed as shipped functionality.
+### 9.1 Canonical Capability Inventory (`CANONICAL_HOMEPAGE_CAPABILITY_INVENTORY`)
+Every public claim in `COL-PUBLIC`, `COL-DOCS`, and the homepage tour contract MUST map to `CANONICAL_HOMEPAGE_CAPABILITY_INVENTORY`:
 
-### 9.2 Approved 5-Stage Traceable Homepage Guided Tour Contract
+| Capability ID | Status | Implementation Evidence | Verified Behavior & Explicit Bounds |
+| :--- | :--- | :--- | :--- |
+| `CAP-WORKSPACE-ISOLATION` | `Verified` | `src/services/auth.ts`, `src/services/store.ts`, `server/demo/publicHomepageDemoAuthorization.ts` | Multi-tenant workspace boundary (`ws_okeng_01` normalized from alias `okeng` at boundary), 5-link RBAC (`WORKSPACE_OWNER` / `WORKSPACE_USER`), and `knowledgeVersion` cache epoch invalidation. |
+| `CAP-COLLECTION-RBAC` | `Verified` | `src/services/embedAuthorization.ts`, `server/demo/publicHomepageDemoAuthorization.ts` | 3-tier visibility (`everyone`, `members`, `admins`) enforced before chunk scoring via `EffectiveScope = EmbedBoundCollections ∩ RoleAuthorizedCollections` and 6-point pre-retrieval narrowing $D$. |
+| `CAP-SIGNED-HOST-IDENTITY` | `Verified` | `src/services/embedAuthorization.ts` (`resolveRequestEmbedIdentity`, `verifyEmbedIdentityToken`), `server.ts` | HMAC-SHA256 (`HS256`) host token verification with 4-case boundary; invalid/expired/tampered tokens or unverified role assertions fail closed with `401`. Public homepage demo requests use dedicated server-only `PublicDemoAuthority` (`visitor`, `member`, `admin` presets) and reject caller tokens (`400 DEMO_TOKEN_NOT_ACCEPTED`). |
+| `CAP-FILE-INGESTION-BOUNDED` | `Limited` | `src/components/UploadDropzone.tsx`, `src/components/MarkdownEditor.tsx`, `src/services/validation.ts` | Browser `FileReader.readAsText()` upload dropzone accepts `.md`, `.txt`, `.json`, and `.csv` text files plus direct Markdown authoring with filename/script validation; no binary PDF/DOCX OCR parser or web crawler. |
+| `CAP-HEADING-CHUNKING` | `Verified` | `src/services/engine/knowledgeParser.ts` (`parseKnowledgeDocument`) | Heading-aware Markdown/text segmentation (`#`, `##`, `###`) extracting steps, bullets, warnings, code blocks, and 1-indexed `lineStart`–`lineEnd` ranges. |
+| `CAP-BM25-RETRIEVAL` | `Verified` | `src/services/engine/bm25Retriever.ts` (`retrieveAndRankAuthorizedDocs`), `src/services/engine/responseCompiler.ts` | Custom BM25 lexical scoring (`k1 = 1.5`, `b = 0.75`) + field boosts (title `+1.8`, intent `+2.0`, heading `+1.1`, synonym `+0.75`), two-step threshold (`rawScore >= 1.35`, `normalizedConfidence >= 0.25`), and deterministic/extractive compilation. |
+| `CAP-ROUTE-CONTEXT-BOOST` | `Verified` | `src/services/engine/bm25Retriever.ts`, `src/services/engine/responseCompiler.ts`, `src/data/seedData.ts` | Route-prefix match (`currentUrl.startsWith(doc.route)`) adds `+2.2` to `rawScore` (`routeBoost = 0.15`) and `routeRules` boost pinned docs strictly inside the already-authorized `EffectiveScope`. |
+| `CAP-GROUNDED-CITATIONS` | `Verified` | `src/services/engine/responseCompiler.ts`, `server/demo/publicHomepageDemoAuthorization.ts` | Structured source citations (`docId`, `title`, `filename`, `collectionId`, `url`, `citationRenderMode`) validated against `PUBLIC_DEMO_SOURCE_POLICY` and `CANONICAL_PUBLIC_ROUTE_REGISTRY`, with server-computed `serverOutcome` (`'grounded' | 'refused' | 'failed'`). |
+| `CAP-MISSING-TOPIC-REFUSAL` | `Verified` | `src/services/engine/bm25Retriever.ts`, `src/services/engine/responseCompiler.ts` | Two-step relevance gate: candidates with `rawScore < 1.35` are capped at `normalizedConfidence <= 0.20` and filtered out by `normalizedConfidence >= 0.25`, returning `answerType: 'unknown'` and `serverOutcome: 'refused'` with `0` fabricated sources. |
+| `CAP-EMBED-MODES-BOUNDED` | `Limited` | `src/pages/PublicSurfaceView.tsx`, `src/components/public/HomepageGuidedTour.tsx`, `public/widget.js`, `src/pages/EmbedConfigView.tsx`, `src/pages/WidgetPreviewView.tsx` | Floating guided tour assistant (`/` `EMB-PUBLIC-HOME`) and `documentation` (`/docs` `EMB-PUBLIC-DOCS`) are live on public pages; `/widget.js` provides a standalone drop-in launcher/drawer; all 6 modes (`widget`, `panel`, `fullscreen`, `inline`, `documentation`, `contextual`) are configurable in Embed Studio and previewable in the Host Simulator. |
+| `CAP-INSTALLATION-RECIPE` | `Verified` | `src/pages/EmbedInstallationView.tsx`, `src/pages/TestConsoleView.tsx` | Configuration-driven installation recipe (`React`, `Vue`, `JavaScript`) distinguishing frontend-only public embeds from backend+frontend signed-token embeds, plus Test Console (`PAGE-APP-06`) verification. |
+| `CAP-MULTILINGUAL-ES` | `Verified` | `src/i18n/I18nContext.tsx`, `src/services/engine/bm25Retriever.ts`, `src/data/seedData.ts` | Full EN/ES UI localization, bilingual tokenization/synonyms, same-language boost (`+0.65` on `rawScore`), `doc_pub_01.translations.es`, and native Spanish `doc_docs_es_20`. |
+| `CAP-GENERATIVE-FALLBACK` | `Limited` | `server.ts` (`/api/chat/stream`), `src/services/api.ts` | Optional server-side Gemini synthesis over pre-filtered `authorizedDocs` when `GEMINI_API_KEY` is configured; falls back deterministically to `compileKnowledgeResponse` when unconfigured. |
 
-*(Note: Candidate Stage 6 — Continue to Signup — is folded into Stage 5 as a verified secondary action `/signup` alongside the primary `/docs/getting-started` guide so every stage teaches a distinct, grounded capability concept.)*
+* **Excluded Claims (`Partial` / `Planned` / `Unverified` — Never Presented as Shipped)**: Dense vector embeddings / HNSW vector databases, automated web crawlers or 3P SaaS sync connectors (Notion/Confluence/Google Drive), binary PDF/DOCX OCR, and automated public domain CORS enforcement are not implemented and MUST NOT be claimed as shipped functionality.
 
-| Stage ID | Title | Suggested Prompt | Acceptable Authoritative Source Set (`COL-PUBLIC` / `COL-DOCS`) | Primary `nextAction` (Router-Verified) | Mapped Acceptance Test ID |
+### 9.2 Approved 5-Stage Traceable Homepage Guided Tour Contract & Discriminated Progression
+
+| Stage ID | Title | Suggested Prompt | Acceptable Authoritative Source Set (`COL-PUBLIC` / `COL-DOCS`) | Discriminated `progression` Contract | Mapped Acceptance Test ID |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| `STAGE-1-WHAT-IS-OKENG` | **1. What is OKEng?** | `"What is OKEng, and what problem does it solve?"` | Primary: `product-overview.md` (`doc_pub_01`)<br>Acceptable: `product-concepts.md` (`doc_pub_02`), `faq.md` (`doc_pub_03`) | `{ label: "Read Getting Started Guide", url: "/docs/getting-started", category: "docs" }` | `TOUR-STAGE-01` |
-| `STAGE-2-WHAT-IT-DOES-TODAY` | **2. What can it do today?** | `"What can I do with OKEng today?"` | Primary: `product-overview.md` (`doc_pub_01`), `faq.md` (`doc_pub_03`)<br>Acceptable: `files.md` (`doc_docs_08`), `embedding.md` (`doc_docs_13`) | `{ label: "Explore Documentation", url: "/docs", category: "docs" }` | `TOUR-STAGE-02` |
-| `STAGE-3-GROUNDED-ANSWERS-AND-CITATIONS` | **3. Answers grounded in knowledge** | `"How does OKEng answer questions using my documentation, and how do citations help me verify an answer?"` | Primary: `retrieval.md` (`doc_docs_11`), `ingestion.md` (`doc_docs_10`)<br>Acceptable: `markdown.md` (`doc_docs_09`), `product-concepts.md` (`doc_pub_02`), `faq.md` (`doc_pub_03`) | `{ label: "Explore Retrieval Guide", url: "/docs/retrieval", category: "docs" }` | `TOUR-STAGE-03` |
-| `STAGE-4-CONTEXT-AND-ACCESS-CONTROL` | **4. Context and access control** | `"How do collections, visibility tiers, and host context control what an Embed can retrieve?"` | Primary: `collections.md` (`doc_docs_07`), `access-control.md` (`doc_docs_12`), `security-overview.md` (`doc_pub_04`)<br>Acceptable: `retrieval.md` (`doc_docs_11`), `embedding.md` (`doc_docs_13`) | `{ label: "Read Access Control Guide", url: "/docs/access-control", category: "docs" }` | `TOUR-STAGE-04` |
-| `STAGE-5-GET-STARTED` | **5. Get started** | `"What are the steps to get started and integrate OKEng into my website or application?"` | Primary: `getting-started.md` (`doc_docs_05`), `embedding.md` (`doc_docs_13`)<br>Acceptable: `workspaces.md` (`doc_docs_06`), `faq.md` (`doc_pub_03`) | Primary: `{ label: "Create Free Account", url: "/signup", category: "signup" }`<br>Secondary: `{ label: "Read Getting Started Guide", url: "/docs/getting-started", category: "docs" }` | `TOUR-STAGE-05` |
+| `STAGE-1-WHAT-IS-OKENG` | **1. What is OKEng?** | `"What is OKEng, and what problem does it solve?"` | Primary: `product-overview.md` (`doc_pub_01`)<br>Acceptable: `product-concepts.md` (`doc_pub_02`), `faq.md` (`doc_pub_03`) | `advance_stage` → `STAGE-2-WHAT-IT-DOES-TODAY`<br>Companion: `/docs/getting-started` | `TOUR-STAGE-01` |
+| `STAGE-2-WHAT-IT-DOES-TODAY` | **2. What can it do today?** | `"What can I do with OKEng today?"` | Primary: `product-overview.md` (`doc_pub_01`), `faq.md` (`doc_pub_03`)<br>Acceptable: `files.md` (`doc_docs_08`), `embedding.md` (`doc_docs_13`), `getting-started.md` (`doc_docs_05`) | `advance_stage` → `STAGE-3-GROUNDED-ANSWERS-AND-CITATIONS`<br>Companion: `/docs` | `TOUR-STAGE-02` |
+| `STAGE-3-GROUNDED-ANSWERS-AND-CITATIONS` | **3. Answers grounded in knowledge** | `"How does OKEng answer questions using my documentation, and how do citations help me verify an answer?"` | Primary: `retrieval.md` (`doc_docs_11`), `ingestion.md` (`doc_docs_10`)<br>Acceptable: `markdown.md` (`doc_docs_09`), `product-concepts.md` (`doc_pub_02`), `faq.md` (`doc_pub_03`) | `advance_stage` → `STAGE-4-CONTEXT-AND-ACCESS-CONTROL`<br>Companion: `/docs/retrieval` | `TOUR-STAGE-03` |
+| `STAGE-4-CONTEXT-AND-ACCESS-CONTROL` | **4. Context and access control** | `"How do collections, visibility tiers, and host context control what an Embed can retrieve?"` | Primary: `collections.md` (`doc_docs_07`), `access-control.md` (`doc_docs_12`), `security-overview.md` (`doc_pub_04`)<br>Acceptable: `retrieval.md` (`doc_docs_11`), `embedding.md` (`doc_docs_13`) | `advance_stage` → `STAGE-5-GET-STARTED`<br>Companion: `/docs/access-control` | `TOUR-STAGE-04` |
+| `STAGE-5-GET-STARTED` | **5. Get started** | `"What are the steps to get started and integrate OKEng into my website or application?"` | Primary: `getting-started.md` (`doc_docs_05`), `embedding.md` (`doc_docs_13`)<br>Acceptable: `workspaces.md` (`doc_docs_06`), `faq.md` (`doc_pub_03`), `product-overview.md` (`doc_pub_01`) | `terminal` → Primary: `/signup` (`Create Free Account`)<br>Secondary: `/docs/getting-started`<br>Action: `Restart tour` | `TOUR-STAGE-05` |
 
-
-
-
+### 9.3 Server-Only Demo Authorization, Policy-Versioned Caching & 81/81 Verification Matrix
+* **Non-Bypassable Server-Only Demo Boundary (`server/demo/publicHomepageDemoAuthorization.ts`)**:
+  - `POST /api/chat/stream` routes any request with `embedId === 'EMB-PUBLIC-HOME'`, `demoPreset !== undefined`, or `mode === 'public_homepage_demo'` unconditionally to `handlePublicHomepageDemoChatStream`. Omitting `demoPreset` on `EMB-PUBLIC-HOME` returns `400 INVALID_DEMO_PRESET` without falling through.
+  - Enforces 6-point pre-retrieval narrowing $D$ over server repositories (`ws_okeng_01`), rewrites restricted `COL-CUSTOMER` and `COL-INTERNAL` citations to `publicSafeTitle` companion guides (`citationRenderMode: 'public_companion_guide'`), and keys the demo cache by `demoPolicyVersion` + `narrowedDocumentFingerprint`.
+* **5-Domain Client Controller (`src/services/homepageTourController.ts`)**:
+  - Separates `AssistantDisplayState`, `TourSessionState`, `ConversationState`, `RequestLifecycleState`, and `DemoSettingsState`, enforcing request fencing `(requestId, exchangeId, tourRunId)`, single-terminal exchange lock (`terminalLock`), `pendingSettingsOpId` atomic settings updates, and separated `stageRetryTarget` vs. `followUpRetryTarget`.
+* **Executed Acceptance Verification (`81/81` Passing)**:
+  - `tests/readiness/homepage-tour-readiness.test.ts`: `52/52` passing (`27` baseline readiness tests + `25` adversarial tests `AT-01..AT-25`).
+  - `tests/rendering/embed-authorization.test.ts`: `29/29` passing.
