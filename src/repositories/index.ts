@@ -1,9 +1,9 @@
-import {
+import type {
   RepositoryRegistry,
   RetrievalService,
   AuthorizedRetrievalQuery,
   RetrievedChunkResult,
-} from './types';
+} from './types'
 import { memoryRepositories, MemoryRetrievalService } from './memory.repository';
 import { supabaseRepositories } from './supabase.repository';
 import { isSupabaseConfigured, getSupabaseServerClient } from '../lib/supabase/server';
@@ -163,14 +163,7 @@ export class HybridRetrievalService implements RetrievalService {
         return [];
       }
 
-      const docs = await repositories.documents.listAuthorized({
-        workspaceId: query.workspaceId,
-        authorizedCollectionIds: query.authorizedCollectionIds,
-        narrowedDocumentIds: query.narrowedDocumentIds,
-      });
-
-      if (docs.length === 0) return [];
-      return this.memoryService.retrieveAuthorizedChunks(query);
+      return supabaseRepositories.retrieval.retrieveAuthorizedChunks(query);
     }
 
     return this.memoryService.retrieveAuthorizedChunks(query);

@@ -17,7 +17,7 @@ import {
   AnswerMode,
   CompiledAnswerPlan,
 } from './src/services/engine/responseCompiler.js';
-// import { repositories } from './src/repositories/index.js';
+import { repositories } from './src/repositories/index';
 import { cacheService, cacheMetrics } from './src/cache/cache.module.js';
 import { resolveLanguageContext } from './src/i18n/i18n.resolver.js';
 import { getLanguageAdapter } from './src/i18n/i18n.adapter.js';
@@ -26,12 +26,12 @@ import {
   renderAstToHtml,
   RENDERER_VERSION,
   renderObservability,
-} from './src/content/index.js';
+} from './src/content/index';
 import {
   INITIAL_WORKSPACE,
   INITIAL_COLLECTIONS,
   INITIAL_PUBLIC_EMBEDS,
-} from './src/data/seedData.js';
+} from './src/data/seedData';
 import {
   EmbedIdentity,
   getEmbedCollectionIds,
@@ -45,13 +45,13 @@ import {
   clearanceLabelToEmbedIdentity,
   CLOCK_SKEW_TOLERANCE_SECONDS,
   EmbedRuntimeSession,
-} from './src/services/embedAuthorization.js';
+} from './src/services/embedAuthorization';
 import {
   clearPublicHomepageDemoCache,
   handlePublicHomepageDemoChatStream,
   handlePublicHomepageDemoContext,
   validatePublicDemoRegistries,
-} from './server/demo/publicHomepageDemoAuthorization.js';
+} from './server/demo/publicHomepageDemoAuthorization';
 
 dotenv.config();
 
