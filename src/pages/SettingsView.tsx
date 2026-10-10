@@ -514,18 +514,18 @@ export const SettingsView: React.FC = () => {
                 </div>
               </div>
 
-              {/* Signing Secret */}
+              {/* Signing Secret Key ID (Redacted KMS Reference) */}
               <div className="space-y-1.5 text-left">
                 <div className="flex items-start gap-2">
                   <div className="flex-1">
                     <Input
-                      label={t('settings.signing_secret', 'HMAC Signing Secret')}
-                      type="password"
+                      label={t('settings.signing_secret', 'HMAC Signing Key ID (KMS Redacted)')}
+                      type="text"
                       readOnly
-                      value={workspace.signingSecret}
+                      value={`${workspace.signingSecretKid || 'kid_okeng_active_v1'} (${workspace.signingSecretPreview || '••••_active_v1'})`}
                       hint={t(
                         'settings.signing_secret_hint',
-                        'Used by your backend server to sign user tokens. Never expose this secret in client-side code.'
+                        'Used by your backend server to sign user tokens. Raw secret material is KMS-isolated and never exposed to browsers.'
                       )}
                       className="bg-elevated font-mono"
                     />
@@ -534,7 +534,12 @@ export const SettingsView: React.FC = () => {
                     <Button
                       size="sm"
                       variant="secondary"
-                      onClick={() => copyToClipboard(workspace.signingSecret, 'sk')}
+                      onClick={() =>
+                        copyToClipboard(
+                          workspace.signingSecretKid || 'kid_okeng_active_v1',
+                          'sk'
+                        )
+                      }
                     >
                       {copiedKey === 'sk' ? (
                         <Check className="w-3.5 h-3.5 text-success" />

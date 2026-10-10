@@ -365,10 +365,15 @@ class Store {
   }
 
   public regenerateSecret(): string {
-    const newSecret = `sk_live_sec_${Math.random().toString(36).substring(2)}${Date.now().toString(36)}`;
-    this.workspace = { ...this.workspace, signingSecret: newSecret };
+    const suffix = `${Math.random().toString(36).substring(2, 6)}${Date.now().toString(36).slice(-4)}`;
+    const nextKid = `kid_okeng_${suffix}`;
+    this.workspace = {
+      ...this.workspace,
+      signingSecretKid: nextKid,
+      signingSecretPreview: `••••_${suffix.slice(-4)}`,
+    };
     this.persist(STORAGE_KEYS.WORKSPACE, this.workspace);
-    return newSecret;
+    return nextKid;
   }
 
   // Collections

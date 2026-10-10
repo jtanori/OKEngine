@@ -17,7 +17,7 @@ import {
   AnswerMode,
   CompiledAnswerPlan,
 } from './src/services/engine/responseCompiler.js';
-import { repositories } from './src/repositories/index.js';
+// import { repositories } from './src/repositories/index.js';
 import { cacheService, cacheMetrics } from './src/cache/cache.module.js';
 import { resolveLanguageContext } from './src/i18n/i18n.resolver.js';
 import { getLanguageAdapter } from './src/i18n/i18n.adapter.js';

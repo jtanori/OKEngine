@@ -264,24 +264,29 @@ export function createUserAssertion(user: {
 }`;
 
   const serverFullExampleSnippet = `# 1. Server environment (.env)
-OKENG_SIGNING_SECRET="${workspace.signingSecret}"
+OKENG_SIGNING_SECRET="<YOUR_KMS_MANAGED_WORKSPACE_HMAC_SECRET>"
+OKENG_SIGNING_KID="${workspace.signingSecretKid || 'kid_okeng_active_v1'}"
 
 // 2. Express / Node.js route handler
 import crypto from 'node:crypto';
 
 app.get('/api/okeng/embed-token', requireAuth, (req, res) => {
   const secret = process.env.OKENG_SIGNING_SECRET;
+  const kid = process.env.OKENG_SIGNING_KID || '${workspace.signingSecretKid || 'kid_okeng_active_v1'}';
   if (!secret) {
     return res.status(500).json({ error: 'Missing OKENG_SIGNING_SECRET' });
   }
 
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(
-    JSON.stringify({ alg: 'HS256', typ: 'JWT' })
+    JSON.stringify({ alg: 'HS256', typ: 'JWT', kid })
   ).toString('base64url');
 
   const payload = Buffer.from(
     JSON.stringify({
+      iss: "workspace:${workspace.id}",
+      aud: "okeng-embed-runtime",
+      jti: crypto.randomUUID(),
       sub: req.user.id,
       role: req.user.isAdmin ? 'admin' : 'member',
       workspace_id: "${workspace.id}",

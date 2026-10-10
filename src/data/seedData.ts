@@ -5,7 +5,8 @@ export const INITIAL_WORKSPACE: Workspace = {
   name: 'OKEng',
   slug: 'okeng',
   publicKey: 'pk_live_ok_7739a8204b',
-  signingSecret: 'sk_live_sec_okeng_prod_9921',
+  signingSecretKid: 'kid_okeng_active_v1',
+  signingSecretPreview: '••••_active_v1',
   knowledgeVersion: 187,
   createdAt: '2026-09-15T08:00:00Z',
 };

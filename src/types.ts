@@ -20,7 +20,9 @@ export interface Workspace {
   name: string;
   slug: string;
   publicKey: string;
-  signingSecret: string;
+  signingSecret?: string;
+  signingSecretKid?: string;
+  signingSecretPreview?: string;
   defaultLanguage?: SupportedLanguage;
   knowledgeVersion?: number;
   createdAt: string;

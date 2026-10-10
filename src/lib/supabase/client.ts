@@ -1,24 +1,8 @@
-// ============================================================================
-// DATA-MIG-001: Browser-Safe Supabase Client (Anon Key Only — SECURITY-004)
-// Used for OKEng Dashboard user authentication (Flow 1).
-// Never contains service-role credentials or signing secrets.
-// ============================================================================
+/**
+ * Browser-side direct Supabase table client is disabled (P0-DATA-01 / REPRO-06).
+ * All tenant data and retrieval operations must flow through the server-side
+ * 5-Link Workspace Authorization Guard and `createUserScopedSupabaseClient()`.
+ */
+export const BROWSER_DIRECT_SUPABASE_DISABLED = true;
 
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-
-let browserClient: SupabaseClient | null = null;
-
-export function getSupabaseBrowserClient(): SupabaseClient | null {
-  const url =
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_URL) ||
-    '';
-  const anonKey =
-    (typeof import.meta !== 'undefined' && (import.meta as any).env?.VITE_SUPABASE_ANON_KEY) ||
-    '';
-
-  if (!url || !anonKey) return null;
-  if (!browserClient) {
-    browserClient = createClient(url, anonKey);
-  }
-  return browserClient;
-}
+export const getSupabaseBrowserClient: undefined = undefined;

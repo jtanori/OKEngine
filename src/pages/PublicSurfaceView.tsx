@@ -393,7 +393,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
   const docNavGroups: DocumentNavGroup[] = useMemo(() => {
     const formatSpecTitle = (slug: string): string => {
       const cleaned = slug
-        .replace(/^[A-Z]+-\d+-/i, '')
+        .replace(/^(?:[A-Z]+-)+\d+-/i, '')
         .replace(/^\d+_/i, '')
         .replace(/[-_]+/g, ' ')
         .trim();
