@@ -1,22 +1,22 @@
-// CO-LANDING-HOW-IT-WORKS — 5 steps horizontal
+// CO-LANDING-HOW-IT-WORKS — 5 steps horizontal (light canvas, no gray band)
 import React from 'react';
 import { HowItWorks } from '../ui/HowItWorksStep';
 
 export function LandingHowItWorks() {
   return (
-    <section id="como-funciona" className="w-full bg-elevated border-y border-line py-16 md:py-24">
+    <section id="como-funciona" className="w-full bg-canvas py-16 md:py-20">
       <div className="max-w-7xl mx-auto px-6 flex flex-col gap-12">
         <div className="max-w-3xl flex flex-col gap-3">
-          <h2 className="text-section font-semibold text-ink tracking-tight">Cómo funciona</h2>
-          <p className="text-sm text-ink-secondary">De archivos a respuestas en 5 pasos. Files → Collections → Access → Context → Answer.</p>
+          <h2 className="text-section font-semibold text-ink tracking-tight">De tus archivos a respuestas, en cinco pasos</h2>
+          <p className="text-sm text-ink-secondary">Sin infraestructura, sin pipelines que mantener. Subes el contenido, defines los permisos y OKEng hace el resto.</p>
         </div>
         <HowItWorks
           steps={[
-            { title: 'Sube contenido', description: 'Markdown, PDF, URLs. Arrastrar y soltar, sin fricción.' },
-            { title: 'Organiza en colecciones', description: 'Agrupa por producto, audiencia o tema. Colecciones ilimitadas.' },
-            { title: 'Define quién ve qué', description: 'Permisos por rol: todos, miembros, admins. SSO y SAML.' },
-            { title: 'Recupera con contexto híbrido', description: 'Búsqueda semántica + palabras clave. Re-ranking con citas verificables.' },
-            { title: 'Responde con citas', description: 'Cada respuesta con fuentes clicables. Sin alucinaciones, ≥98% con cita.' },
+            { title: 'Sube tu contenido', description: 'Markdown, PDF, DOCX, HTML o sitemap. Sincronización con Git y Notion.' },
+            { title: 'Organiza en colecciones', description: 'Agrupa por producto, versión o equipo. Cada colección se mantiene al día sola.' },
+            { title: 'Define quién ve qué', description: 'Visibilidad por colección: todos, miembros o admins. Retrieval solo con lo autorizado.' },
+            { title: 'Recupera con contexto', description: 'Búsqueda híbrida semántica y por palabras clave sobre lo que el usuario puede ver.' },
+            { title: 'Responde con citas', description: 'Cada respuesta enlaza a su fuente y fragmento exacto. Verificable, siempre.' },
           ]}
         />
       </div>

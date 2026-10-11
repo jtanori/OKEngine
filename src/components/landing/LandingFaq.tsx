@@ -1,12 +1,13 @@
-// CO-LANDING-FAQ — FAQ accordion 6 Q
+// CO-LANDING-FAQ — FAQ accordion 6 Q (light canvas, centered)
 import React from 'react';
 import { FaqAccordion } from '../ui/FaqAccordion';
 
 export function LandingFaq() {
   return (
-    <section id="faq" className="w-full bg-surface border-y border-line py-16 md:py-24">
+    <section id="faq" className="w-full bg-canvas py-16 md:py-20">
       <div className="max-w-3xl mx-auto px-6 flex flex-col gap-8">
-        <h2 className="text-section font-semibold text-ink tracking-tight text-center">Preguntas frecuentes</h2>
+        <h2 className="text-section font-semibold text-ink tracking-tight text-center">Las dudas que siempre aparecen</h2>
+        <p className="text-sm text-ink-secondary text-center -mt-4">Y si te falta alguna, responde una persona, no un bot. <a href="mailto:hola@okeng.com" className="underline hover:text-ink">hola@okeng.com</a></p>
         <FaqAccordion
           items={[
             { question: '¿Cuánto tarda la integración?', answer: '3 líneas de código, una tarde. SDKs React/Vue/JS, API REST, webhooks. Instalación verificada con HMAC opcional.' },

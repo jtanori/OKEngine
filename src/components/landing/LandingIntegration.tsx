@@ -1,14 +1,14 @@
-// CO-LANDING-INTEGRATION — 3 modes tabs + preview
+// CO-LANDING-INTEGRATION — 3 modes tabs + preview (light canvas, tabs pop on white)
 import React from 'react';
 import { IntegrationTabs } from '../ui/IntegrationTabs';
 
 export function LandingIntegration() {
   return (
-    <section id="integracion" className="w-full bg-surface border-y border-line py-16 md:py-24">
+    <section id="integracion" className="w-full bg-canvas py-16 md:py-20">
       <div className="max-w-7xl mx-auto px-6 flex flex-col gap-12">
         <div className="max-w-3xl flex flex-col gap-3">
-          <h2 className="text-section font-semibold text-ink tracking-tight">Se adapta a cómo usas tu producto</h2>
-          <p className="text-sm text-ink-secondary">Widget flotante, panel lateral o pantalla completa. Elige la experiencia.</p>
+          <h2 className="text-section font-semibold text-ink tracking-tight">Elige cómo se ve en tu producto</h2>
+          <p className="text-sm text-ink-secondary">El mismo motor, la misma seguridad y las mismas citas. Solo cambia el contenedor.</p>
         </div>
         <IntegrationTabs
           modes={[

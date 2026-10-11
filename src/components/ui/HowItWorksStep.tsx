@@ -15,7 +15,7 @@ export function HowItWorksStep({ number, icon, title, description, isLast = fals
   return (
     <div className={`flex flex-col items-start gap-3 relative ${className}`}>
       <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-ink text-surface flex items-center justify-center text-xs font-semibold">
+        <div className="h-8 w-8 rounded-full bg-surface border border-line text-ink flex items-center justify-center text-xs font-semibold shadow-sm">
           {number}
         </div>
         {icon && <div className="text-ink-muted text-sm">{icon}</div>}
@@ -23,7 +23,7 @@ export function HowItWorksStep({ number, icon, title, description, isLast = fals
       <div className="text-sm font-semibold text-ink">{title}</div>
       <div className="text-xs text-ink-secondary leading-relaxed">{description}</div>
       {!isLast && (
-        <div className="hidden md:block absolute top-4 left-8 w-[calc(100%-2rem)] h-px bg-line -z-10"></div>
+        <div className="hidden md:block absolute top-4 left-8 w-[calc(100%-2rem)] h-px bg-line/60 -z-10"></div>
       )}
     </div>
   );
