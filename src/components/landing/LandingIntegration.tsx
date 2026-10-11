@@ -1,9 +1,32 @@
-// CO-LANDING-INTEGRATION — 3 modes tabs + preview with bullets and browser mock — segmented control restored per request
+'use client';
+
+// CO-LANDING-INTEGRATION — 3 modes tabs + preview with bullets and browser mock — segmented control restored, now interactive
 import React, { useState } from 'react';
 import { SectionPill } from '../ui/SectionPill';
 import { Shield, BarChart3, Sun } from 'lucide-react';
 
+type Mode = 'widget' | 'panel' | 'fullscreen';
+
 export function LandingIntegration() {
+  const [mode, setMode] = useState<Mode>('widget');
+
+  const content: Record<Mode, { title: string; desc: string }> = {
+    widget: {
+      title: 'Widget flotante',
+      desc: 'La burbuja que tus usuarios ya saben usar. Se abre en un clic, no interrumpe y desaparece cuando no la necesitan.',
+    },
+    panel: {
+      title: 'Panel lateral',
+      desc: 'Documentación y chat en un panel deslizable. Perfecto para dashboards. 360px, se abre desde el lateral sin salir de la página.',
+    },
+    fullscreen: {
+      title: 'Pantalla completa',
+      desc: 'Base de conocimiento completa. Para centros de ayuda dedicados. Búsqueda, filtros y respuestas en una sola vista.',
+    },
+  };
+
+  const active = content[mode];
+
   return (
     <section id="integracion" className="w-full bg-canvas py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-6 flex flex-col gap-10 items-center">
@@ -12,19 +35,30 @@ export function LandingIntegration() {
           <h2 className="text-[32px] lg:text-[36px] font-bold text-ink-strong tracking-tight leading-tight">Elige cómo se ve en tu producto</h2>
           <p className="text-[15px] leading-relaxed text-ink-secondary max-w-xl mx-auto">El mismo motor, la misma seguridad y las mismas citas. Solo cambia el contenedor.</p>
         </div>
-        {/* Segmented control — restored, centered dark active like PricingToggle */}
+        {/* Segmented control — centered dark active, now interactive */}
         <div className="flex justify-center w-full">
           <div className="inline-flex items-center gap-1 rounded-full bg-elevated p-1 border border-line shadow-sm" role="tablist">
-            <button type="button" role="tab" aria-selected className="rounded-full px-5 py-2 text-sm font-medium bg-ink-strong text-white shadow-sm">Widget flotante</button>
-            <button type="button" role="tab" aria-selected="false" className="rounded-full px-5 py-2 text-sm font-medium text-ink-secondary hover:text-ink">Panel lateral</button>
-            <button type="button" role="tab" aria-selected="false" className="rounded-full px-5 py-2 text-sm font-medium text-ink-secondary hover:text-ink">Pantalla completa</button>
+            {(['widget', 'panel', 'fullscreen'] as Mode[]).map(m => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={mode === m}
+                onClick={() => setMode(m)}
+                className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+                  mode === m ? 'bg-ink-strong text-white shadow-sm' : 'text-ink-secondary hover:text-ink'
+                }`}
+              >
+                {m === 'widget' ? 'Widget flotante' : m === 'panel' ? 'Panel lateral' : 'Pantalla completa'}
+              </button>
+            ))}
           </div>
         </div>
         <div className="grid md:grid-cols-2 gap-12 items-start max-w-7xl w-full">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-semibold text-ink">Widget flotante</h3>
-                <p className="text-[15px] text-ink-secondary leading-relaxed">La burbuja que tus usuarios ya saben usar. Se abre en un clic, no interrumpe y desaparece cuando no la necesitan.</p>
+                <h3 className="text-lg font-semibold text-ink">{active.title}</h3>
+                <p className="text-[15px] text-ink-secondary leading-relaxed">{active.desc}</p>
               </div>
               <div className="flex flex-col gap-4">
                 <div className="flex gap-3">
@@ -57,25 +91,60 @@ export function LandingIntegration() {
                 <span className="w-2.5 h-2.5 rounded-full bg-[#27C93F]"></span>
                 <span className="ml-3 flex-1 bg-white border border-line rounded-full px-3 py-1 text-2xs text-ink-muted">app.tuproducto.com</span>
               </div>
-              <div className="grid grid-cols-[140px_1fr] h-80">
-                <div className="border-r border-line p-3 flex flex-col gap-2">
-                  <div className="h-5 w-5 rounded-md bg-ink"></div>
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-line"></div>
-                      <div className="h-2 flex-1 bg-line rounded-sm"></div>
+              {/* Preview switches by mode */}
+              {mode === 'widget' && (
+                <div className="grid grid-cols-[140px_1fr] h-80">
+                  <div className="border-r border-line p-3 flex flex-col gap-2">
+                    <div className="h-5 w-5 rounded-md bg-ink"></div>
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full bg-line"></div>
+                        <div className="h-2 flex-1 bg-line rounded-sm"></div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="p-3 flex flex-col gap-3 bg-elevated/30">
+                    <div className="h-4 bg-white border border-line rounded-md"></div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-white border border-line rounded-lg p-3 h-20"></div>
+                      <div className="bg-white border border-line rounded-lg p-3 h-20"></div>
                     </div>
-                  ))}
-                </div>
-                <div className="p-3 flex flex-col gap-3 bg-elevated/30">
-                  <div className="h-4 bg-white border border-line rounded-md"></div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-white border border-line rounded-lg p-3 h-20"></div>
                     <div className="bg-white border border-line rounded-lg p-3 h-20"></div>
                   </div>
-                  <div className="bg-white border border-line rounded-lg p-3 h-20"></div>
                 </div>
-              </div>
+              )}
+              {mode === 'panel' && (
+                <div className="flex h-80">
+                  <div className="flex-1 p-3 flex flex-col gap-3 bg-elevated/30">
+                    <div className="h-4 bg-white border border-line rounded-md"></div>
+                    <div className="bg-white border border-line rounded-lg p-3 h-20"></div>
+                    <div className="grid grid-cols-2 gap-2 flex-1">
+                      <div className="bg-white border border-line rounded-lg p-3"></div>
+                      <div className="bg-white border border-line rounded-lg p-3"></div>
+                    </div>
+                  </div>
+                  <div className="w-[160px] border-l border-line bg-surface p-3 flex flex-col gap-2 shadow-[-8px_0_20px_rgba(0,0,0,0.06)]">
+                    <div className="h-4 bg-elevated border border-line rounded-md"></div>
+                    <div className="flex-1 bg-elevated/50 border border-line rounded-lg p-2"></div>
+                    <div className="h-8 bg-ink-strong rounded-full"></div>
+                  </div>
+                </div>
+              )}
+              {mode === 'fullscreen' && (
+                <div className="flex flex-col h-80 p-3 gap-3 bg-elevated/30">
+                  <div className="h-8 bg-white border border-line rounded-lg flex items-center px-3 gap-2">
+                    <span className="text-accent text-xs">⌕</span>
+                    <span className="text-xs text-ink-muted">Buscar en la documentación…</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 flex-1">
+                    <div className="bg-white border border-line rounded-lg p-3"></div>
+                    <div className="bg-white border border-line rounded-lg p-3"></div>
+                    <div className="bg-white border border-line rounded-lg p-3"></div>
+                    <div className="col-span-3 bg-white border border-line rounded-lg p-3 h-20"></div>
+                  </div>
+                </div>
+              )}
+              {/* Floating widget preview — only for widget mode, but keep subtle for others */}
               <div className="absolute bottom-4 right-4 bg-surface border border-line rounded-lg shadow-lg w-64 p-3 hidden md:block">
                 <div className="flex items-center gap-2 text-xs font-semibold"><span className="w-5 h-5 rounded-md bg-ink text-surface flex items-center justify-center text-2xs">OK</span> OKEng <span className="ml-auto w-1.5 h-1.5 bg-success rounded-full"></span></div>
                 <div className="mt-2 bg-accent text-surface rounded-full px-3 py-1.5 text-2xs ml-auto w-fit">¿Cómo configuro SSO?</div>
