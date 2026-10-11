@@ -21,11 +21,20 @@ const stepColors: Record<number, string> = {
   5: 'bg-[#F43F5E]',
 };
 
+const pastelBg: Record<number, string> = {
+  1: 'bg-[#EFF6FF]',
+  2: 'bg-[#F0F9FF]',
+  3: 'bg-[#ECFDF5]',
+  4: 'bg-[#F5F3FF]',
+  5: 'bg-[#FFF1F2]',
+};
+
 export function HowItWorksStep({ number, icon, illustration, color, title, description, isLast = false, className = '' }: HowItWorksStepProps) {
   const numberBg = color || stepColors[number] || 'bg-accent';
+  const illustrationBg = pastelBg[number] || 'bg-elevated';
   return (
     <div className={`flex flex-col relative bg-surface border border-line rounded-xl shadow-sm overflow-hidden ${className}`}>
-      {illustration && <div className="h-28 bg-elevated border-b border-line flex items-center justify-center p-3">{illustration}</div>}
+      {illustration && <div className={`h-28 ${illustrationBg} border-b border-line flex items-center justify-center p-3`}>{illustration}</div>}
       <div className="flex flex-col gap-3 p-4 relative">
         <div className={`absolute -top-3 left-3 w-7 h-7 rounded-full ${numberBg} text-surface flex items-center justify-center text-2xs font-bold shadow-md`}>
           {number}

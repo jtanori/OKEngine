@@ -18,10 +18,13 @@ import { LandingFooter } from './LandingFooter';
 export function LandingView() {
   return (
     <div className="min-h-screen bg-canvas text-ink">
-      {/* SU-LANDING-ANNOUNCEMENT */}
-      <AnnouncementBanner>Citas verificables y permisos por rol — hasta 98% con cita* sin alucinaciones</AnnouncementBanner>
+      {/* SU-LANDING-ANNOUNCEMENT — Left target: Nuevo pill */}
+      <AnnouncementBanner>
+        <span className="inline-flex items-center rounded-full bg-white/10 border border-white/20 px-2 py-0.5 text-2xs font-medium">Nuevo</span>
+        Respuestas con citas verificadas y permisos por rol. <a href="#novedades" className="underline underline-offset-2 hover:text-white">Ver novedades →</a>
+      </AnnouncementBanner>
 
-      {/* Minimal header for landing — 3-zone centered nav */}
+      {/* Minimal header for landing — 3-zone centered nav — Left target IA */}
       <header className="w-full bg-surface border-b border-line/60 sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center">
           <a href="/" className="flex items-center gap-2 shrink-0">
@@ -30,9 +33,9 @@ export function LandingView() {
           </a>
           <nav className="hidden md:flex flex-1 items-center justify-center gap-8 text-sm font-medium text-ink-secondary">
             <a href="#producto" className="hover:text-ink transition-colors">Producto</a>
-            <a href="#integracion" className="hover:text-ink transition-colors">Integración</a>
+            <a href="#como-funciona" className="hover:text-ink transition-colors">Cómo funciona</a>
+            <a href="#desarrolladores" className="hover:text-ink transition-colors">Desarrolladores</a>
             <a href="#precios" className="hover:text-ink transition-colors">Precios</a>
-            <a href="#faq" className="hover:text-ink transition-colors">FAQ</a>
           </nav>
           <div className="flex items-center gap-3 shrink-0">
             <a href="/login" className="text-sm font-medium text-ink-secondary hover:text-ink px-3 py-2">Iniciar sesión</a>

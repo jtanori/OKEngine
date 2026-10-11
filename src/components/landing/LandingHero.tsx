@@ -17,7 +17,7 @@ export function LandingHero({ onPrimaryCta, onSecondaryCta }: LandingHeroProps) 
             <span className="h-1.5 w-1.5 rounded-full bg-accent"></span>
             Capa de conocimiento para tu producto
           </div>
-          <h1 className="text-hero font-bold tracking-tight text-ink-strong leading-[1.05]">
+          <h1 className="text-hero font-bold tracking-tight text-ink-strong leading-[0.95]">
             Convierte tu documentación en <span className="text-accent underline decoration-2 underline-offset-4">respuestas con citas,</span> dentro de tu app.
           </h1>
           <p className="text-lg text-ink-secondary leading-relaxed">
