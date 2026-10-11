@@ -51,6 +51,98 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
     return errors;
   };
 
+  const handleDevLogin = async (userId: string) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/dev/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.message || 'Dev login falló');
+        return;
+      }
+      // Seed localStorage store used by AppShell (AuthService) for persona + memberships
+      try {
+        const membershipsByUser: Record<string, any> = {
+          usr_sarah_102: {
+            id: 'mem_01',
+            workspaceId: 'okeng',
+            userId: 'usr_sarah_102',
+            userEmail: 'sarah.chen@okeng.io',
+            userName: 'Sarah Chen',
+            role: 'WORKSPACE_OWNER',
+            permissions: [
+              'workspace.read',
+              'workspace.settings.manage',
+              'workspace.users.manage',
+              'collection.read',
+              'collection.write',
+              'collection.delete',
+              'collection.access.manage',
+              'content.read',
+              'content.write',
+              'content.delete',
+              'embed.read',
+              'embed.manage',
+              'test.execute',
+              'conversations.read',
+            ],
+            status: 'active',
+          },
+          usr_marcus_204: {
+            id: 'mem_02',
+            workspaceId: 'okeng',
+            userId: 'usr_marcus_204',
+            userEmail: 'marcus.vance@okeng.io',
+            userName: 'Marcus Vance',
+            role: 'WORKSPACE_USER',
+            permissions: [
+              'workspace.read',
+              'collection.read',
+              'collection.write',
+              'content.read',
+              'content.write',
+              'embed.read',
+              'conversations.read',
+              'test.execute',
+            ],
+            status: 'active',
+          },
+          usr_elena_309: {
+            id: 'mem_03',
+            workspaceId: 'okeng',
+            userId: 'usr_elena_309',
+            userEmail: 'elena.rostova@okeng.io',
+            userName: 'Elena Rostova',
+            role: 'WORKSPACE_USER',
+            permissions: ['workspace.read', 'collection.read', 'content.read', 'test.execute'],
+            status: 'active',
+          },
+        };
+        const mem = membershipsByUser[userId];
+        if (mem) {
+          localStorage.setItem('okeng_current_user_id_v2', JSON.stringify(userId));
+          // AuthService stores memberships as array under okeng_memberships_v2
+          const existing = JSON.parse(localStorage.getItem('okeng_memberships_v2') || '[]');
+          const filtered = Array.isArray(existing) ? existing.filter((m: any) => m.userId !== userId) : [];
+          filtered.push(mem);
+          localStorage.setItem('okeng_memberships_v2', JSON.stringify(filtered.length ? filtered : [mem]));
+        } else {
+          localStorage.setItem('okeng_current_user_id_v2', JSON.stringify(userId));
+        }
+      } catch {}
+      push('/workspaces/okeng/collections');
+    } catch {
+      setError('Error en dev login');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs = validate();
@@ -129,6 +221,48 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         <AuthDivider label="o" />
         <SsoButtons />
       </form>
+
+      {/* Dev bypass — arena branch only, no DB needed */}
+      <div className="rounded-md border border-dashed border-line bg-elevated/60 p-4 flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <span className="text-2xs font-semibold tracking-widest uppercase text-ink-muted">Dev login — sin DB / sin contraseña</span>
+          <span className="text-2xs bg-warning-subtle text-warning border border-warning/30 px-1.5 py-0.5 rounded-xs font-mono">arena</span>
+        </div>
+        <p className="text-2xs text-ink-secondary leading-relaxed">
+          En este sandbox <code className="bg-surface border border-line rounded-xs px-1">DATABASE_URL=dummy</code>, el login normal falla. Usa un usuario mock para entrar al dashboard y probar el AppShell, colecciones y embeds.
+        </p>
+        <div className="grid grid-cols-1 gap-2">
+          <button
+            type="button"
+            onClick={() => handleDevLogin('usr_sarah_102')}
+            disabled={isLoading}
+            className="w-full h-9 inline-flex items-center justify-center rounded-sm bg-ink text-surface border border-ink hover:bg-ink-strong text-xs font-medium transition-colors disabled:opacity-50"
+          >
+            Entrar como Sarah Chen — Owner (todos los permisos)
+          </button>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleDevLogin('usr_marcus_204')}
+              disabled={isLoading}
+              className="h-9 inline-flex items-center justify-center rounded-sm bg-surface text-ink border border-line hover:bg-elevated text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              Marcus — Write
+            </button>
+            <button
+              type="button"
+              onClick={() => handleDevLogin('usr_elena_309')}
+              disabled={isLoading}
+              className="h-9 inline-flex items-center justify-center rounded-sm bg-surface text-ink border border-line hover:bg-elevated text-xs font-medium transition-colors disabled:opacity-50"
+            >
+              Elena — Read
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 text-2xs text-ink-muted font-mono">
+          <span className="h-1.5 w-1.5 rounded-full bg-success"></span> sets <code>okeng.sid</code> cookie + <code>localStorage</code> → <code>/workspaces/okeng/collections</code>
+        </div>
+      </div>
     </AuthCard>
   );
 }
