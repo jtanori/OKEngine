@@ -35,12 +35,12 @@ export function HowItWorksStep({ number, icon, illustration, color, title, descr
   return (
     <div className={`flex flex-col relative bg-surface border border-line rounded-xl shadow-sm overflow-hidden ${className}`}>
       {illustration && <div className={`h-28 ${illustrationBg} border-b border-line flex items-center justify-center p-3`}>{illustration}</div>}
-      <div className="flex flex-col gap-3 p-4 relative">
-        <div className={`absolute -top-3 left-3 w-7 h-7 rounded-full ${numberBg} text-surface flex items-center justify-center text-2xs font-bold shadow-md`}>
+      <div className="flex flex-col gap-3 p-5 relative">
+        <div className={`absolute -top-3.5 left-4 w-8 h-8 rounded-md ${numberBg} text-surface flex items-center justify-center text-xs font-bold shadow-md`}>
           {number}
         </div>
-        <div className={`text-card-title font-semibold text-ink ${illustration ? 'pt-2' : ''}`}>{title}</div>
-        <div className="text-xs text-ink-secondary leading-relaxed">{description}</div>
+        <div className={`text-card-title font-semibold text-ink ${illustration ? 'pt-3' : ''}`}>{title}</div>
+        <div className="text-sm text-ink-secondary leading-relaxed">{description}</div>
         {icon && <div className="text-ink-muted text-sm">{icon}</div>}
       </div>
       {!isLast && <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-px bg-line/60"></div>}

@@ -5,12 +5,12 @@ import { SectionPill } from '../ui/SectionPill';
 
 export function LandingHowItWorks() {
   return (
-    <section id="como-funciona" className="w-full bg-canvas py-16 md:py-20">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col gap-8 items-center">
+    <section id="como-funciona" className="w-full bg-canvas py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-6 flex flex-col gap-10 items-center">
         <SectionPill label="Cómo funciona" />
-        <div className="max-w-3xl flex flex-col gap-3 text-center">
-          <h2 className="text-section font-bold text-ink-strong tracking-tight">De tus archivos a respuestas, en cinco pasos</h2>
-          <p className="text-sm text-ink-secondary">Sin infraestructura, sin pipelines que mantener. Subes el contenido, defines los permisos y OKEng hace el resto.</p>
+        <div className="max-w-2xl flex flex-col gap-4 text-center">
+          <h2 className="text-[32px] lg:text-[36px] font-bold text-ink-strong tracking-tight leading-tight">De tus archivos a respuestas, en cinco pasos</h2>
+          <p className="text-[15px] leading-relaxed text-ink-secondary max-w-xl mx-auto">Sin infraestructura, sin pipelines que mantener. Subes el contenido, defines los permisos y OKEng hace el resto.</p>
         </div>
         <HowItWorks
           steps={[

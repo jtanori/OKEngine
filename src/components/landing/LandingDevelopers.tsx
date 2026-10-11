@@ -7,15 +7,15 @@ export function LandingDevelopers() {
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-4">
-            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3 py-1 text-2xs font-medium tracking-wide text-white/80">
+            <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3.5 py-1.5 text-xs font-medium tracking-wide text-white/80">
               <span className="font-mono text-xs">&gt;_</span> Para desarrolladores
             </span>
-            <h2 className="text-section font-bold tracking-tight text-white leading-tight">
+            <h2 className="text-[32px] lg:text-[36px] font-bold tracking-tight text-white leading-tight">
               Tres líneas de código.
               <br />
               Cero infraestructura.
             </h2>
-            <p className="text-sm leading-relaxed text-white/70">
+            <p className="text-[15px] leading-relaxed text-white/70">
               Empotra el conocimiento donde ya está tu producto. Sin servidores de vectores que mantener, sin pipelines, sin sorpresas en la factura de la nube.
             </p>
           </div>

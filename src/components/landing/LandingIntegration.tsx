@@ -6,12 +6,12 @@ import { Shield, BarChart3, Sun } from 'lucide-react';
 
 export function LandingIntegration() {
   return (
-    <section id="integracion" className="w-full bg-canvas py-16 md:py-20">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col gap-8 items-center">
+    <section id="integracion" className="w-full bg-canvas py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-6 flex flex-col gap-10 items-center">
         <SectionPill label="Integración" />
-        <div className="max-w-3xl flex flex-col gap-3 text-center">
-          <h2 className="text-section font-bold text-ink-strong tracking-tight">Elige cómo se ve en tu producto</h2>
-          <p className="text-sm text-ink-secondary">El mismo motor, la misma seguridad y las mismas citas. Solo cambia el contenedor.</p>
+        <div className="max-w-2xl flex flex-col gap-4 text-center">
+          <h2 className="text-[32px] lg:text-[36px] font-bold text-ink-strong tracking-tight leading-tight">Elige cómo se ve en tu producto</h2>
+          <p className="text-[15px] leading-relaxed text-ink-secondary max-w-xl mx-auto">El mismo motor, la misma seguridad y las mismas citas. Solo cambia el contenedor.</p>
         </div>
         <div className="w-full flex flex-col gap-8">
           <div className="flex justify-center">
@@ -40,30 +40,30 @@ export function LandingIntegration() {
           </div>
           <div className="grid md:grid-cols-2 gap-12 items-start max-w-7xl w-full">
             <div className="flex flex-col gap-6">
-              <div>
-                <h3 className="text-card-title font-semibold text-ink">Widget flotante</h3>
-                <p className="text-sm text-ink-secondary">La burbuja que tus usuarios ya saben usar. Se abre en un clic, no interrumpe y desaparece cuando no la necesitan.</p>
+              <div className="flex flex-col gap-2">
+                <h3 className="text-lg font-semibold text-ink">Widget flotante</h3>
+                <p className="text-[15px] text-ink-secondary leading-relaxed">La burbuja que tus usuarios ya saben usar. Se abre en un clic, no interrumpe y desaparece cuando no la necesitan.</p>
               </div>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-4">
                 <div className="flex gap-3">
-                  <span className="w-7 h-7 rounded-md bg-accent-subtle text-accent flex items-center justify-center shrink-0"><Shield className="w-3.5 h-3.5" /></span>
-                  <div>
-                    <div className="text-xs font-semibold text-ink">Permisos en todos los modos</div>
-                    <div className="text-xs text-ink-secondary">El mismo control de acceso, vayas donde vayas.</div>
+                  <span className="w-8 h-8 rounded-lg bg-accent-subtle text-accent flex items-center justify-center shrink-0"><Shield className="w-4 h-4" /></span>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-sm font-semibold text-ink">Permisos en todos los modos</div>
+                    <div className="text-sm text-ink-secondary leading-relaxed">El mismo control de acceso, vayas donde vayas.</div>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <span className="w-7 h-7 rounded-md bg-accent-subtle text-accent flex items-center justify-center shrink-0"><BarChart3 className="w-3.5 h-3.5" /></span>
-                  <div>
-                    <div className="text-xs font-semibold text-ink">Analítica unificada</div>
-                    <div className="text-xs text-ink-secondary">Todas las conversaciones en un solo panel.</div>
+                  <span className="w-8 h-8 rounded-lg bg-accent-subtle text-accent flex items-center justify-center shrink-0"><BarChart3 className="w-4 h-4" /></span>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-sm font-semibold text-ink">Analítica unificada</div>
+                    <div className="text-sm text-ink-secondary leading-relaxed">Todas las conversaciones en un solo panel.</div>
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <span className="w-7 h-7 rounded-md bg-accent-subtle text-accent flex items-center justify-center shrink-0"><Sun className="w-3.5 h-3.5" /></span>
-                  <div>
-                    <div className="text-xs font-semibold text-ink">Claro y oscuro</div>
-                    <div className="text-xs text-ink-secondary">Se adapta al tema de tu aplicación.</div>
+                  <span className="w-8 h-8 rounded-lg bg-accent-subtle text-accent flex items-center justify-center shrink-0"><Sun className="w-4 h-4" /></span>
+                  <div className="flex flex-col gap-1">
+                    <div className="text-sm font-semibold text-ink">Claro y oscuro</div>
+                    <div className="text-sm text-ink-secondary leading-relaxed">Se adapta al tema de tu aplicación.</div>
                   </div>
                 </div>
               </div>
