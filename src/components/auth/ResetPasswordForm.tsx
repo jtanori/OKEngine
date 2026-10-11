@@ -1,6 +1,5 @@
-// CO-AUTH-RESET-FORM — Reset password form
-// PA-AUTH — canvas #F8F7F4 centered card max-w-md white surface rounded-lg shadow-md
-// Uses PR-AUTH-CARD + PR-PASSWORD-INPUT x2 + PR-BUTTON, FORM-SEC-01, strength meter, 5-Link Auth Chain
+// CO-AUTH-RESET-FORM — Reset split v3.3 — hideLogo rounded-xl
+// PA-AUTH-SPLIT — uses AuthCard hideLogo, FORM-SEC-01 strength meter
 'use client';
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -22,7 +21,6 @@ export function ResetPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: typeof errors = {};
-
     const pwdCheck = validatePasswordInput(newPassword, 'signup');
     if (!pwdCheck.valid) {
       if (!newPassword) errs.newPassword = 'Nueva contraseña requerida';
@@ -31,7 +29,6 @@ export function ResetPasswordForm() {
     }
     if (newPassword !== confirm) errs.confirm = 'Las contraseñas no coinciden';
     if (!confirm) errs.confirm = errs.confirm || 'Confirma tu contraseña';
-
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setIsLoading(true);
@@ -68,16 +65,17 @@ export function ResetPasswordForm() {
     <AuthCard
       title="Nueva contraseña"
       subtitle="Elige una contraseña segura"
+      hideLogo
       footer={<div className="text-xs text-ink-secondary"><a href="/login" className="text-accent hover:underline">Volver a iniciar sesión</a></div>}
     >
       {success ? (
         <div className="bg-success-subtle border border-line rounded-sm p-4 text-sm text-success">Contraseña restablecida, redirigiendo a login...</div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-          {error && <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
+          {error && <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
           <PasswordInput label="Nueva contraseña" value={newPassword} onChange={setNewPassword} error={errors.newPassword} id="newPassword" showStrength />
           <PasswordInput label="Confirma contraseña" value={confirm} onChange={setConfirm} error={errors.confirm} id="confirm" />
-          <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full">
+          <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5855EB] hover:to-[#7C3AED] text-white border-0 shadow-md">
             Restablecer contraseña
           </Button>
         </form>

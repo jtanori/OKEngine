@@ -1,6 +1,5 @@
-// CO-AUTH-FORGOT-FORM — Forgot password form
-// PA-AUTH — canvas #F8F7F4 centered card max-w-md white surface rounded-lg shadow-md
-// Uses PR-AUTH-CARD + PR-INPUT + PR-BUTTON, FORM-SEC-01, no enumeration, generic success
+// CO-AUTH-FORGOT-FORM — Forgot password split v3.3 — hideLogo rounded-xl
+// PA-AUTH-SPLIT — uses AuthCard hideLogo, FORM-SEC-01 generic success no enumeration
 'use client';
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -34,7 +33,6 @@ export function ForgotPasswordForm() {
         headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
         body: JSON.stringify({ email }),
       });
-      // Always success generic, no enumeration — per SEC-01 / WF-AUTH-FORGOT-01
       setSuccess(true);
     } catch {
       setError('Error interno');
@@ -47,6 +45,7 @@ export function ForgotPasswordForm() {
     <AuthCard
       title="Restablece tu contraseña"
       subtitle="Te enviaremos un enlace para restablecerla"
+      hideLogo
       footer={<div className="text-xs text-ink-secondary"><a href="/login" className="text-accent hover:underline">Volver a iniciar sesión</a></div>}
     >
       {success ? (
@@ -55,10 +54,10 @@ export function ForgotPasswordForm() {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-          {error && <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
+          {error && <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
           <Input
             id="email"
-            label="Correo electrónico"
+            label="Correo de trabajo"
             type="email"
             value={email}
             onChange={e => { setEmail(e.target.value); setFieldError(null); }}
@@ -67,8 +66,9 @@ export function ForgotPasswordForm() {
             error={fieldError}
             sizeVariant="md"
             autoComplete="email"
+            leadingIcon={<span className="text-ink-muted">✉</span>}
           />
-          <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full">
+          <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5855EB] hover:to-[#7C3AED] text-white border-0 shadow-md">
             Enviar enlace
           </Button>
         </form>
