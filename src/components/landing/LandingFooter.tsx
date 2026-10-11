@@ -1,10 +1,16 @@
-// CO-LANDING-FOOTER — Footer 4 columns + bottom dark
+// CO-LANDING-FOOTER — Footer 4 columns + bottom dark with fading glow like other dark sections
 import React from 'react';
 
 export function LandingFooter() {
   return (
-    <footer className="w-full bg-ink-strong">
-      <div className="max-w-7xl mx-auto px-6 py-16 grid grid-cols-2 md:grid-cols-5 gap-8">
+    <footer className="w-full bg-ink-strong relative overflow-hidden">
+      {/* Fading glow — like Developers / FinalCTA */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-[700px] h-[500px] bg-[#1D4ED8]/12 blur-[100px] rounded-full" />
+        <div className="absolute -bottom-32 -right-32 w-[600px] h-[500px] bg-[#8B5CF6]/12 blur-[100px] rounded-full" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-gradient-to-t from-[#6366F1]/08 to-transparent blur-2xl" />
+      </div>
+      <div className="relative max-w-7xl mx-auto px-6 py-16 grid grid-cols-2 md:grid-cols-5 gap-8">
         <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-lg bg-white/10 border border-white/10 flex items-center justify-center text-white text-2xs font-bold">OK</div>
@@ -63,7 +69,7 @@ export function LandingFooter() {
           <a href="/terms" className="text-sm text-white/60 hover:text-white leading-7">Subencargados</a>
         </div>
       </div>
-      <div className="border-t border-white/5">
+      <div className="relative border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-xs text-white/40">© {new Date().getFullYear()} OKEng. Todos los derechos reservados.</div>
           <div className="text-xs text-white/40">Hecho con quiet technical</div>
