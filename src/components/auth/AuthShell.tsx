@@ -13,11 +13,13 @@ export interface AuthShellProps {
   variant?: AuthPageType;
 }
 
-const LEFT_COPY_KEYS: Record<AuthPageType, { headline: string; support: string }> = {
+const LEFT_COPY_KEYS: Record<string, { headline: string; support: string }> = {
   login: { headline: 'auth.left.login_headline', support: 'auth.left.login_support' },
   signup: { headline: 'auth.left.signup_headline', support: 'auth.left.signup_support' },
   'forgot-password': { headline: 'auth.left.forgot_headline', support: 'auth.left.forgot_support' },
   'reset-password': { headline: 'auth.left.reset_headline', support: 'auth.left.reset_support' },
+  'verify-email': { headline: 'auth.left.verify_headline', support: 'auth.left.verify_support' },
+  verify: { headline: 'auth.left.verify_headline', support: 'auth.left.verify_support' },
 };
 
 export function AuthShell({ children, variant = 'login' }: AuthShellProps) {
@@ -37,7 +39,7 @@ export function AuthShell({ children, variant = 'login' }: AuthShellProps) {
         </a>
         <div className="flex items-center gap-3">
           <a href="/" className="inline-flex items-center gap-1.5 text-xs text-white/70 hover:text-white">
-            <span aria-hidden>←</span> Volver
+            <span aria-hidden>←</span> {t('auth.shell.back_short')}
           </a>
           <LanguageSelector variant="compact" showIcon={false} />
         </div>
@@ -83,33 +85,31 @@ export function AuthShell({ children, variant = 'login' }: AuthShellProps) {
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-md bg-accent-violet flex items-center justify-center text-2xs font-bold text-white">OK</div>
                     <div className="flex flex-col">
-                      <span className="text-xs font-semibold text-ink">Asistente del producto</span>
-                      <span className="text-2xs text-ink-muted">Conectado a 128 documentos</span>
+                      <span className="text-xs font-semibold text-ink">{t('auth.preview.assistant_title')}</span>
+                      <span className="text-2xs text-ink-muted">{t('auth.preview.connected')}</span>
                     </div>
                   </div>
                   <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/20 px-2 py-1 text-2xs text-emerald-600">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> En línea
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> {t('auth.preview.online')}
                   </span>
                 </div>
 
                 <div className="flex justify-end">
                   <div className="max-w-3/4 bg-accent-indigo rounded-2xl rounded-br-sm px-3 py-2">
-                    <p className="text-xs text-white">¿Cómo añado un miembro al workspace?</p>
+                    <p className="text-xs text-white">{t('auth.preview.user_question')}</p>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
                   <div className="w-6 h-6 rounded-md bg-subtle border border-line flex items-center justify-center text-2xs font-bold text-ink-muted shrink-0">OK</div>
-                  <p className="text-xs leading-relaxed text-ink-secondary">
-                    Ve a <span className="font-semibold text-ink">Configuración → Miembros</span>, selecciona Invitar y asigna su rol antes de enviar la invitación.
-                  </p>
+                  <p className="text-xs leading-relaxed text-ink-secondary">{t('auth.preview.answer')}</p>
                 </div>
 
                 <div className="flex items-center justify-between gap-2 pt-2 border-t border-line">
                   <div className="flex items-center gap-1.5 text-2xs text-ink-muted">
-                    <span className="text-emerald-600">🛡</span> Gestión de miembros · sección 3
+                    <span className="text-emerald-600">🛡</span> {t('auth.preview.section')}
                   </div>
-                  <span className="text-2xs font-medium text-emerald-600">Verificada</span>
+                  <span className="text-2xs font-medium text-emerald-600">{t('auth.preview.verified')}</span>
                 </div>
               </div>
 
@@ -127,7 +127,7 @@ export function AuthShell({ children, variant = 'login' }: AuthShellProps) {
             {/* Semi-header — full width of right panel, holds Volver + Lang top-right, no extra margin/padding — same level as left logo */}
             <div className="hidden lg:flex w-full items-center justify-end gap-3 shrink-0">
               <a href="/" className="inline-flex items-center gap-1.5 text-xs text-ink-secondary hover:text-ink">
-                <span aria-hidden>←</span> Volver a la web
+                <span aria-hidden>←</span> {t('auth.shell.back')}
               </a>
               <LanguageSelector variant="compact" />
             </div>

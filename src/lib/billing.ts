@@ -48,8 +48,9 @@ export function buildPriceMap(): Record<string, { plan: BillingPlan; interval: B
 export const PRICE_ID_TO_PLAN = buildPriceMap();
 
 export const PLAN_LIMITS = {
-  starter: { maxCollections: 3, maxFiles: 10, maxEmbeds: 1, maxQueriesPerMonth: 100 },
-  pro: { maxCollections: 20, maxFiles: 500, maxEmbeds: 10, maxQueriesPerMonth: 10000 },
+  // Verified against product contract (00_product_contract, ANALYSIS-001): Starter 1k/mo, Pro 10k/mo
+  starter: { maxCollections: 1, maxFiles: 100, maxEmbeds: 1, maxQueriesPerMonth: 1000 },
+  pro: { maxCollections: 10, maxFiles: 1000, maxEmbeds: 5, maxQueriesPerMonth: 10000 },
   escala: { maxCollections: 100, maxFiles: 5000, maxEmbeds: 100, maxQueriesPerMonth: 100000 },
 };
 

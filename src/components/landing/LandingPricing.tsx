@@ -38,7 +38,7 @@ export function LandingPricing() {
           price="0€"
           description="Para probar y proyectos personales"
           priceNote=""
-          features={['1 proyecto y 1 colección', '500 consultas al mes', 'Widget flotante con marca OKEng', 'Citas verificables incluidas', 'Soporte de la comunidad']}
+          features={['1 proyecto y 1 colección', '1.000 consultas al mes', 'Widget flotante con marca OKEng', 'Citas verificables incluidas', 'Soporte de la comunidad']}
           ctaLabel="Empieza gratis"
           ctaHref="/signup?plan=starter"
         />

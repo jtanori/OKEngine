@@ -49,15 +49,16 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Security headers (SEC-HEADERS-01) — P1 restore framing protection, scoped CSP per review
+  // Security headers (SEC-HEADERS-01) — P1 framing: single canonical policy (keep in sync with next.config comment).
+  // Canonical allowlist: only /workspaces/:workspaceSlug/embeds/preview and /workspaces/:workspaceSlug/embeds/:embedId/preview are frame-allowed (EMBED-02). Installation and /api/* remain DENY.
   const pathname = request.nextUrl.pathname;
   const isEmbedPreview =
-    pathname.includes('/embeds/preview') ||
-    (pathname.includes('/embeds/') && pathname.endsWith('/installation')) ||
-    pathname.startsWith('/api/embed/');
+    /^\/workspaces\/[^/]+\/embeds\/preview(\/|\?|$)/.test(pathname) ||
+    /^\/workspaces\/[^/]+\/embeds\/[^/]+\/preview(\/|\?|$)/.test(pathname);
   if (isEmbedPreview) {
     // Embeddable route — allow framing from verified origins only (EMBED-02 contract)
-    response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    // X-Frame-Options omitted: SAMEORIGIN would block cross-origin allowlist; CSP frame-ancestors is authoritative.
+    response.headers.delete('X-Frame-Options');
     response.headers.set(
       'Content-Security-Policy',
       "frame-ancestors 'self' https://*.okeng.io https://*.arena.site https://*.e2b.app"
@@ -116,5 +117,6 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/workspaces/:path*', '/login', '/signup', '/forgot-password', '/password/reset', '/reset-password'],
+  // Apply framing + security headers to all routes (canonical policy). Keep narrow in dev if needed, but must include public, auth, docs, workspaces.
+  matcher: ['/:path*'],
 };

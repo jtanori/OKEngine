@@ -1,47 +1,48 @@
-// CO-LANDING-TESTIMONIALS — 3 testimonials — illustrative examples, not verified customer claims
+// CO-LANDING-TESTIMONIALS — 3 neutral use-case examples — no fabricated identities/quotes
 import React from 'react';
-import { TestimonialCard } from '../ui/TestimonialCard';
 import { SectionPill } from '../ui/SectionPill';
+
+function UseCaseCard({ title, desc, icon, color }: { title: string; desc: string; icon: string; color: string }) {
+  return (
+    <div className="bg-surface border border-line rounded-xl p-6 shadow-sm flex flex-col gap-3">
+      <div className={`w-9 h-9 rounded-lg ${color} text-white flex items-center justify-center text-sm`}>{icon}</div>
+      <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      <p className="text-sm text-ink-secondary leading-relaxed">{desc}</p>
+      <span className="mt-auto inline-flex w-fit rounded-full bg-subtle border border-line text-ink-muted text-2xs px-2.5 py-1">Ejemplo ilustrativo</span>
+    </div>
+  );
+}
 
 export function LandingTestimonials() {
   return (
     <section id="clientes" className="w-full bg-canvas py-16 md:py-20">
       <div className="max-w-7xl mx-auto px-6 flex flex-col gap-8 items-center">
-        <SectionPill label="Clientes" />
+        <SectionPill label="Casos de uso" />
         <div className="max-w-3xl flex flex-col gap-3 text-center">
-          <h2 className="text-section font-bold text-ink-strong tracking-tight">Equipos que ya responden con OKEng</h2>
-          <p className="text-sm text-ink-secondary">Ejemplos ilustrativos — métricas basadas en casos de uso internos, no en clientes verificados.</p>
+          <h2 className="text-section font-bold text-ink-strong tracking-tight">Cómo los equipos usan OKEng</h2>
+          <p className="text-sm text-ink-secondary">Ejemplos de uso ilustrativos — no son testimonios de clientes verificados ni compromisos de resultado.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 w-full">
-          <TestimonialCard
-            quote="Pasamos de 340 tickets por semana a 90. Lo que más valora el usuario es que la respuesta viene con la cita: se la cree y deja de preguntarnos."
-            author="Marta Ibáñez"
-            role="Head of Support"
-            company="Nexora (ejemplo)"
-            initials="MI"
-            color="bg-[#8B5CF6]"
-            metric="−73% ilustrativo"
+          <UseCaseCard
+            title="Centro de ayuda con citas"
+            desc="Las respuestas incluyen fuente y fragmento verificable, reduciendo repreguntas."
+            icon="◬"
+            color="bg-accent-violet"
           />
-          <TestimonialCard
-            quote="Montamos el widget en producción en una tarde. En otras herramientas nos costó un mes solo resolver que el retrieval respetara los permisos por rol."
-            author="Diego Serrano"
-            role="CTO"
-            company="Kubelab (ejemplo)"
-            initials="DS"
+          <UseCaseCard
+            title="Incorporación rápida"
+            desc="Widget integrado sin infraestructura adicional. Esfuerzo de ejemplo, no SLA."
+            icon="⚡"
             color="bg-[#0EA5E9]"
-            metric="1 tarde (ejemplo)"
           />
-          <TestimonialCard
-            quote="Nuestra documentación por fin se lee. Cada semana recibimos el listado de preguntas sin respuesta y sabemos exactamente qué documento falta escribir."
-            author="Lucía Ferrer"
-            role="Product Lead"
-            company="Dataflow (ejemplo)"
-            initials="LF"
+          <UseCaseCard
+            title="Documentación viva"
+            desc="Listado semanal de preguntas sin respuesta para priorizar qué documentar."
+            icon="◈"
             color="bg-[#10B981]"
-            metric="+41% ilustrativo"
           />
         </div>
-        <p className="text-center text-xs text-ink-muted">* Testimonios y logos ilustrativos. +400 equipos / 1,2M respuestas son métricas internas aspiracionales, no compromisos verificados.</p>
+        <p className="text-center text-2xs text-ink-muted">* Ejemplos ilustrativos. No representan clientes verificados ni métricas comprometidas. Límites y precios verificables en Precios y contrato.</p>
       </div>
     </section>
   );
