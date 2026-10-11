@@ -60,6 +60,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           background, ink colour, sans font stack and antialiasing from
           index.css; these utilities preserve the previous wrapper <div>. */}
       <body className="min-h-screen bg-canvas text-ink font-sans antialiased selection:bg-accent selection:text-white">
+        {/* Arena hot-fix: normalize legacy plain-string currentUserId left by manual
+            localStorage snippets (\"usr_sarah_102\" without JSON quotes) that broke
+            AuthService JSON.parse before the dev-login hard-navigation fix. Runs
+            synchronously before AppRouterProvider / AuthService module evaluation. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var k='okeng_current_user_id_v2';var r=localStorage.getItem(k);if(r&&r.indexOf('\"')===-1&&r.indexOf('usr_')===0){localStorage.setItem(k,JSON.stringify(r));}}catch(e){}})();`,
+          }}
+        />
         <I18nProvider>
           <AppRouterProvider>{children}</AppRouterProvider>
         </I18nProvider>
