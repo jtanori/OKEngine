@@ -1,5 +1,25 @@
 # 01 — UI Foundation: Quiet Technical Architecture
 
+| Field | Value |
+| :--- | :--- |
+| **Document ID** | `01_ui_foundation` |
+| **Status** | `APPROVED — v3.0` |
+| **Owner** | Design System |
+| **Authority** | Blocking |
+| **Dependencies** | `00_product_contract`, `SEC-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
+| **Revision** | `3.0 (2026-10-11)` — Added v3.0 editorial marketing layer, 16 new PR primitives, shadow/radius/typography tokens, principles 10-13 |
+
+## v3.0 Changelog (from v2.0)
+
+- **DS Tokens Extended**: Added `--text-strong` #0F172A, `--text-hero` 48px/52px -0.02em, `--text-section` 30px/36px -0.01em, `--text-card-title` 16px/24px, `--text-metric-value` 36px/40px, `--radius-lg` 12px, `--radius-xl` 16px, `--shadow-sm` 0 1px 2px rgba(0,0,0,0.04), `--shadow-md` 0 4px 12px rgba(0,0,0,0.08), `--shadow-lg` 0 8px 24px rgba(0,0,0,0.12), `--spacing-section-y` 6rem, `--spacing-section-y-mobile` 4rem
+- **PR Taxonomy Extended**: Added 16 new primitives from PLAN-001/002: PR-ANNOUNCEMENT-BANNER, PR-METRIC, PR-PRICING-TOGGLE, PR-TESTIMONIAL-CARD, PR-FAQ-ACCORDION, PR-CODE-SNIPPET, PR-LOGO-STRIP, PR-INTEGRATION-TABS, PR-FEATURE-CARD, PR-HOW-IT-WORKS-STEP, PR-CHAT-MOCK, PR-PRICING-CARD, PR-AUTH-CARD, PR-PASSWORD-INPUT, PR-AUTH-DIVIDER, PR-TRUST-BADGE
+- **Principles Added** (10-13): 10 Editorial Whitespace (py-16 mobile py-24 desktop, max-w-7xl, 24px gap), 11 Real Metrics Only (≥98% cited, -73% tickets, 1k free queries, 3 lines code — no fabricated), 12 Shadow Restraint (shadow-sm for cards, md for hero mock/pricing popular/auth card, lg for modals/drawers), 13 Radius Scale Extension (xs 3px, sm 4px, md 6px, lg 12px for hero mock/pricing/testimonial/auth, xl 16px future)
+- **Archetypes Added**: PA-LANDING (marketing landing 12 surfaces, max-w-7xl, no sidebar, public surface, editorial whitespace) and PA-AUTH (centered card max-w-md, canvas #F8F7F4, white surface, cobalt accent, rounded-lg shadow-md)
+- **Surfaces Added**: SU-LANDING-* (13 surfaces) and SU-AUTH-* (5 surfaces) — see UI-01 v3.0
+- **Sidebar Posture Note**: Marketing surfaces PA-LANDING and PA-AUTH have no sidebar, full viewport, max-w-7xl or max-w-md centered, not affected by DS-SIDEBAR-POSTURE-001
+
+---
+
 The UI Foundation follows the strict five-layer hierarchy:
 
 ```text
