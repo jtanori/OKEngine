@@ -37,3 +37,13 @@ export * from './AuthCard';
 export * from './PasswordInput';
 export * from './AuthDivider';
 export * from './TrustBadge';
+// v3.0 new primitives — docs & public pages (PLAN-006)
+export * from './DocsHeader';
+export * from './DocsSidebar';
+export * from './DocsArticle';
+export * from './DocsSearch';
+export * from './DocsAsk';
+export * from './DocsToc';
+export * from './PublicPage';
+export * from './ContactForm';
+export * from './LegalArticle';
