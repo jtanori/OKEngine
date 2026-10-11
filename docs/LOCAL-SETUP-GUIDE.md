@@ -34,9 +34,9 @@ OKEng is an embeddable product knowledge layer: **Files → Collections → Acce
 | Lint | ESLint + eslint-config-next | 9.39.5 + 16.4.0 flat config | next lint removed in Next.js 16, use eslint . with eslint.config.mjs flat config (core-web-vitals + typescript) |
 | Icons | lucide-react | 0.546.0 | FileText etc |
 | Animations | motion | 12.23.24 | For landing tour |
-| DB | PostgreSQL via pg | 8.11.0 | Supabase PostgreSQL in staging/prod, memory in dev |
+| DB | Supabase PostgreSQL via request-scoped Supabase JS; direct `pg` retained for narrowly scoped billing/webhook work | `@supabase/supabase-js` + `pg` | Tenant queries use the verified caller JWT and RLS; memory mode remains available for demo development |
 | Cache | ioredis + redis | 6.0.0 / 4.6.0 | Redis optional in dev, required in staging/prod for distributed rate limiting |
-| Auth | Custom HMAC-SHA256 | HS256 | Session httpOnly secure sameSite strict 12h Redis fallback regeneration CSRF double-submit 5-Link Auth Chain |
+| Auth | Supabase Auth in Supabase mode; signed HMAC session retained only for the explicit memory/demo adapter | Supabase Auth SSR + `@supabase/ssr` | Supabase Auth owns credentials and recovery in connected mode; profile/membership authorization is resolved server-side and enforced again by PostgreSQL RLS |
 | Billing | Stripe | 23.0.0 | checkout/portal/webhooks metering |
 | AI (optional) | @google/genai | 2.4.0 | Gemini synthesis over pre-filtered authorizedDocs when GEMINI_API_KEY configured, falls back deterministic compileKnowledgeResponse |
 | Testing | tsx + node:test | 4.21.0 | 52/52 homepage-tour-readiness + 29/29 embed-authorization |
@@ -123,6 +123,8 @@ npm run start
 - Test Console at `/workspaces/okeng/test?embedId=EMB-PUBLIC-HOME` with 5 scenarios Visitor Member Admin Invalid Token 401 Multilingual
 
 **No external services needed** — retrieval uses BM25 + field boosts + route boost + same-language boost, deterministic compilation, no Gemini required.
+
+For the Windows local Supabase stack, see [`LOCAL-SUPABASE-WINDOWS.md`](./LOCAL-SUPABASE-WINDOWS.md). In Supabase mode, Auth and the workspace overview use the caller's Supabase session and tenant-scoped data; the legacy dashboard modules remain demo-backed and are intentionally hidden rather than shown as if they were tenant data.
 
 ---
 
@@ -305,28 +307,18 @@ npm run clean # rm -rf .next dist
 - Cache: in-memory sliding window for rate limiting, MemoryCacheAdapter for answer cache
 - Good for: landing, docs, public pages, auth UI, Test Console, Embed Studio preview
 
-### 7.2 Supabase mode (staging/production mandatory)
+### 7.2 Supabase mode (local development, staging, production)
 
-**Setup:**
+**Local Windows development:** follow [`LOCAL-SUPABASE-WINDOWS.md`](./LOCAL-SUPABASE-WINDOWS.md). It starts only the local Postgres/Auth/Storage/Edge services plus required API plumbing, applies migrations locally, and can write ignored local credentials to `.env.local`.
 
-```bash
-# 1. Create Supabase project at https://supabase.com
-# 2. Get URL, anon key, service role key into .env.local
-# 3. Run migrations
-# Migration file: supabase/migrations/* (DATA-MIG-001)
-# Contains: workspaces, users, workspace_memberships, collections, files, documents, document_versions, document_chunks, etc
-
-# If you have supabase CLI:
-supabase db push
-
-# Or manually via psql:
-psql $DATABASE_URL -f supabase/migrations/20241001_initial.sql
-
-# 4. Set OKENG_DATA_MODE=supabase in .env.local
-# 5. Run migrate script (if needed)
-npm run migrate
-# → src/lib/migrate.ts validates env, creates pool, runs migrations
+```powershell
+.\scripts\supabase-local.ps1 -Action up -WriteAppEnv
+npm run dev
 ```
+
+**Hosted development/staging project:** configure that project's URL, database URL, anon key, and service-role key privately in `.env.local` or a secrets manager. `supabase db push` targets a linked remote project; confirm the project reference before using it. Never put service-role keys in Git, client-side variables, or chat. Do not use production for local experiments.
+
+The PowerShell setup script applies pending local migrations with `supabase migration up`. `supabase db reset` is destructive; `supabase db push` is for a linked hosted database, not the local setup. Note: the existing `npm run migrate` still points to `src/lib/migrate.ts`, which is absent from this checkout; do not rely on it until that migration-runner contract is fixed.
 
 **Tables** (canonical schema):
 - `workspaces` id slug name public_key signing_secret_hash created_at updated_at + plan fields starter/pro/escala plan_interval monthly/annual stripe_customer_id stripe_subscription_id
@@ -679,13 +671,14 @@ npm run build && npm run start
 npm run lint
 # Clean
 npm run clean
-# Migrate (if supabase mode)
-npm run migrate
-# Tests
+# Local Supabase (Windows): see docs/LOCAL-SUPABASE-WINDOWS.md
+# npm run migrate is not configured in this checkout (src/lib/migrate.ts is absent)
+# Fast integration contract checks
+npm run test:supabase-integration
 npm run test:homepage-tour-readiness # 52/52
 npm run test:embed-authorization # 29/29
-npm run test:staging-readiness
-npm run test:baseline
+# Optional local-stack Auth/RLS/Storage E2E (PowerShell):
+# $env:OKENG_RUN_SUPABASE_INTEGRATION = '1'; npm run test:supabase-live
 ```
 
 **Key routes to verify manually after setup:**

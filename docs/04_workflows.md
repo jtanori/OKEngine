@@ -3,11 +3,17 @@
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `04_workflows` |
-| **Status** | `APPROVED — v2.0` |
+| **Status** | `APPROVED — v2.1` |
 | **Owner** | Workflows |
 | **Authority** | Blocking |
 | **Dependencies** | `00_product_contract`, `01_ui_foundation`, `02_component_catalog`, `03_page_specifications`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
-| **Revision** | `2.0 (2026-10-11)` — Added WF-LANDING-01, WF-PRICING-01, WF-AUTH-LOGIN-01, SIGNUP-01, FORGOT-01, RESET-01, updated WF-EMBED-01 for 3 integration modes |
+| **Revision** | `2.1 (2026-10-11)` — Auth workflows now specify optional conditional Google/GitHub OAuth, consent, Remember me, callback provisioning, and recovery session |
+
+## v2.1 Changelog — Supabase Auth and optional OAuth
+
+- Email/password remains available without social providers. Google/GitHub buttons and divider are server-discovered and absent if no provider is configured. Login OAuth requires explicit Terms/Privacy consent and forwards Remember me; signup OAuth reuses its required terms consent.
+- OAuth start is same-origin, CSRF-protected, rate-limited, allow-listed, PKCE-backed, and returns only the validated Supabase authorization URL. The fixed callback verifies the Auth user, requires usable email, provisions via Auth UUID and `auth.uid()`, and uses only safe internal redirects. OAuth/provider credentials remain server-only; no application-level email matching or role trust from provider metadata.
+- Supabase Auth sessions remain in HttpOnly `okeng-auth` cookies, Secure in production, SameSite=Lax; unremembered sessions use browser-session cookies, Remember me uses 30-day persistence. Recovery links use the same callback to establish a recovery session before the CSRF-protected password update.
 
 ## v2.0 Changelog — New Workflows from Landing + Auth + Integration
 
@@ -26,17 +32,17 @@
 
 ### WF-AUTH-LOGIN-01 — Anonymous → /login → Session → /workspaces
 - **Trigger**: Anonymous visits /login or clicks Iniciar sesión from landing header
-- **Steps**: View auth card PA-AUTH canvas #F8F7F4 centered max-w-md white surface cobalt accent rounded-lg shadow-md + title Inicia sesión en OKEng + subtitle Tu documentación respondiendo dentro de tu app + email placeholder tu@empresa.com hint Usa tu correo de trabajo + password •••••••• show/hide + remember checkbox + forgot link → /forgot-password + submit Iniciar sesión isLoading spinner + disabled double-submit lock → POST /api/auth/login with CSRF header x-csrf-token + validation loginSchema + FORM-SEC-01 + rate limiting AUTH 5/15m + 5-Link Auth Chain session creation regeneration httpOnly secure sameSite strict 12h Redis → redirect /workspaces or intended URL, branch forgot → /forgot-password, branch SSO → OAuth future placeholder Pronto, error generic Credenciales inválidas not email not found, field validation unsafe input AlertCircle role=alert aria-invalid, 429 Demasiados intentos Retry-After
-- **Success**: Session cookie okeng.sid set, redirect
+- **Steps**: Render the established PA-AUTH surface with email/password, Remember me, forgot-password link, and submit. Discover enabled Google/GitHub providers from the no-store same-origin provider endpoint; render only available buttons and their divider, otherwise render neither. Email login uses CSRF-protected `POST /api/auth/login`; OAuth uses a provider-specific action with explicit Terms/Privacy consent and the same Remember me state, then CSRF-protected/rate-limited `POST /api/auth/oauth/start`, PKCE, and a validated Supabase authorization URL. On return, `/auth/callback` exchanges/verifies the Auth response, requires usable email, provisions/loads the Auth-UUID profile and initial workspace via `auth.uid()`, and redirects to a safe internal path. Supabase Auth session cookies are HttpOnly `okeng-auth`, SameSite=Lax, Secure in production; browser-session by default, 30-day persistence when Remember me is set. Preserve generic credential errors and AUTH rate limiting.
+- **Success**: Verified Supabase Auth session and active workspace membership are loaded server-side; redirect to the workspace collections route. No provider secret, access token, or refresh token is exposed to browser JavaScript.
 
 ### WF-AUTH-SIGNUP-01 — Anonymous → /signup → Account Creation → /workspaces
-- **Steps**: Similar to login but name Ada Lovelace, email, password min 8 hint + strength meter débil/media/fuerte, terms checkbox Acepto Términos y Privacidad required link /terms /privacy, submit Crear cuenta isLoading → POST /api/auth/signup → validation signupSchema + FORM-SEC-01 + rate limiting → account creation + workspace slug + public_key + signing_secret + plan starter monthly + workspace_members admin + session → redirect /workspaces, trust Sin tarjeta • Cancela cuando quieras • 1.000 consultas gratis
+- **Steps**: Collect name, email, password, and required Terms/Privacy consent. Email signup uses CSRF-protected, rate-limited `POST /api/auth/signup`; when email confirmation is enabled, require the callback before entering the workspace. Configured Google/GitHub controls reuse the same consent state and use the OAuth flow described in WF-AUTH-LOGIN-01. New profiles map by Supabase Auth UUID (never email conflict matching); the callback provisions the owner workspace through the `auth.uid()` RPC. Workspace membership and role are loaded from the database, not provider metadata.
 
 ### WF-AUTH-FORGOT-01 — Anonymous → /forgot-password → Email Sent
-- **Steps**: Enter email tu@empresa.com → submit Enviar enlace isLoading → POST /api/auth/forgot-password with CSRF → generic success Si el correo existe recibirás un enlace no enumeration → check email UI bg-success-subtle
+- **Steps**: Enter email → CSRF-protected, rate-limited `POST /api/auth/forgot-password` → generic success regardless of account existence → recovery email uses the fixed `/auth/callback?next=/reset-password` app callback. Do not expose account existence.
 
-### WF-AUTH-RESET-01 — Anonymous → /password/reset?token=xxx → Password Reset → /login
-- **Steps**: Validate token (server), enter new password + confirm strength, submit Restablecer contraseña isLoading → POST /api/auth/reset-password with token + newPassword + confirmPassword → validation resetPasswordSchema → reset → redirect /login with success banner
+### WF-AUTH-RESET-01 — Recovery callback → Auth session → Password reset
+- **Steps**: Supabase verifies the recovery code/token at `/auth/callback?next=/reset-password` and sets the HttpOnly recovery session; render new password + confirmation, then CSRF-protected, rate-limited `POST /api/auth/reset-password` updates the currently authenticated Supabase user. The client never submits a reset token; show success after the update.
 
 ### WF-EMBED-01 Updated — 3 Integration Modes (Widget/Panel/Fullscreen)
 - **Trigger**: User configures embed in /workspaces/:slug/embeds

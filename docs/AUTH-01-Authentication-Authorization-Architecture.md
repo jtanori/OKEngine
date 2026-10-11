@@ -268,6 +268,18 @@ For the dashboard application, use server-managed sessions (`Session` with `id`,
 
 Cookie properties: `HttpOnly`, `Secure`, `SameSite=Lax`. Conservative lifetime defaults: 7 days idle timeout, 30 days absolute lifetime.
 
+### 10.1 Current Supabase Auth Implementation — Email + Optional OAuth
+
+This subsection is the implementation contract for the Next.js App Router/Supabase Auth path and supersedes any legacy Express/custom-session examples above for that path.
+
+- Password signup/login, email confirmation, recovery/reset, logout, session lookup, and OAuth initiation use same-origin `/api/auth/*` or `/auth/callback` server routes with request-scoped Supabase SSR clients. Browser code does not instantiate a Supabase client or store access/refresh tokens.
+- Supabase Auth cookies use the `okeng-auth` storage key and are `HttpOnly`, `SameSite=Lax`, `Secure` in production, and scoped to `/`. Unchecked Remember me yields a browser-session cookie; checked Remember me persists it for 30 days. The server proxy refreshes Auth sessions and the server session endpoint returns only a safe profile/workspace projection.
+- Google and GitHub are the only application-advertised OAuth providers. Each appears only when the server has both a nonblank provider client ID and secret; `/api/auth/providers` returns names only. When none are configured, the provider block and divider are both absent. For hosted Supabase, configure the provider in the Supabase Auth dashboard and set the matching pair in the application server environment; for local Supabase, use `supabase/config.toml` and the ignored `.env.local`.
+- OAuth initiation accepts only the provider allowlist, requires Terms/Privacy consent, enforces existing AUTH rate limiting and same-origin CSRF validation, uses Supabase PKCE, and sets a fixed application callback. The browser accepts only a validated HTTPS or loopback Supabase `/auth/v1/authorize` URL before top-level navigation. Provider secrets and the PKCE verifier are never placed in browser-readable application storage; OAuth protocol state is managed by Supabase Auth, not accepted from caller-supplied redirect state.
+- `/auth/callback` accepts the Auth code/allowed OTP callback parameters and a safe internal `next`; it verifies the Supabase user, requires a usable email for the current profile/workspace model, and provisions the first workspace with the Auth user's UUID through the `auth.uid()`-checked RPC. Any missing email or provisioning failure signs out and redirects with a generic error. Workspace/platform roles are loaded from application tables, never inferred from provider metadata.
+- No application-level email-based user matching, account merge, or custom social-account linking is implemented. Supabase Auth's own identity behavior is separate from OKEngine profile mapping; application profiles are associated by Auth UUID only.
+- Recovery links use the same fixed callback to establish a recovery session. Password update then uses an authenticated, CSRF-protected same-origin API request; the client does not submit a reset token.
+
 ---
 
 # 11. Cross-Tenant Protection & Retrieval Security

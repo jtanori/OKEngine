@@ -96,7 +96,8 @@ Need new behavior
 
 ## 7. Agent Operating Procedure
 
-- **Branch**: always `arena/c1ccdf80-okengine` (session-fixed); never switch/create/push to other branches; `git push origin arena/c1ccdf80-okengine`; PR from this branch (`gh pr merge/close` with explicit number, last command, no `--auto`).
+- **TDD is mandatory for feature work**: Before changing production code for a feature, add or update an automated test that captures the intended behavior. Run it first and confirm it fails for the expected reason (red); then implement the smallest change and run the focused test plus relevant regression suites (green). Do not delete, weaken, or skip an assertion merely to make a test pass. If a test cannot run (for example, an opt-in local service is unavailable), report that explicitly and do not claim it passed. Plans/spec updates may precede tests, but production-code implementation may not.
+- **Branch**: use the branch assigned by the active Arena session; never hard-code, switch, create, or push to another branch. Follow the session's explicit Git push/PR instructions rather than storing a session-specific branch name in this repository.
 - **Commits**: atomic, conventional (`feat(PR):`, `feat(CO):`, `feat(SU):`, `feat(PA):`, `fix(DS):`, `docs(STATUS):`), no large datasets in Git (`bun.lock` etc only if needed).
 - **Servers**: `start_process` with `0.0.0.0`, allowlist preview host `https://{port}-{sandbox}.e2b.app`, relative URLs, never `localhost` in browser code.
 - **Verification**: after any UI change, run `npx next build` (must `Compiled successfully` 26 routes) and `npm run lint` (0 errors). Keep `homepage-tour-readiness 52/52` + `embed-authorization 29/29` green.

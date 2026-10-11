@@ -3,11 +3,11 @@
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `SEC-01` |
-| **Status** | `APPROVED — v1.0` |
+| **Status** | `APPROVED — v1.1` |
 | **Owner** | Security & Architecture |
 | **Authority** | Blocking — All Surfaces |
 | **Dependencies** | `STG-01`, `ENG-DOD-STG-01`, `AUTH-01..05`, `FORM-SEC-01`, `00_product_contract`, `API-01` |
-| **Revision** | `1.0 (2026-10-11)` — Consolidated from staging hardening (server.ts 74K, sessionAndCsrf.ts, rateLimiter.ts, requestSchemas.ts, systemPrivileged.ts) |
+| **Revision** | `1.1 (2026-10-11)` — Records the implemented Supabase Auth cookie/session, OAuth, and CSRF contracts |
 
 ---
 
@@ -30,6 +30,7 @@ Canonical security specification consolidating all hardening introduced for stag
 - `REDIS_URL` optional, if present must be valid redis URL, if missing warn and use in-memory fallback (OPS-01)
 - `CORS_ALLOWED_ORIGINS` comma-separated exact origins, no wildcard, fail-fast if contains `*`
 - `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` optional for billing, if present validate format
+- `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`, `SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET`, `SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID`, and `SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET` are optional server-only provider credentials. They are not required for startup; a provider is advertised only when its client ID and secret are both nonblank.
 
 **Behavior**: On boot, validate all env, log masked values, throw and exit 1 if invalid. No hardcoded secrets in code.
 
@@ -37,23 +38,23 @@ Canonical security specification consolidating all hardening introduced for stag
 
 ## 2. Session Management (SEC-SESSION-01)
 
-**File**: `src/lib/auth.ts` (Next.js) / `src/services/sessionAndCsrf.ts` (legacy)
+**Files**: `src/lib/supabase/cookies.ts`, `src/lib/supabase/server.ts`, `src/lib/auth.ts`, `src/proxy.ts`, and the same-origin `/api/auth/*` routes.
 
-**Invariants**:
-- httpOnly: true (no JS access)
-- secure: true in prod, false in dev (allow http localhost)
-- sameSite: strict (no cross-site)
-- maxAge: 12h (43200000 ms)
-- store: Redis when `REDIS_URL` present, else in-memory with warning (OPS-REDIS-01)
-- secret: `SESSION_SECRET` >=32 chars, rotated? No rotation yet, but validation
-- regeneration: On login, regenerate session ID to prevent fixation
-- rolling: disabled for CSRF safety (session not extended on every request, only explicit)
-- cookie name: `okeng.sid` or `__Host-okeng.sid` in prod (prefix for secure)
-- 5-Link Auth Chain (AUTH-05): Session → User → Workspace → Membership → Role → Collection Access
+**Supabase Auth-backed session contract (production/Supabase mode)**:
+- Supabase SSR session cookies use the `okeng-auth` name (chunking may append suffixes), `HttpOnly: true`, `Secure` in production, `SameSite: Lax`, and `Path: /`.
+- Without Remember me, no persistent cookie max-age is set (browser-session cookie). With Remember me, the session and HttpOnly `okeng.remember` preference use a 30-day max-age. The Next.js proxy refreshes tokens server-side.
+- Auth verification uses Supabase `auth.getUser()` on request-scoped server clients. The browser receives only a safe session/profile/workspace projection; it never receives access/refresh tokens through application APIs or JavaScript storage.
+- Profile identity is tied to the Supabase Auth UUID. Active profile, workspace membership, and roles are resolved from database rows/RLS; the user-to-workspace authorization chain remains enforced before resource access.
+- Logout calls Supabase `signOut` and clears Auth/persistence cookies. Redis is not the Supabase session store.
 
-**Implementation**:
-- Express: `express-session` + `connect-redis` or `MemoryStore` fallback
-- Next.js: Custom session via `jose` JWT or `iron-session` or `next-auth`? Plan uses `src/lib/auth.ts` with JWT signed by `SESSION_SECRET`, httpOnly cookie, same properties
+**Legacy local demo mode only**: `OKENG_DATA_MODE=memory` may use the custom signed `okeng.sid` cookie with a 12-hour verification age. It is not the Supabase Auth session and is not accepted as a production Auth credential. `SESSION_SECRET` and `CSRF_SECRET` remain environment-validated by the app, but production Supabase Auth cookies are managed by Supabase SSR rather than a custom JWT session implementation.
+
+### 2.1 Optional Google/GitHub OAuth
+
+- Only Google and GitHub are allow-listed. `/api/auth/providers` returns provider names only, and only when each provider has a complete nonblank server-side client-ID/secret pair. No providers configured means no buttons and no divider; email/password remains available.
+- `/api/auth/oauth/start` applies the AUTH rate limit and `validateCsrf`, requires explicit Terms/Privacy consent, uses a request-scoped Supabase SSR client with PKCE and a fixed same-origin callback, and returns only the validated Supabase authorize URL.
+- The browser performs only the top-level redirect; provider credentials, PKCE verifier, access tokens, and refresh tokens are not exposed to browser JavaScript. The app callback verifies the Supabase user, requires usable email, provisions by Auth UUID/`auth.uid()`, and signs out on missing email or provisioning failure.
+- Login passes Remember me to OAuth. Signup reuses required Terms/Privacy consent. Custom application-level email-based merging/linking and provider-metadata role assignment are out of scope.
 
 ---
 
@@ -63,9 +64,9 @@ Canonical security specification consolidating all hardening introduced for stag
 
 **Contract**: Double-submit cookie + header
 
-- Cookie: `okeng.csrf` or `__Host-okeng.csrf`, httpOnly false (JS readable), secure prod, sameSite strict, path /
+- Cookie: `okeng.csrf` or `__Host-okeng.csrf`, `HttpOnly: false` (JavaScript-readable), Secure in production, `SameSite: Strict`, `Path: /`, max age 1 hour
 - Header: `x-csrf-token` or `x-okeng-csrf`, value must match cookie via constant-time compare (`crypto.timingSafeEqual`)
-- Token generation: `crypto.randomBytes(32).toString('hex')` or `csrfSecret` HMAC, 64 chars
+- Token generation: `crypto.randomBytes(32).toString('hex')` (64 hex characters)
 - Endpoint: `GET /api/csrf-token` returns `{ csrfToken }` and sets cookie, exempt from CSRF check
 - Safe methods exempt: GET, HEAD, OPTIONS — no CSRF check
 - Mutating methods protected: POST, PUT, PATCH, DELETE — require header matching cookie
@@ -83,7 +84,7 @@ Canonical security specification consolidating all hardening introduced for stag
 | Tier ID | Limit | Window | Applies To | Key | Error |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `TIER_GLOBAL_100_PER_MIN` | 100 req | 60s | All /api/* | IP + session ID composite | 429 + Retry-After |
-| `TIER_AUTH_5_PER_15M` | 5 req | 15m (900s) | /api/auth/login, /api/auth/signup, /api/auth/forgot-password, /api/auth/reset-password | IP + email (if present) composite | 429 + Retry-After |
+| `TIER_AUTH_5_PER_15M` | 5 req | 15m (900s) | /api/auth/login, /api/auth/signup, /api/auth/oauth/start, /api/auth/forgot-password, /api/auth/reset-password | IP + email (if present) composite | 429 + Retry-After |
 | `TIER_WRITE_20_PER_MIN` | 20 req | 60s | POST/PUT/PATCH/DELETE /api/collections, /api/files, /api/embeds, /api/ask, /api/feedback | IP + session ID | 429 |
 | `TIER_READ_60_PER_MIN` | 60 req | 60s | GET /api/collections, /api/files, /api/embeds, /api/ask | IP + session ID | 429 |
 

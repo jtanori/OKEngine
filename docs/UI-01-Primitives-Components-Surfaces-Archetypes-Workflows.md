@@ -1,9 +1,13 @@
 # UI-01 — Primitives, Components, Surfaces, Archetypes & Workflows
 
-**Status:** Canonical UI & Interaction Architecture Specification (v3.1)  
+**Status:** Canonical UI & Interaction Architecture Specification (v3.5)
 **Type:** Design System / Primitive & Component Catalog / Page Archetypes / Workflows  
 **Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006`, `SEC-01`, `API-01`  
-**Revision:** `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer (aligns with `01 v3.4` + `02 v3.4`)
+**Revision:** `3.5 (2026-10-11)` — Auth OAuth: optional server-discovered Google/GitHub, consent, Remember me, conditional divider
+
+## v3.5 Changelog (from v3.4)
+
+- **Optional provider auth**: `CO-AUTH-SSO-BUTTONS` renders only Google/GitHub providers advertised by the same-origin server. While discovery is pending, fails, or returns no provider, render neither the provider block nor `AuthDivider`; email/password and recovery remain available. Login OAuth uses Remember me and requires Terms/Privacy consent; signup reuses its existing required consent. OAuth start is CSRF-backed and server-mediated; the client validates the returned authorize URL before its top-level redirect. See `01_ui_foundation v3.5`, `02_component_catalog v3.5`, `03_page_specifications v3.1`, and `04_workflows v2.1`.
 
 ## v3.4 Changelog (from v3.3)
 

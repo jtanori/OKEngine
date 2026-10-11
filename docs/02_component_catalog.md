@@ -3,11 +3,15 @@
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `02_component_catalog` |
-| **Status** | `APPROVED — v3.0` |
+| **Status** | `APPROVED — v3.5` |
 | **Owner** | Component Catalog |
 | **Authority** | Blocking |
 | **Dependencies** | `01_ui_foundation`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
-| **Revision** | `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer About·TOS·Privacy·Contact |
+| **Revision** | `3.5 (2026-10-11)` — Optional server-discovered Google/GitHub buttons and conditional divider |
+
+## v3.5 Changelog — Optional OAuth providers
+
+- `CO-AUTH-SSO-BUTTONS` shows only server-advertised Google/GitHub providers; the provider block and `AuthDivider` are both omitted while loading, on discovery failure, or when no providers are configured. Login passes Remember me and shows Terms/Privacy consent only when a provider is available; signup reuses its required terms checkbox. No SAML/other providers or custom account linking.
 
 ## v3.4 Changelog — Auth Defects 1-4 (7a15944)
 
@@ -73,11 +77,11 @@ All consume DS tokens via @theme, no hardcoded colors, a11y, sizeVariant where a
 | `CO-LANDING-FAQ` | `landing/LandingFaq.tsx` | PR-FAQ-ACCORDION | FAQ 6 Q integration time, data training, permissions, formats, no source, migration |
 | `CO-LANDING-FINAL-CTA` | `landing/LandingFinalCta.tsx` | PR-BOX + PR-TEXT + PR-BUTTON | Final centered CTA Empieza a responder en minutos |
 | `CO-LANDING-FOOTER` | `landing/LandingFooter.tsx` | PR-BOX + links + LanguageSelector | Footer 4 columns Producto/Desarrolladores/Empresa/Legal + bottom © |
-| `CO-AUTH-LOGIN-FORM` | `auth/LoginForm.tsx` | PR-AUTH-CARD + PR-INPUT + PR-PASSWORD-INPUT + PR-BUTTON + PR-CHECKBOX + PR-AUTH-DIVIDER + CO-AUTH-SSO-BUTTONS + CO-AUTH-TRUST-FOOTER | Login form email, password, remember, forgot, submit, SSO, FORM-SEC-01, empty initial, placeholder+hint, field errors, isLoading, generic 401, 429 |
-| `CO-AUTH-SIGNUP-FORM` | `auth/SignupForm.tsx` | Same + PR-CHECKBOX terms | Signup form name, email, password, terms, submit, SSO |
+| `CO-AUTH-LOGIN-FORM` | `auth/LoginForm.tsx` | PR-AUTH-CARD + PR-INPUT + PR-PASSWORD-INPUT + PR-BUTTON + PR-CHECKBOX + CO-AUTH-SSO-BUTTONS + CO-AUTH-TRUST-FOOTER | Login email/password remains primary; optional configured Google/GitHub with divider only when present, Remember me forwarding, consent gate, FORM-SEC-01, generic errors, 429 |
+| `CO-AUTH-SIGNUP-FORM` | `auth/SignupForm.tsx` | Same + PR-CHECKBOX terms | Signup name/email/password remains primary; required Terms/Privacy consent gates both email signup and optional configured Google/GitHub OAuth |
 | `CO-AUTH-FORGOT-FORM` | `auth/ForgotPasswordForm.tsx` | PR-AUTH-CARD + PR-INPUT + PR-BUTTON | Forgot password email, submit, generic success no enumeration |
 | `CO-AUTH-RESET-FORM` | `auth/ResetPasswordForm.tsx` | PR-AUTH-CARD + PR-PASSWORD-INPUT x2 + PR-BUTTON | Reset password new + confirm, strength, submit |
-| `CO-AUTH-SSO-BUTTONS` | `auth/SsoButtons.tsx` | PR-BUTTON outline + icon | SSO buttons Google/GitHub/SAML placeholder Pronto |
+| `CO-AUTH-SSO-BUTTONS` | `auth/SsoButtons.tsx` | PR-BUTTON secondary + provider icon + conditional PR-AUTH-DIVIDER | Google/GitHub from server discovery only; returns no markup when unavailable/empty, keeps divider inside the same optional block, consent-gated, CSRF-backed server start |
 | `CO-AUTH-TRUST-FOOTER` | `auth/AuthTrustFooter.tsx` | PR-TRUST-BADGE x3 + links | Trust badges Citas verificables, Permisos por rol, Sin tarjeta + terms/privacy |
 
 ### PA Archetypes Added
