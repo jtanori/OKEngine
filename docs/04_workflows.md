@@ -1,5 +1,50 @@
 # 04 — Workflows: Operational Contracts
 
+| Field | Value |
+| :--- | :--- |
+| **Document ID** | `04_workflows` |
+| **Status** | `APPROVED — v2.0` |
+| **Owner** | Workflows |
+| **Authority** | Blocking |
+| **Dependencies** | `00_product_contract`, `01_ui_foundation`, `02_component_catalog`, `03_page_specifications`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
+| **Revision** | `2.0 (2026-10-11)` — Added WF-LANDING-01, WF-PRICING-01, WF-AUTH-LOGIN-01, SIGNUP-01, FORGOT-01, RESET-01, updated WF-EMBED-01 for 3 integration modes |
+
+## v2.0 Changelog — New Workflows from Landing + Auth + Integration
+
+### WF-LANDING-01 — Anonymous → Landing 12 Surfaces → Signup
+- **Trigger**: Anonymous visits `/`
+- **Steps**: Announcement banner "Citas verificables y permisos por rol" → Hero (value prop "Capa de conocimiento para tu producto" + "Convierte tu documentación en respuestas con citas, dentro de tu app" + sub "Empieza gratis con 1.000 consultas/mes. Sin tarjeta." + CTAs Empieza gratis → /signup + Ver cómo funciona → #como-funciona + badges ≥98% con cita, Permisos por rol, Markdown PDF web + social proof avatars "Más de 1.200 equipos confían" + right ChatMock demo live SSO question + citations [1][2] + input) → Logo strip Nexora/Dataflow/Kubelab/Aurea/Pacted/Vanti → Metrics bar 3 líneas, -73%, 99.9%, 0 datos entrenados → How it works 5 steps Files→Collections→Access→Context→Answer → Product 6 features MD, permisos, citas, BYOK, widget, analítica → Integration 3 modes widget/panel/fullscreen tabs + mock + 3 lines code → Developers HelpCenter.tsx code + bullets API/webhooks/BYOK/EU/SDKs → Testimonials 3 cards -73% etc → Pricing 3 tiers Starter 0€ Pro 31€/24€ annual Escala custom + toggle monthly/annual -20% → FAQ 6 Q → Final CTA Empieza a responder en minutos → /signup
+- **Branch**: Secondary CTA Ver cómo funciona → scroll #como-funciona
+- **Success**: Clicks primary CTA → /signup, conversion tracked, real metrics only
+- **Archetype**: PA-LANDING, surfaces SU-LANDING-* (13), components CO-LANDING-* (12)
+
+### WF-PRICING-01 — Pricing Toggle → Plan Selection → Checkout
+- **Trigger**: User in pricing section #precios
+- **Steps**: Toggle monthly/annual -20% badge → view tier features (Starter 0€ 1k 1 100 Widget+Panel community, Pro 31€/24€ 10k 10 1k + fullscreen + permisos SSO analítica priority badge Más popular, Escala custom unlimited + on-premise SLA dedicated BYOK EU webhooks) → click CTA Empieza gratis → /signup?plan=starter or Empieza con Pro → /signup?plan=pro&interval=monthly/annual or Habla con nosotros → /contact?plan=escala → checkout Stripe (future)
+- **State**: pricingInterval = monthly|annual stored in local state, -20% badge for annual
+- **Success**: Checkout session created, redirect Stripe, webhook updates workspace plan
+
+### WF-AUTH-LOGIN-01 — Anonymous → /login → Session → /workspaces
+- **Trigger**: Anonymous visits /login or clicks Iniciar sesión from landing header
+- **Steps**: View auth card PA-AUTH canvas #F8F7F4 centered max-w-md white surface cobalt accent rounded-lg shadow-md + title Inicia sesión en OKEng + subtitle Tu documentación respondiendo dentro de tu app + email placeholder tu@empresa.com hint Usa tu correo de trabajo + password •••••••• show/hide + remember checkbox + forgot link → /forgot-password + submit Iniciar sesión isLoading spinner + disabled double-submit lock → POST /api/auth/login with CSRF header x-csrf-token + validation loginSchema + FORM-SEC-01 + rate limiting AUTH 5/15m + 5-Link Auth Chain session creation regeneration httpOnly secure sameSite strict 12h Redis → redirect /workspaces or intended URL, branch forgot → /forgot-password, branch SSO → OAuth future placeholder Pronto, error generic Credenciales inválidas not email not found, field validation unsafe input AlertCircle role=alert aria-invalid, 429 Demasiados intentos Retry-After
+- **Success**: Session cookie okeng.sid set, redirect
+
+### WF-AUTH-SIGNUP-01 — Anonymous → /signup → Account Creation → /workspaces
+- **Steps**: Similar to login but name Ada Lovelace, email, password min 8 hint + strength meter débil/media/fuerte, terms checkbox Acepto Términos y Privacidad required link /terms /privacy, submit Crear cuenta isLoading → POST /api/auth/signup → validation signupSchema + FORM-SEC-01 + rate limiting → account creation + workspace slug + public_key + signing_secret + plan starter monthly + workspace_members admin + session → redirect /workspaces, trust Sin tarjeta • Cancela cuando quieras • 1.000 consultas gratis
+
+### WF-AUTH-FORGOT-01 — Anonymous → /forgot-password → Email Sent
+- **Steps**: Enter email tu@empresa.com → submit Enviar enlace isLoading → POST /api/auth/forgot-password with CSRF → generic success Si el correo existe recibirás un enlace no enumeration → check email UI bg-success-subtle
+
+### WF-AUTH-RESET-01 — Anonymous → /password/reset?token=xxx → Password Reset → /login
+- **Steps**: Validate token (server), enter new password + confirm strength, submit Restablecer contraseña isLoading → POST /api/auth/reset-password with token + newPassword + confirmPassword → validation resetPasswordSchema → reset → redirect /login with success banner
+
+### WF-EMBED-01 Updated — 3 Integration Modes (Widget/Panel/Fullscreen)
+- **Trigger**: User configures embed in /workspaces/:slug/embeds
+- **Modes**: widget (floating launcher bottom-right + CO-CONTENT-RENDERER + CO-NEXT-STEP, 3 lines code), panel (PR-DRAWER 360px maxWidth min(380px,40%) + CO-CONTENT-RENDERER), fullscreen (full-viewport search + collection filter + CO-CONTENT-RENDERER), inline, documentation, contextual — 6 composable surfaces EMBED-02, gated by plan (fullscreen gated Pro+ per ANALYSIS-001)
+- **Steps**: Select mode + knowledge (collectionIds) + context & behavior + installation guide (React/Vue/JS, server/browser steps, verify installation) → save → install widget via <OKEngWidget collection="docs" mode="widget" theme={{accent:"#1D4ED8"}} permissions={{role:user.role}} /> → verify
+
+---
+
 Workflows define end-to-end user objectives, authorization checks, cache transitions, and multilingual retrieval behavior across OKEng surfaces.
 
 ---

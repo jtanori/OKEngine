@@ -1,5 +1,77 @@
 # 02 — Component Catalog: Canonical Inventory (`PR-*` & `CO-*`)
 
+| Field | Value |
+| :--- | :--- |
+| **Document ID** | `02_component_catalog` |
+| **Status** | `APPROVED — v3.0` |
+| **Owner** | Component Catalog |
+| **Authority** | Blocking |
+| **Dependencies** | `01_ui_foundation`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
+| **Revision** | `3.0 (2026-10-11)` — Added 16 new PR primitives + 18 new CO components for landing + auth from proposal |
+
+## v3.0 Changelog — New Primitives & Components from Proposal (PLAN-001, PLAN-002, PLAN-003)
+
+### New PR Primitives (16) — `src/components/ui/`
+
+| Primitive ID | File | Purpose | Tokens |
+| :--- | :--- | :--- | :--- |
+| `PR-ANNOUNCEMENT-BANNER` | `AnnouncementBanner.tsx` | Top full-width banner "Citas verificables y permisos por rol" | bg-subtle, border-line, text-ink-secondary, text-xs |
+| `PR-METRIC` | `Metric.tsx` | Metric display value + label "-73% tickets" | text-ink, text-ink-secondary, text-metric-value, font-sans |
+| `PR-PRICING-TOGGLE` | `PricingToggle.tsx` | Monthly/Annual toggle with -20% badge | bg-elevated, bg-surface, border-line, rounded-sm, accent |
+| `PR-TESTIMONIAL-CARD` | `TestimonialCard.tsx` | Testimonial quote + author + role + company + metric | bg-surface, border-line, rounded-lg, shadow-sm |
+| `PR-FAQ-ACCORDION` | `FaqAccordion.tsx` | FAQ accordion Q+A single expand | border-line, bg-surface, text-ink |
+| `PR-CODE-SNIPPET` | `CodeSnippet.tsx` | Code block with language, copy button | bg-elevated, border-line, rounded-md, font-mono |
+| `PR-LOGO-STRIP` | `LogoStrip.tsx` | Logo strip 6 logos monochrome | text-ink-muted, border-line |
+| `PR-INTEGRATION-TABS` | `IntegrationTabs.tsx` | Tabs widget/panel/fullscreen with mock preview | bg-elevated, bg-surface, border-line, rounded-sm |
+| `PR-FEATURE-CARD` | `FeatureCard.tsx` | Feature card icon + title + desc for 6 features | bg-surface, border-line, rounded-lg, shadow-sm/md |
+| `PR-HOW-IT-WORKS-STEP` | `HowItWorksStep.tsx` | Step number + icon + title + desc + connector | bg-surface, border-line, text-ink, accent |
+| `PR-CHAT-MOCK` | `ChatMock.tsx` | Chat mock UI header + messages + citations + input | bg-surface, border-line, rounded-lg, shadow-lg |
+| `PR-PRICING-CARD` | `PricingCard.tsx` | Pricing tier card features + CTA + popular badge | bg-surface, border-line/ink, rounded-lg, shadow-sm/md |
+| `PR-AUTH-CARD` | `AuthCard.tsx` | Centered card logo + title + subtitle + form + footer + trust | bg-surface, border-line, rounded-lg, shadow-md, bg-canvas |
+| `PR-PASSWORD-INPUT` | `PasswordInput.tsx` | Input show/hide toggle + strength meter | border-line, rounded-sm, bg-surface, text-ink |
+| `PR-AUTH-DIVIDER` | `AuthDivider.tsx` | Divider with "o"/"or" for SSO vs password | bg-line, text-ink-muted |
+| `PR-TRUST-BADGE` | `TrustBadge.tsx` | Small badge "Sin tarjeta" etc | text-2xs, text-ink-muted |
+
+All consume DS tokens via @theme, no hardcoded colors, a11y, sizeVariant where applicable.
+
+### New CO Components (18) — `src/components/landing/` + `src/components/auth/`
+
+| Component ID | File | Composition | Purpose |
+| :--- | :--- | :--- | :--- |
+| `CO-LANDING-HERO` | `landing/LandingHero.tsx` | PR-BOX + PR-TEXT + PR-BUTTON + PR-CHAT-MOCK + PR-BADGE | Hero split left copy + right chat mock, badges ≥98% con cita etc |
+| `CO-LANDING-LOGO-STRIP` | `landing/LandingLogoStrip.tsx` | PR-LOGO-STRIP + PR-TEXT | Logo strip Nexora/Dataflow/Kubelab/Aurea/Pacted/Vanti |
+| `CO-LANDING-METRICS` | `landing/LandingMetrics.tsx` | PR-METRIC x4 | Metrics bar 3 líneas, -73%, 99.9%, 0 datos entrenados |
+| `CO-LANDING-HOW-IT-WORKS` | `landing/LandingHowItWorks.tsx` | PR-HOW-IT-WORKS-STEP x5 | 5 steps Files→Collections→Access→Context→Answer |
+| `CO-LANDING-PRODUCT-FEATURES` | `landing/LandingProductFeatures.tsx` | PR-FEATURE-CARD x6 | 6 features MD, permisos, citas, BYOK, widget, analítica |
+| `CO-LANDING-INTEGRATION` | `landing/LandingIntegration.tsx` | PR-INTEGRATION-TABS + mock + code | 3 modes widget/panel/fullscreen tabs + preview + 3 lines code |
+| `CO-LANDING-DEVELOPERS` | `landing/LandingDevelopers.tsx` | PR-CODE-SNIPPET + PR-TEXT + list | Code HelpCenter.tsx + bullets API/webhooks/BYOK/EU/SDKs |
+| `CO-LANDING-TESTIMONIALS` | `landing/LandingTestimonials.tsx` | PR-TESTIMONIAL-CARD x3 + PR-METRIC | 3 testimonials -73% etc + metrics |
+| `CO-LANDING-PRICING` | `landing/LandingPricing.tsx` | PR-PRICING-TOGGLE + PR-PRICING-CARD x3 | Pricing 3 tiers Starter 0€ Pro 31€/24€ Escala custom + toggle |
+| `CO-LANDING-FAQ` | `landing/LandingFaq.tsx` | PR-FAQ-ACCORDION | FAQ 6 Q integration time, data training, permissions, formats, no source, migration |
+| `CO-LANDING-FINAL-CTA` | `landing/LandingFinalCta.tsx` | PR-BOX + PR-TEXT + PR-BUTTON | Final centered CTA Empieza a responder en minutos |
+| `CO-LANDING-FOOTER` | `landing/LandingFooter.tsx` | PR-BOX + links + LanguageSelector | Footer 4 columns Producto/Desarrolladores/Empresa/Legal + bottom © |
+| `CO-AUTH-LOGIN-FORM` | `auth/LoginForm.tsx` | PR-AUTH-CARD + PR-INPUT + PR-PASSWORD-INPUT + PR-BUTTON + PR-CHECKBOX + PR-AUTH-DIVIDER + CO-AUTH-SSO-BUTTONS + CO-AUTH-TRUST-FOOTER | Login form email, password, remember, forgot, submit, SSO, FORM-SEC-01, empty initial, placeholder+hint, field errors, isLoading, generic 401, 429 |
+| `CO-AUTH-SIGNUP-FORM` | `auth/SignupForm.tsx` | Same + PR-CHECKBOX terms | Signup form name, email, password, terms, submit, SSO |
+| `CO-AUTH-FORGOT-FORM` | `auth/ForgotPasswordForm.tsx` | PR-AUTH-CARD + PR-INPUT + PR-BUTTON | Forgot password email, submit, generic success no enumeration |
+| `CO-AUTH-RESET-FORM` | `auth/ResetPasswordForm.tsx` | PR-AUTH-CARD + PR-PASSWORD-INPUT x2 + PR-BUTTON | Reset password new + confirm, strength, submit |
+| `CO-AUTH-SSO-BUTTONS` | `auth/SsoButtons.tsx` | PR-BUTTON outline + icon | SSO buttons Google/GitHub/SAML placeholder Pronto |
+| `CO-AUTH-TRUST-FOOTER` | `auth/AuthTrustFooter.tsx` | PR-TRUST-BADGE x3 + links | Trust badges Citas verificables, Permisos por rol, Sin tarjeta + terms/privacy |
+
+### PA Archetypes Added
+
+- `PA-LANDING`: Marketing landing page archetype — single column, max-w-7xl centered, section padding py-16 md:py-24, no sidebar, no app shell, public surface, minimal header logo + nav + CTAs, 12 surfaces stacked, footer 4 columns, anchor nav, pricing toggle state, FAQ accordion state, integration tabs state, i18n EN/ES, real metrics only
+- `PA-AUTH`: Authentication page archetype — full viewport canvas #F8F7F4, centered card max-w-md 448px, white surface, border #DEDDD8, rounded-lg 12px, shadow-md, padding 32px, minimal header logo + EN/ES switch, card with AuthHeader + form + divider + SSO + footer links, below card trust badges + terms/privacy + ©, FORM-SEC-01, 5-Link Auth Chain, TIER_AUTH_5_PER_15M, generic 401, no enumeration, empty initial, placeholder+hint, field errors, isLoading+disabled
+
+### SU Surfaces Added
+
+See UI-01 v3.0 for full list: SU-LANDING-ANNOUNCEMENT, HERO, LOGOS, METRICS, HOW-IT-WORKS, PRODUCT, INTEGRATION, DEVELOPERS, TESTIMONIALS, PRICING, FAQ, FINAL-CTA, FOOTER (13) and SU-AUTH-LOGIN, SIGNUP, FORGOT, RESET, LAYOUT (5).
+
+---
+
+# Original v2.0 Content Below — Preserved
+
+## 1. Layer 2 — UI Primitives (`src/components/ui/`)
+
 ## 1. Layer 2 — UI Primitives (`src/components/ui/`)
 
 | Primitive ID | Implementation File | Exported Symbols | Consumes Tokens | Purpose |

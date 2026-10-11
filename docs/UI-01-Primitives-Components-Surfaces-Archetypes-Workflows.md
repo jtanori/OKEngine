@@ -1,8 +1,22 @@
 # UI-01 — Primitives, Components, Surfaces, Archetypes & Workflows
 
-**Status:** Canonical UI & Interaction Architecture Specification (v2.0)  
+**Status:** Canonical UI & Interaction Architecture Specification (v3.0)  
 **Type:** Design System / Primitive & Component Catalog / Page Archetypes / Workflows  
-**Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`
+**Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `SEC-01`, `API-01`  
+**Revision:** `3.0 (2026-10-11)` — Added v3.0 editorial marketing layer, 16 new PR, 18 new CO, 18 new SU, 2 new PA, 6 new WF from proposal + staging hardening
+
+## v3.0 Changelog
+
+- **DS Tokens Extended**: --text-strong #0F172A, --text-hero 48px/52px -0.02em, --text-section 30px/36px -0.01em, --text-card-title 16px/24px, --text-metric-value 36px/40px, --radius-lg 12px, --radius-xl 16px, --shadow-sm/md/lg, --spacing-section-y 6rem, --spacing-section-y-mobile 4rem — see 01_ui_foundation v3.0
+- **PR Added 16**: PR-ANNOUNCEMENT-BANNER, PR-METRIC, PR-PRICING-TOGGLE, PR-TESTIMONIAL-CARD, PR-FAQ-ACCORDION, PR-CODE-SNIPPET, PR-LOGO-STRIP, PR-INTEGRATION-TABS, PR-FEATURE-CARD, PR-HOW-IT-WORKS-STEP, PR-CHAT-MOCK, PR-PRICING-CARD, PR-AUTH-CARD, PR-PASSWORD-INPUT, PR-AUTH-DIVIDER, PR-TRUST-BADGE — all DS tokens, a11y, sizeVariant
+- **CO Added 18**: CO-LANDING-HERO, LOGO-STRIP, METRICS, HOW-IT-WORKS, PRODUCT-FEATURES, INTEGRATION, DEVELOPERS, TESTIMONIALS, PRICING, FAQ, FINAL-CTA, FOOTER (12) + CO-AUTH-LOGIN-FORM, SIGNUP-FORM, FORGOT-FORM, RESET-FORM, SSO-BUTTONS, TRUST-FOOTER (6) — composed from PR, i18n, FORM-SEC-01, security
+- **SU Added 18**: SU-LANDING-ANNOUNCEMENT, HERO, LOGOS, METRICS, HOW-IT-WORKS, PRODUCT, INTEGRATION, DEVELOPERS, TESTIMONIALS, PRICING, FAQ, FINAL-CTA, FOOTER (13) + SU-AUTH-LOGIN, SIGNUP, FORGOT, RESET, LAYOUT (5)
+- **PA Added 2**: PA-LANDING (12 surfaces, max-w-7xl, no sidebar, editorial whitespace, real metrics only) + PA-AUTH (centered card max-w-md, canvas #F8F7F4, white surface, cobalt accent, rounded-lg shadow-md, FORM-SEC-01, 5-Link Auth Chain, TIER_AUTH_5_PER_15M)
+- **WF Added 6**: WF-LANDING-01 (anonymous → landing 12 surfaces → /signup), WF-PRICING-01 (toggle monthly/annual → plan → checkout), WF-AUTH-LOGIN-01, SIGNUP-01, FORGOT-01, RESET-01
+- **Security Preserved**: SEC-01 foundations (env, session, CSRF, rate limiting, CORS, headers, privilege, sanitization, graceful, trust proxy) + API-01 middleware pipeline + FORM-SEC-01 everywhere — see SEC-01, API-01, DB-01, DATA-01, OPS-01
+- **Principles Extended**: 10 Editorial Whitespace, 11 Real Metrics Only, 12 Shadow Restraint, 13 Radius Scale Extension — see 01_ui_foundation v3.0
+
+---
 
 ---
 
