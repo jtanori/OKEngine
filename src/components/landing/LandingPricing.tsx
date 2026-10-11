@@ -48,8 +48,8 @@ export function LandingPricing() {
           priceNote={proPriceLabel}
           description="Para equipos de producto en serio"
           features={['Colecciones y proyectos ilimitados', '10.000 consultas al mes', 'Permisos por colección, rol y miembro', 'Widget, panel o pantalla completa', 'Sin marca · tu dominio y tu tema', 'Tu propia clave de proveedor de IA', 'Analítica de conocimiento']}
-          ctaLabel="Probar 14 días gratis"
-          ctaHref={`/signup?plan=pro&interval=${interval}&price=${proDisplayPrice}`}
+          ctaLabel="Empieza con Pro"
+          ctaHref={`/signup?plan=pro&interval=${interval}`}
           popular
         />
         <PricingCard

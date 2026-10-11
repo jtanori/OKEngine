@@ -48,8 +48,8 @@ export function AuthShell({ children, variant = 'login' }: AuthShellProps) {
       {/* Split body — flush 40/60, no outer margin, left 100% height */}
       <main className="flex-1 w-full flex flex-col min-h-0">
         <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-0 items-stretch min-h-0">
-          {/* Left — desktop: 100% height (h-screen), no vertical scroll unless overflow, rounded-none */}
-          <div className="hidden lg:flex relative bg-brand rounded-none p-8 lg:p-10 flex-col gap-8 overflow-hidden h-screen lg:h-[100dvh] sticky top-0">
+          {/* Left — desktop: min-height screen, no fixed height to avoid awkward short-viewport double-scroll (P2 responsive). Sticky kept but with min-h, not h-screen. */}
+          <div className="hidden lg:flex relative bg-brand rounded-none p-8 lg:p-10 flex-col gap-8 overflow-hidden lg:min-h-screen lg:sticky lg:top-0">
             {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.06]"
@@ -62,7 +62,7 @@ export function AuthShell({ children, variant = 'login' }: AuthShellProps) {
             {/* subtle gradient */}
             <div className="absolute bottom-0 right-0 w-100 h-100 bg-accent-indigo opacity-[0.08] rounded-full blur-3xl pointer-events-none" aria-hidden />
 
-            <div className="relative flex flex-col gap-8 flex-1 min-h-0 overflow-y-auto scrollbar-thin">
+            <div className="relative flex flex-col gap-8 flex-1">
               {/* Layer 1: logo (replaces pill) */}
               <div>
                 <a href="/" className="flex items-center gap-2">
