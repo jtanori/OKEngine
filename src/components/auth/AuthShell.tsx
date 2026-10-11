@@ -29,9 +29,9 @@ export function AuthShell({ children }: AuthShellProps) {
         </div>
       </div>
 
-      {/* Split body — flush 52/48, no outer margin, left 100% height */}
+      {/* Split body — flush 40/60, no outer margin, left 100% height */}
       <main className="flex-1 w-full flex flex-col min-h-0">
-        <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[52fr_48fr] gap-0 items-stretch min-h-0">
+        <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[40fr_60fr] gap-0 items-stretch min-h-0">
           {/* Left — desktop: 100% height (h-screen), no vertical scroll unless overflow, rounded-none */}
           <div className="hidden lg:flex relative bg-brand rounded-none p-8 lg:p-10 flex-col gap-8 overflow-hidden h-screen lg:h-[100dvh] sticky top-0">
             {/* dot grid */}
@@ -116,17 +116,19 @@ export function AuthShell({ children }: AuthShellProps) {
             </div>
           </div>
 
-          {/* Right — borderless form area transparent on bg-canvas, max-w 400-460, form-first on mobile */}
-          <div className="order-first lg:order-last flex flex-col items-center px-4 lg:px-8 py-6 lg:py-10 min-h-0">
-            {/* Top-right inline Volver + Lang — inside right panel */}
-            <div className="hidden lg:flex w-full max-w-[440px] items-center justify-end gap-3 pb-6">
+          {/* Right — borderless form area transparent on bg-canvas, two components: semi-header + form container, standard padding = left */}
+          <div className="order-first lg:order-last flex flex-col p-8 lg:p-10 min-h-0">
+            {/* Semi-header — full width of right panel, holds Volver + Lang top-right */}
+            <div className="hidden lg:flex w-full items-center justify-end gap-3 pb-8 shrink-0">
               <a href="/" className="inline-flex items-center gap-1.5 text-xs text-ink-secondary hover:text-ink">
                 <span aria-hidden>←</span> Volver a la web
               </a>
               <LanguageSelector variant="compact" />
             </div>
-            {/* Mobile: Volver+Lang already in top minimal bar, so hide duplicate — above is hidden lg:flex only */}
-            <div className="w-full max-w-[440px] flex flex-col gap-6">{children}</div>
+            {/* Form container — centered when panel wider than form max-width */}
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-full max-w-[440px] flex flex-col gap-6">{children}</div>
+            </div>
           </div>
         </div>
       </main>
