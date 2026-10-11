@@ -1,11 +1,11 @@
-# UI Alignment Status — Continuing v3.1 Public & Auth Alignment
+# UI Alignment Status — Continuing v3.2 Landing Pixel Alignment
 
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `UI-ALIGNMENT-STATUS` |
-| **Status** | `LIVE — Ground-up re-audit 2026-10-12` |
+| **Status** | `LIVE — v3.2 landing pixel (arena.site target) 2026-10-11` |
 | **Owner** | Design System & Agent Mode |
-| **Authority** | Informational — tracks implementation vs `01_ui_foundation v3.1`, `02_component_catalog v3.0`, `03_page_specifications v3.0`, `04_top_screens_audit_and_standardization`, `UI-01 v3.1`, `PLAN-001`, `PLAN-002`, `PLAN-006` |
+| **Authority** | Informational — tracks implementation vs `01_ui_foundation v3.2`, `02_component_catalog v3.2`, `03_page_specifications v3.0`, `04_top_screens_audit_and_standardization`, `UI-01 v3.2`, `PLAN-001`, `PLAN-002`, `PLAN-006` |
 | **Branch** | `arena/c1ccdf80-okengine` |
 | **Base** | `2c6381f (main)` — after PLAN-001 landing, PLAN-002 auth, PLAN-006 docs/public pages landing |
 | **Ground-up** | DS → PR → CO → SU → PA (AGENTS.md §2 hierarchy) — target `https://01a1278b-f5a1-71f6-830f-8c5c544d4689.arena.site/` |
@@ -42,6 +42,7 @@ Per user request, alignment restarted **ground-up** `DS → PR → CO → SU →
 | **3 CO** | `src/components/{landing,auth,docs,public}/*` | audit PASS | No `bg-[#]` / bracket px, no raw `<input>` (auth now `Input`/`PasswordInput`/`Checkbox`/`Button` + `FORM-SEC-01`), `useRouter` for nav, `allowed window` only for `localStorage` (sidebar posture), `navigator.clipboard` (share/copy), `keydown` (a11y). |
 | **4 SU** | `SU-LANDING 13 + SU-AUTH 5 + SU-DOCS/PUBLIC/WORKSPACE` | audit PASS | `LandingView` 13 surfaces `min-h-screen bg-canvas` `max-w-7xl px-6 py-16 md:py-24` header `h-14 sticky top-0 z-20 backdrop-blur`, `About/Contact max-w-7xl py-16/24` `Legal/DocsArticle max-w-3xl`, badges `rounded-full border bg-surface`. |
 | **5 PA** | `src/app/(public)/(auth)/(workspace)/*` `26 routes` | audit PASS | `PA-LANDING` no sidebar, `PA-AUTH` canvas+card `max-w-md rounded-lg shadow-md`, `PA-DOCS` sidebar `w-[300px] sticky top-14 h-[calc(100vh-56px)]` + `max-w-3xl`, workspace 5 archetypes + `DS-SIDEBAR-POSTURE-001` already ALIGNED. |
+| **6 Landing pixel v3.2** | `src/components/ui` + `src/components/landing` 13 surfaces | `6e55f84 feat(landing)` + spec `v3.2` | `Badge pill-accent rounded-full` + `SectionPill/IconTile` new, `FeatureCard rounded-xl illustration`, `HowItWorksStep pastel h-28 colored numbers #6366F1→#F43F5E rounded-xl`, `TestimonialCard quote+lavender pill+avatar`, `PricingCard dark bg-ink-strong gradient popular rounded-full`, `FaqAccordion plus-circle w-7 border-t` — plus all `Landing*` header `flex-1 center gap-8 text-sm rounded-md accent` / hero `Capa… bg-surface H1 purple underline buttons accent` / product `IconTile w-9 bg-accent-subtle illustrations` / integration `pill tabs pill active black + browser mock` / devs `green checks dot-tabs code rounded-xl` / testimonials/pricing/faq/final/footer — light canvas + single dark `Tres líneas…` verified `31€/mes Pro` |
 
 All phases gate on `build 26 routes PASS` + `lint 0 errors` — verified after each commit.
 
@@ -81,7 +82,7 @@ All phases gate on `build 26 routes PASS` + `lint 0 errors` — verified after e
 
 ### 2.1 Canonical Inventory (v3.1)
 - **v2.0 base (15)**: `PR-BOX`, `PR-CARD`, `PR-DIVIDER`, `PR-TEXT`, `PR-BUTTON` (`xs 24 h-6`, `sm 32 h-8`, `md 36 h-9`, `lg 40 h-10`, `isLoading` `Loader2` + `disabled`), `PR-BADGE` (`solid-*`), `PR-INPUT`/`PR-TEXTAREA` (`sm/md/lg`, `leadingIcon`, `trailingElement`, `aria-invalid`, `role=alert`), `PR-SELECT`, `PR-TABS` (`xs h-6`, `sm h-8`, `md h-9`), `PR-FILTER-BAR` (`searchSlot`, `filtersSlot`, `summarySlot`, `sm 32px` invariant), `PR-TABLE`, `PR-MODAL`, `PR-DRAWER` (`sm 340`, `md 420`, `lg 520`, `scopeBanner`, `headerActions`), `PR-CODE-BLOCK`, `PR-EMPTY-STATE`, `PR-ACCORDION`, `PR-CHECKBOX` (`role=checkbox`, `aria-checked`, `AlertCircle`), `PR-INFO-POPOVER`.
-- **v3.0 landing/auth (16)**: `PR-ANNOUNCEMENT-BANNER` ( `bg-subtle border-line text-xs text-ink-secondary` ), `PR-METRIC` (`text-metric-value`), `PR-PRICING-TOGGLE` (`bg-elevated p-0.5 -20% badge`), `PR-TESTIMONIAL-CARD` (`rounded-lg shadow-sm`), `PR-FAQ-ACCORDION` (single expand, `border-line`), `PR-CODE-SNIPPET` (`bg-elevated font-mono`), `PR-LOGO-STRIP`, `PR-INTEGRATION-TABS` (`bg-elevated tabs + preview`), `PR-FEATURE-CARD` (`rounded-lg shadow-sm/md`), `PR-HOW-IT-WORKS-STEP` (number+icon+connector), `PR-CHAT-MOCK` (`rounded-lg shadow-lg`), `PR-PRICING-CARD` (`rounded-lg shadow-sm/md popular badge`), `PR-AUTH-CARD` (`max-w-md bg-surface border-line rounded-lg shadow-md p-8`), `PR-PASSWORD-INPUT` (show/hide + strength), `PR-AUTH-DIVIDER` (`o`), `PR-TRUST-BADGE`.
+- **v3.2 landing/auth (18)**: `PR-ANNOUNCEMENT-BANNER` (`bg-ink-strong #05081A`), `PR-METRIC` (`text-metric-value`), `PR-PRICING-TOGGLE` (`bg-elevated p-0.5 -20% pill-accent`), `PR-TESTIMONIAL-CARD` (`rounded-xl quote accent/20 + lavender pill + avatar w-9 marketing palette`), `PR-FAQ-ACCORDION` (`border-t py-4 plus-circle w-7 rounded-full border`), `PR-CODE-SNIPPET` (`bg-elevated font-mono`), `PR-LOGO-STRIP`, `PR-INTEGRATION-TABS` (`bg-elevated tabs + preview`), `PR-FEATURE-CARD` (`rounded-xl IconTile w-9 + illustration slot bg-subtle`), `PR-HOW-IT-WORKS-STEP` (`rounded-xl pastel h-28 + colored number pill 5 colors`), `PR-CHAT-MOCK` (`rounded-lg shadow-lg`), `PR-PRICING-CARD` (`rounded-xl dark Pro bg-ink-strong shadow-xl + gradient pill`), `PR-AUTH-CARD`, `PR-PASSWORD-INPUT`, `PR-AUTH-DIVIDER`, `PR-TRUST-BADGE` + **new `PR-SECTION-PILL` (`rounded-full bg-accent-subtle`)** + **new `PR-ICON-TILE` (`w-9 h-9 / w-7 h-7 rounded-lg/md bg-accent-subtle`)** — see `02 v3.2`.
 - **v3.1 docs/public (9)**: `PR-DOCS-HEADER` (banner + `h-14 sticky top-0 z-20 backdrop-blur`), `PR-DOCS-SIDEBAR` (`w-300 border-r`, single-expand, `font-semibold text-xs tabular-nums`, auth-gated `COL-INTERNAL`), `PR-DOCS-ARTICLE` (`max-w-3xl text-section`), `PR-DOCS-SEARCH` (hybrid citations), `PR-DOCS-ASK` (Ask Box), `PR-DOCS-TOC` (hover `#`), `PR-PUBLIC-PAGE` (`max-w-7xl/3xl py-16 md:py-24`), `PR-CONTACT-FORM` (honeypot, `FORM-SEC-01`), `PR-LEGAL-ARTICLE`.
 
 ### 2.2 Gaps Found & Fixes (this session)

@@ -3,7 +3,13 @@
 **Status:** Canonical UI & Interaction Architecture Specification (v3.1)  
 **Type:** Design System / Primitive & Component Catalog / Page Archetypes / Workflows  
 **Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006`, `SEC-01`, `API-01`  
-**Revision:** `3.1 (2026-10-12)` — DS ground-up audit + marketing band rule (aligns with `01_ui_foundation v3.1` + `arena.site` target)
+**Revision:** `3.2 (2026-10-11)` — Landing pixel alignment: +2 PR, 5 card refinements, marketing palette exception (aligns with `01_ui_foundation v3.2`)
+
+## v3.2 Changelog (from v3.1)
+
+- **+2 PR**: `PR-SECTION-PILL` (`SectionPill.tsx` rounded-full bg-accent-subtle) + `PR-ICON-TILE` (`IconTile.tsx` w-9/w-7) — DS-only.
+- **5 PR refinements**: `FeatureCard` rounded-xl + illustration, `HowItWorksStep` rounded-xl + pastel h-28 + 5-color pills, `TestimonialCard` rounded-xl + quote + lavender pill + avatar, `PricingCard` rounded-xl + dark Pro + gradient, `FaqAccordion` plus-circle — see `02_component_catalog v3.2` + commit `6e55f84`.
+- **Token reaffirm**: `rounded-xl 16px` landing cards canonical; marketing palette exception documented in `02` §v3.2; `bg-canvas` band rule + intentional `bg-ink-strong` dark bands unchanged.
 
 ## v3.1 Changelog (from v3.0)
 

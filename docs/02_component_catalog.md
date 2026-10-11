@@ -7,7 +7,14 @@
 | **Owner** | Component Catalog |
 | **Authority** | Blocking |
 | **Dependencies** | `01_ui_foundation`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
-| **Revision** | `3.0 (2026-10-11)` — Added 16 new PR primitives + 18 new CO components for landing + auth from proposal |
+| **Revision** | `3.2 (2026-10-11)` — Landing pixel alignment: +2 PR (SectionPill/IconTile), 5 PR card refinements, Badge pill-accent |
+
+## v3.2 Changelog — Landing Pixel Alignment (arena.site target, 6e55f84)
+
+- **+2 PR**: `PR-SECTION-PILL` (`SectionPill.tsx` — `rounded-full bg-accent-subtle border-accent/10 text-accent text-2xs` with dot/icon) and `PR-ICON-TILE` (`IconTile.tsx` — `w-9 h-9 rounded-lg bg-accent-subtle border-accent/10 text-accent`, sm `w-7`) — both DS-only, no hardcoded hex.
+- **5 PR refinements vs v3.0**: `PR-FEATURE-CARD` now `rounded-xl 16px shadow-sm p-6 + IconTile + illustration slot h-16 bg-subtle`; `PR-HOW-IT-WORKS-STEP` now `rounded-xl pastel illustration h-28 + colored number pill w-7 h-7 rounded-full shadow-md` with marketing palette `#6366F1/#0EA5E9/#10B981/#8B5CF6/#F43F5E` + connector `bg-line/60` (documented exception — marketing only); `PR-TESTIMONIAL-CARD` now `rounded-xl quote accent/20 + top lavender pill rounded-full bg-accent-subtle + avatar w-9 h-9 rounded-full` (`#8B5CF6/#0EA5E9/#10B981`) + `border-t pt-4`; `PR-PRICING-CARD` now `rounded-xl dark Pro variant bg-ink-strong #05081A shadow-xl + gradient popular pill from-[#6366F1] to-[#8B5CF6] -top-3 rounded-full` + CTA `rounded-full bg-white`; `PR-FAQ-ACCORDION` now `border-t py-4 plus w-7 h-7 rounded-full border bg-white / open bg-accent text-white rotate-45` (no divide-y chevron).
+- **PR-BADGE**: added `pill-accent` tone `rounded-full bg-accent-subtle border-accent/10 text-accent` used by `SectionPill` and pricing `-20%` pill.
+- **Marketing palette exception**: 5 step colors + 3 avatar colors + pricing gradient use fixed hex but are scoped to `SU-LANDING` marketing and documented here; all other PR remain zero-hex DS tokens.
 
 ## v3.0 Changelog — New Primitives & Components from Proposal (PLAN-001, PLAN-002, PLAN-003)
 
@@ -18,15 +25,17 @@
 | `PR-ANNOUNCEMENT-BANNER` | `AnnouncementBanner.tsx` | Top full-width banner "Citas verificables y permisos por rol" | bg-subtle, border-line, text-ink-secondary, text-xs |
 | `PR-METRIC` | `Metric.tsx` | Metric display value + label "-73% tickets" | text-ink, text-ink-secondary, text-metric-value, font-sans |
 | `PR-PRICING-TOGGLE` | `PricingToggle.tsx` | Monthly/Annual toggle with -20% badge | bg-elevated, bg-surface, border-line, rounded-sm, accent |
-| `PR-TESTIMONIAL-CARD` | `TestimonialCard.tsx` | Testimonial quote + author + role + company + metric | bg-surface, border-line, rounded-lg, shadow-sm |
-| `PR-FAQ-ACCORDION` | `FaqAccordion.tsx` | FAQ accordion Q+A single expand | border-line, bg-surface, text-ink |
+| `PR-TESTIMONIAL-CARD` | `TestimonialCard.tsx` | Testimonial quote + avatar MI/DS/LF + pill lavender + author + metric + border-t | bg-surface, border-line, rounded-xl 16px, shadow-sm, accent/20 quote, avatar marketing palette |
+| `PR-FAQ-ACCORDION` | `FaqAccordion.tsx` | FAQ accordion Q+A single expand plus-circle | border-t, border-line, bg-surface, text-ink, w-7 h-7 rounded-full border, open bg-accent rotate-45 |
 | `PR-CODE-SNIPPET` | `CodeSnippet.tsx` | Code block with language, copy button | bg-elevated, border-line, rounded-md, font-mono |
-| `PR-LOGO-STRIP` | `LogoStrip.tsx` | Logo strip 6 logos monochrome | text-ink-muted, border-line |
+| `PR-LOGO-STRIP` | `LogoStrip.tsx` | Logo strip 6 logos monochrome EQUIPOS… | text-ink-muted, border-line |
 | `PR-INTEGRATION-TABS` | `IntegrationTabs.tsx` | Tabs widget/panel/fullscreen with mock preview | bg-elevated, bg-surface, border-line, rounded-sm |
-| `PR-FEATURE-CARD` | `FeatureCard.tsx` | Feature card icon + title + desc for 6 features | bg-surface, border-line, rounded-lg, shadow-sm/md |
-| `PR-HOW-IT-WORKS-STEP` | `HowItWorksStep.tsx` | Step number + icon + title + desc + connector | bg-surface, border-line, text-ink, accent |
+| `PR-FEATURE-CARD` | `FeatureCard.tsx` | Feature card icon + title + desc + illustration slot | bg-surface, border-line, rounded-xl 16px, shadow-sm, IconTile w-9 h-9 bg-accent-subtle |
+| `PR-HOW-IT-WORKS-STEP` | `HowItWorksStep.tsx` | Step number + illustration pastel h-28 + title + desc + connector | bg-surface, border-line, rounded-xl, shadow-sm, marketing palette 5 colors, bg-line/60 |
 | `PR-CHAT-MOCK` | `ChatMock.tsx` | Chat mock UI header + messages + citations + input | bg-surface, border-line, rounded-lg, shadow-lg |
-| `PR-PRICING-CARD` | `PricingCard.tsx` | Pricing tier card features + CTA + popular badge | bg-surface, border-line/ink, rounded-lg, shadow-sm/md |
+| `PR-PRICING-CARD` | `PricingCard.tsx` | Pricing tier card features + CTA + popular gradient pill -top-3 rounded-full | bg-surface / bg-ink-strong #05081A, border-line/ink, rounded-xl, shadow-sm/xl, gradient #6366F1→#8B5CF6 |
+| `PR-SECTION-PILL` | `SectionPill.tsx` | Section header pill with dot/icon | rounded-full, bg-accent-subtle, border-accent/10, text-accent, text-2xs |
+| `PR-ICON-TILE` | `IconTile.tsx` | Small icon tile for FeatureCard/bullets | w-9 h-9 / w-7 h-7, rounded-lg/md, bg-accent-subtle, border-accent/10, text-accent |
 | `PR-AUTH-CARD` | `AuthCard.tsx` | Centered card logo + title + subtitle + form + footer + trust | bg-surface, border-line, rounded-lg, shadow-md, bg-canvas |
 | `PR-PASSWORD-INPUT` | `PasswordInput.tsx` | Input show/hide toggle + strength meter | border-line, rounded-sm, bg-surface, text-ink |
 | `PR-AUTH-DIVIDER` | `AuthDivider.tsx` | Divider with "o"/"or" for SSO vs password | bg-line, text-ink-muted |

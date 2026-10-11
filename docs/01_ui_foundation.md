@@ -7,7 +7,13 @@
 | **Owner** | Design System |
 | **Authority** | Blocking |
 | **Dependencies** | `00_product_contract`, `SEC-01`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006` |
-| **Revision** | `3.1 (2026-10-12)` — DS ground-up audit: token-spec convergence (subtle/line-strong/ink-strong), font convergence (Inter active), alias tokens, landing band rule |
+| **Revision** | `3.2 (2026-10-11)` — Landing pixel alignment: SectionPill/IconTile + card refinements + marketing palette exception |
+
+## v3.2 Changelog (from v3.1)
+
+- **PR refinements (landing pixel)**: Added `PR-SECTION-PILL` + `PR-ICON-TILE` (DS-only), refined `PR-FEATURE-CARD` (`rounded-xl 16px + illustration slot`), `PR-HOW-IT-WORKS-STEP` (`rounded-xl pastel h-28 + 5-color number pill`), `PR-TESTIMONIAL-CARD` (`rounded-xl quote + lavender pill + avatar`), `PR-PRICING-CARD` (`rounded-xl dark Pro bg-ink-strong + gradient pill`), `PR-FAQ-ACCORDION` (`plus w-7 rounded-full border`), `PR-BADGE pill-accent` (`rounded-full bg-accent-subtle`).
+- **Marketing palette exception**: 5 step colors `#6366F1/#0EA5E9/#10B981/#8B5CF6/#F43F5E` + 3 avatar `#8B5CF6/#0EA5E9/#10B981` + pricing gradient `#6366F1→#8B5CF6` are scoped to `SU-LANDING` marketing and explicitly documented; all other PR remain zero-hex. `rounded-xl 16px` is now canonical for landing cards (vs `rounded-lg 12px` for auth/workspace).
+- **Band rule reaffirmed**: `PA-LANDING` light canvas remains; only `Developers/FinalCTA/Footer` intentional `bg-ink-strong #05081A`; header `h-14 sticky top-0 z-20 backdrop-blur bg-canvas/80`.
 
 ## v3.1 Changelog (from v3.0)
 
