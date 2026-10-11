@@ -1,7 +1,5 @@
-// CO-AUTH-LOGIN-FORM — Login form with FORM-SEC-01, empty initial values, placeholder+hint, field errors, isLoading
-// PA-AUTH — canvas #F8F7F4 centered card max-w-md white surface cobalt accent rounded-lg shadow-md
-// Uses PR-AUTH-CARD + PR-INPUT + PR-PASSWORD-INPUT + PR-BUTTON + PR-CHECKBOX + PR-AUTH-DIVIDER + CO-AUTH-SSO-BUTTONS + CO-AUTH-TRUST-FOOTER
-// DS tokens only, no hardcoded colors, a11y AlertCircle role=alert aria-invalid, 5-Link Auth Chain, TIER_AUTH_5_PER_15M
+// CO-AUTH-LOGIN-FORM — Login form v3.3 split: SSO top → Divider o → Input/Password → Gradient CTA → Footer border-t
+// PA-AUTH-SPLIT 55/45 — reorders per locked liked v2, FORM-SEC-01, hideLogo, gradient from-[#6366F1] to-[#8B5CF6], collapsed DEV LOGIN
 'use client';
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -29,26 +27,22 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
 
   const validate = () => {
     const errors: { email?: string; password?: string } = {};
-
-    // FORM-SEC-01 via centralized helpers
     const emailCheck = validateEmailInput(email);
     if (!emailCheck.valid) {
       errors.email = emailCheck.errorMessage || 'Correo inválido';
     } else if (containsUnsafePayload(email)) {
       errors.email = 'Contenido no permitido';
     }
-
     const pwdCheck = validatePasswordInput(password, 'login');
     if (!pwdCheck.valid) {
-      // Map to ES messages expected in spec
       if (!password) errors.password = 'Contraseña requerida';
       else if (containsUnsafePayload(password)) errors.password = 'Contenido no permitido';
       else errors.password = pwdCheck.errorMessage || 'Contraseña inválida';
     }
-
     return errors;
   };
 
@@ -67,12 +61,9 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         setIsLoading(false);
         return;
       }
-      // Sync client AuthService (localStorage + in-memory) and force hard navigation
-      // so AppShell re-reads persona and server cookie is sent on next request.
       try {
         authService.switchPersona(userId);
       } catch {}
-      // Hard reload ensures AppShell picks up new currentUserId and okeng.sid cookie
       window.location.href = '/workspaces/okeng/collections';
       return;
     } catch {
@@ -115,25 +106,47 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
   return (
     <AuthCard
-      title="Inicia sesión en OKEng"
-      subtitle="Tu documentación, respondiendo dentro de tu app"
+      title="Bienvenido de nuevo"
+      subtitle="Accede a tu espacio de conocimiento."
+      hideLogo
       footer={
-        <div className="text-xs text-ink-secondary">
-          ¿No tienes cuenta? <a href="/signup" className="text-accent hover:underline">Regístrate</a>
+        <div className="flex flex-col gap-2 text-xs text-ink-secondary">
+          <div>
+            ¿No tienes cuenta? <a href="/signup" className="text-accent hover:underline font-medium">Regístrate</a>
+          </div>
+          <div>
+            ¿Necesitas ayuda? <a href="/contact" className="text-accent hover:underline">Contáctanos</a>
+          </div>
         </div>
       }
-      trustFooter={<AuthTrustFooter />}
+      trustFooter={
+        <div className="flex flex-col gap-3 pt-4">
+          <AuthTrustFooter />
+          <div className="text-2xs text-ink-muted">
+            Al continuar, aceptas <a href="/terms" className="underline hover:text-ink">Términos</a> y{' '}
+            <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
+          </div>
+          <div className="text-2xs text-ink-muted">
+            © {new Date().getFullYear()} OKEng • <a href="/terms" className="underline hover:text-ink">Términos</a> •{' '}
+            <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
+          </div>
+        </div>
+      }
     >
+      {/* SSO top per locked v2 */}
+      <SsoButtons />
+      <AuthDivider label="o continúa con correo" />
+
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {error && (
-          <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
+          <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
         <Input
           id="email"
-          label="Correo electrónico"
+          label="Correo de trabajo"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -142,71 +155,54 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           error={fieldErrors.email || null}
           sizeVariant="md"
           autoComplete="email"
+          leadingIcon={<span className="text-ink-muted">✉</span>}
         />
-        <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={fieldErrors.password} id="password" />
-        <div className="flex items-center justify-between">
-          <Checkbox
-            id="remember"
-            checked={remember}
-            onChange={setRemember}
-            label="Recordarme"
-          />
-          <a href="/forgot-password" className="text-xs text-accent hover:underline">¿Olvidaste tu contraseña?</a>
+        <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={fieldErrors.password} id="password" hint={fieldErrors.password ? undefined : 'Tu contraseña'} />
+        <div className="flex items-center justify-between -mt-1">
+          <Checkbox id="remember" checked={remember} onChange={setRemember} label="Recordarme" />
+          <a href="/forgot-password" className="text-xs text-accent hover:underline">
+            ¿Olvidaste tu contraseña?
+          </a>
         </div>
-        <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full">
-          Iniciar sesión
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          isLoading={isLoading}
+          className="w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5855EB] hover:to-[#7C3AED] text-white border-0 shadow-md justify-center gap-1.5"
+        >
+          Iniciar sesión <span aria-hidden>→</span>
         </Button>
-        <AuthDivider label="o" />
-        <SsoButtons />
       </form>
 
-      {/* Dev bypass — arena branch only, no DB needed */}
-      <div className="rounded-md border border-dashed border-line bg-elevated/60 p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+      {/* DEV LOGIN — collapsed details per v3.3, keeps arena bypass but not bloating */}
+      <details open={devOpen} onToggle={(e) => setDevOpen((e.target as HTMLDetailsElement).open)} className="rounded-md border border-dashed border-line bg-elevated/60 open:p-4 p-0 overflow-hidden">
+        <summary className="cursor-pointer list-none flex items-center justify-between px-4 py-3 open:px-0 open:py-0 open:mb-3">
           <span className="text-2xs font-semibold tracking-widest uppercase text-ink-muted">Dev login — sin DB / sin contraseña</span>
           <span className="text-2xs bg-warning-subtle text-warning border border-warning/30 px-1.5 py-0.5 rounded-xs font-mono">arena</span>
-        </div>
-        <p className="text-2xs text-ink-secondary leading-relaxed">
-          En este sandbox <code className="bg-surface border border-line rounded-xs px-1">DATABASE_URL=dummy</code>, el login normal falla. Usa un usuario mock para entrar al dashboard y probar el AppShell, colecciones y embeds.
-        </p>
-        <div className="grid grid-cols-1 gap-2">
-          <Button
-            type="button"
-            variant="primary"
-            size="md"
-            onClick={() => handleDevLogin('usr_sarah_102')}
-            disabled={isLoading}
-            className="w-full"
-          >
-            Entrar como Sarah Chen — Owner (todos los permisos)
-          </Button>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              onClick={() => handleDevLogin('usr_marcus_204')}
-              disabled={isLoading}
-              className="w-full"
-            >
-              Marcus — Write
+        </summary>
+        <div className="flex flex-col gap-3">
+          <p className="text-2xs text-ink-secondary leading-relaxed">
+            En este sandbox <code className="bg-surface border border-line rounded-xs px-1">DATABASE_URL=dummy</code>, el login normal falla. Usa un usuario mock.
+          </p>
+          <div className="grid grid-cols-1 gap-2">
+            <Button type="button" variant="primary" size="md" onClick={() => handleDevLogin('usr_sarah_102')} disabled={isLoading} className="w-full">
+              Entrar como Sarah Chen — Owner (todos los permisos)
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="md"
-              onClick={() => handleDevLogin('usr_elena_309')}
-              disabled={isLoading}
-              className="w-full"
-            >
-              Elena — Read
-            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant="secondary" size="md" onClick={() => handleDevLogin('usr_marcus_204')} disabled={isLoading} className="w-full">
+                Marcus — Write
+              </Button>
+              <Button type="button" variant="secondary" size="md" onClick={() => handleDevLogin('usr_elena_309')} disabled={isLoading} className="w-full">
+                Elena — Read
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-2xs text-ink-muted font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-success"></span> sets <code>okeng.sid</code> cookie + <code>localStorage</code> → <code>/workspaces/okeng/collections</code>
           </div>
         </div>
-        <div className="flex items-center gap-1.5 text-2xs text-ink-muted font-mono">
-          <span className="h-1.5 w-1.5 rounded-full bg-success"></span> sets <code>okeng.sid</code> cookie + <code>localStorage</code> → <code>/workspaces/okeng/collections</code>
-        </div>
-      </div>
+      </details>
     </AuthCard>
   );
 }

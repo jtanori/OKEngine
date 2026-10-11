@@ -1,5 +1,5 @@
 // PR-AUTH-CARD — Centered card container with logo, title, subtitle, form, footer
-// DS tokens: bg-surface, border-line, rounded-lg, shadow-md, bg-canvas
+// DS tokens: bg-surface, border-line, rounded-xl 16px, shadow-md, bg-canvas — v3.3 split uses rounded-xl + hideLogo
 import React from 'react';
 
 export interface AuthCardProps {
@@ -9,17 +9,20 @@ export interface AuthCardProps {
   footer?: React.ReactNode;
   trustFooter?: React.ReactNode;
   className?: string;
+  hideLogo?: boolean;
 }
 
-export function AuthCard({ title, subtitle, children, footer, trustFooter, className = '' }: AuthCardProps) {
+export function AuthCard({ title, subtitle, children, footer, trustFooter, className = '', hideLogo = false }: AuthCardProps) {
   return (
     <div className={`w-full max-w-md mx-auto flex flex-col gap-6 ${className}`}>
-      <div className="bg-surface border border-line rounded-lg shadow-md p-8 flex flex-col gap-6">
+      <div className="bg-surface border border-line rounded-xl shadow-md p-8 flex flex-col gap-6">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-sm bg-ink text-surface flex items-center justify-center text-2xs font-bold">O</div>
-            <span className="text-sm font-semibold text-ink">OKEng</span>
-          </div>
+          {!hideLogo && (
+            <div className="flex items-center gap-2">
+              <div className="h-6 w-6 rounded-sm bg-ink text-surface flex items-center justify-center text-2xs font-bold">O</div>
+              <span className="text-sm font-semibold text-ink">OKEng</span>
+            </div>
+          )}
           <h1 className="text-xl font-semibold text-ink tracking-tight">{title}</h1>
           {subtitle && <p className="text-sm text-ink-secondary leading-relaxed">{subtitle}</p>}
         </div>
