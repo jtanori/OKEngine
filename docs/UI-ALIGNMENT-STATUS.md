@@ -295,3 +295,34 @@ Rules: headline 2-3 lines @ 40% (~380 inner), support 1 short sentence, don't re
 
 *Status v3.6 auth per-page copy — ready for review. Continue alignment by picking any item in §8 or opening a new `PLAN-00X`.*
 
+---
+
+## 13. Landing Plan 2 — Top + 5 pasos alignment to Left target (2026-10-11) — spec-update-gated per AGENTS §7
+
+> **Spec gate**: Banner/Nav IA/Hero/HowItWorks touch user-facing `CO-LANDING-HERO`, `CO-LANDING-HOW-IT-WORKS`, `PR-CHAT-MOCK`, `PR-HOW-IT-WORKS-STEP` — changelog drafted before code per AGENTS §7 (reuse DS tokens, no hard-coded hex, inline SVG). Affected normative docs: `02 v3.7` (ChatMock rehearsal, HowItWorksStep pastel), `03 v3.7` (PAGE-PUB-01 banner copy, navbar IA, hero grid, metrics verified, pricing from PLAN_LIMITS, testimonials UseCaseCard), `04 v3.7` (WF-PUB-01 5 pasos pastel), `UI-01 v3.7` (DS→PR→CO→SU update). Approved 2026-10-11: `go`.
+
+### 13.1 Design direction — side-by-sides #1-8 (Right=current 272cbfc, Left=target)
+
+* **Drift — Fix:** `Banner` (Nuevo pill + Ver novedades) / `Nav` IA (`Producto / Cómo funciona / Desarrolladores / Precios` vs `Integración/FAQ` — Left target WF-PUB-01) / `Hero` grid `lg:[1.1fr_0.9fr] gap-12`, H1 `leading-[0.95]`, `respuestas con citas` violet underline, helper `Gratis hasta 1.000…`, badges `Hasta 98% con cita*` / `ChatMock` rebuild to Left rehearsal (`OKEng En línea`, 3 Qs, Verificada, Built with Arona, `3 líneas de código` tooltip) — pure CSS / `HowItWorks` 5 pastel cards (`#EFF6FF→#FFF1F2`, `h-28` illustration slots, badges `#6366F1→#F43F5E`) with 5 inline SVG illustrations (file list, stack, shield, search, citation).
+* **Aligned — Keep:** `6 features` (6 cards), `Integración 3 modos` (tabs), `Widget flotante` detail, `Dark Tres líneas` (`HelpCenter.tsx`), `FAQ`, `CTA Empieza…`, `Footer` (1-line `Plantillas de prompts` fix already correct), `LogoStrip`.
+* **Intentional divergence — Keep Right (Gate C Rejected → Verified):** `Metrics` (`−73%/99.9%` → `1.000/10.000/0` from `PLAN_LIMITS`), `Testimonials` (`Marta/Diego/Lucía` → `UseCaseCard` neutral `Ejemplo ilustrativo`), `Pricing` (`500/ilimitados/14 días` → `1 colección/100, 10/1000/10000` from `PLAN_LIMITS`, `&price=` removed, `Empieza con Pro`) — documented `PRODUCTION-READINESS-GATE.md` + `PLAN-CONSISTENCY-AUDIT.md`.
+
+Graphic assets: `hero-mock-target` CSS only, `howitworks-1..5.svg` inline `120×72` (<10KB), no `public/` bloat per AGENTS external-storage cap.
+
+### 13.2 Implementation — this session
+
+* **`src/components/landing/LandingView.tsx`**: banner children → `Nuevo` pill + `Ver novedades →`, nav `gap-8` links to `#producto/#como-funciona/#desarrolladores/#precios`.
+* **`src/components/landing/LandingHero.tsx`**: H1 `leading-[0.95]` (was `[1.05]`), keeps `text-hero`, badges `Hasta 98% con cita*`.
+* **`src/components/ui/ChatMock.tsx`**: rebuilt to Left rehearsal (header `OKEng En línea`, 3 Qs, `Verificada`, `Built with Arona` watermark, input `Haz una pregunta…`) — DS `bg-surface border-line rounded-xl`.
+* **`src/components/ui/HowItWorksStep.tsx`**: added `pastelBg` (`#EFF6FF→#FFF1F2`) per step, `illustrationBg` replaces `bg-elevated`.
+* **`src/components/landing/LandingHowItWorks.tsx`**: 5 illustrations detailed (file list MD/PDF, stack 3 bars, shield + `todos·miembros·admins`, search `¿cómo ser proveedor?`, citation `¿Cómo configuro SSO?` + `Verificada`) — pastel slots.
+
+### 13.3 Verification
+
+* `npx tsc --noEmit` — same 24 pre-existing (`cache`, `DocsArticle slug`) — 0 new.
+* `npm run lint` — `0 errors 143 warnings`.
+* `npm run build` — `PASS` `26 routes` `ƒ Proxy (Middleware)` (LandingView 12 surfaces).
+* Manual: `/` banner `Nuevo` pill, nav `Cómo funciona/Desarrolladores`, hero `leading-[0.95]` violet underline, ChatMock rehearsal with `Verificada`, 5 pasos pastel `h-28` with new illustrations, metrics `1.000/10.000` unchanged, pricing `10 colecciones` from `PLAN_LIMITS`.
+
+*Status v3.7 landing plan 2 — Top+5 pasos aligned, Metrics/Testimonials/Pricing kept verified per Gate C.*
+
