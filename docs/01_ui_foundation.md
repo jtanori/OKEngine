@@ -3,11 +3,18 @@
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `01_ui_foundation` |
-| **Status** | `APPROVED — v3.0` |
+| **Status** | `APPROVED — v3.1` |
 | **Owner** | Design System |
 | **Authority** | Blocking |
-| **Dependencies** | `00_product_contract`, `SEC-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
-| **Revision** | `3.0 (2026-10-11)` — Added v3.0 editorial marketing layer, 16 new PR primitives, shadow/radius/typography tokens, principles 10-13 |
+| **Dependencies** | `00_product_contract`, `SEC-01`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006` |
+| **Revision** | `3.1 (2026-10-12)` — DS ground-up audit: token-spec convergence (subtle/line-strong/ink-strong), font convergence (Inter active), alias tokens, landing band rule |
+
+## v3.1 Changelog (from v3.0)
+
+- **DS Token–Spec Convergence**: Aligned implementation `src/index.css` with spec — `DS-COLOR-SUBTLE` `#F1F0EC → #F4F4F0` (lighter, less gray mass on marketing bands), `DS-COLOR-LINE-STRONG` `#C5C4BE → #C7C6C0`, added missing `DS-COLOR-INK-STRONG` `#0F172A` (`--color-ink-strong`/`text-ink-strong`) to token table, documented `--text-display`/`--text-body` aliases as legacy compat (canonical `text-hero`/`text-section`/`text-card-title`/`text-metric-value` remain).
+- **Font Convergence**: Spec `font-sans` was `Instrument Sans` but active implementation and `arena.site` target use `Inter` (loaded via `next/font`, optimized). Spec updated to `Inter` with `Instrument Sans` retained as editorial-optional fallback; `Source Serif 4` + `JetBrains Mono` unchanged.
+- **Marketing Band Rule** (new §1.3): `PA-LANDING` generic sections MUST use `bg-canvas` (no `bg-elevated`/`bg-surface` + `border-y` full-width bands); `bg-surface` reserved for cards/panels, `bg-elevated` for wells/inputs, `bg-subtle` for hover/badge only. This prevents the “too many gray and black items” accumulation seen in `LogoStrip/Metrics/HowItWorks/Integration/Testimonials/FAQ` before ground-up fix.
+- **No New Tokens**: Geometry (`xs 3px / sm 4px / md 6px / lg 12px / xl 16px`), elevation (`sm 0 1px 2px 0.04 / md 0 4px 12px 0.08 / lg 0 8px 24px 0.12`), control heights (`xs 24 h-6 / sm 32 h-8 / md 36 h-9 / lg 40 h-10`), spacing (`section-y 6rem / mobile 4rem`) unchanged and verified.
 
 ## v3.0 Changelog (from v2.0)
 
@@ -41,28 +48,33 @@ PA / PAGE (Page Archetypes & Canonical Routes)
 ## 1. Design System — `DS-*` (`src/index.css`)
 
 ### Visual Color Tokens
-- `DS-COLOR-CANVAS` (`--color-canvas` / `bg-canvas`): `#F8F7F4` (Warm paper)
-- `DS-COLOR-ELEVATED` (`--color-elevated` / `bg-elevated`): `#FAF9F6` (Secondary wells & subtle headers)
-- `DS-COLOR-SURFACE` (`--color-surface` / `bg-surface`): `#FFFFFF` (Clean white cards, panels, tables)
-- `DS-COLOR-SUBTLE` (`--color-subtle` / `bg-subtle`): `#F1F0EC` (Hover & subtle badge background)
-- `DS-COLOR-INK` (`--color-ink` / `text-ink`): `#171717` (Deep neutral black)
-- `DS-COLOR-INK-SECONDARY` (`--color-ink-secondary` / `text-ink-secondary`): `#6B6B67` (Neutral charcoal)
+- `DS-COLOR-CANVAS` (`--color-canvas` / `bg-canvas`): `#F8F7F4` (Warm paper — primary viewport)
+- `DS-COLOR-ELEVATED` (`--color-elevated` / `bg-elevated`): `#FAF9F6` (Secondary wells, code headers, table headers, inputs — never full-width marketing bands)
+- `DS-COLOR-SURFACE` (`--color-surface` / `bg-surface`): `#FFFFFF` (Cards, panels, tables, active panels)
+- `DS-COLOR-SUBTLE` (`--color-subtle` / `bg-subtle`): `#F4F4F0` (Hover & badge wells — v3.1 lightened from `#F1F0EC` to cut gray mass vs. `arena.site` target)
+- `DS-COLOR-INK` (`--color-ink` / `text-ink`): `#171717` (Primary headings/body)
+- `DS-COLOR-INK-STRONG` (`--color-ink-strong` / `text-ink-strong` / `bg-ink-strong`): `#0F172A` (Navy for hero H1 + dark landing bands Developers/FinalCTA/Footer — v3.0 extended, now documented)
+- `DS-COLOR-INK-SECONDARY` (`--color-ink-secondary` / `text-ink-secondary`): `#6B6B67` (Subtitles, descriptions)
 - `DS-COLOR-INK-MUTED` (`--color-ink-muted` / `text-ink-muted`): `#8C8B85` (Monospace metadata, timestamps)
-- `DS-COLOR-LINE` (`--color-line` / `border-line`): `#DEDDD8` (1px hairline gray)
-- `DS-COLOR-LINE-STRONG` (`--color-line-strong` / `border-line-strong`): `#C5C4BE` (Emphasized border)
-- `DS-COLOR-ACCENT` (`--color-accent` / `text-accent`): `#1D4ED8` (Disciplined cobalt)
-- `DS-COLOR-SUCCESS` (`--color-success` / `text-success`): `#15803D` (Forest green)
-- `DS-COLOR-WARNING` (`--color-warning` / `text-warning`): `#B45309` (Amber)
-- `DS-COLOR-DANGER` (`--color-danger` / `text-danger`): `#B91C1C` (Crimson)
+- `DS-COLOR-LINE` (`--color-line` / `border-line`): `#DEDDD8` (1px hairline — card/table boundaries, not section dividers)
+- `DS-COLOR-LINE-STRONG` (`--color-line-strong` / `border-line-strong`): `#C7C6C0` (Emphasized border — v3.1 from `#C5C4BE` to match implementation)
+- `DS-COLOR-ACCENT` (`--color-accent` / `text-accent`): `#1D4ED8` (Cobalt — citations, active badges) + `DS-COLOR-ACCENT-HOVER` `#1E40AF`, `DS-COLOR-ACCENT-SUBTLE` `#EFF6FF`
+- `DS-COLOR-SUCCESS` / `SUCCESS-SUBTLE`: `#15803D` / `#F0FDF4` — `WARNING` `#B45309`/`#FFFBEB` — `DANGER` `#B91C1C`/`#FEF2F2`
+- `DS-ALIASES` (legacy compat): `--text-display 1.875rem/2.25rem -0.01em` (=`text-section`), `--text-body 0.875rem/1.25rem` (=`text-sm`) — canonical remains `text-hero`/`text-section`/`text-card-title`/`text-metric-value`
 
 ### Typography Scale & Font Families
-- Primary Sans (`--font-sans` / `font-sans`): `Instrument Sans`, sans-serif (weights 400, 500, 600)
-- Monospace / Tabular (`--font-mono` / `font-mono`): `JetBrains Mono`, monospace (`tabular-nums`)
+- Primary Sans (`--font-sans` / `font-sans`): `Inter`, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif (weights 400, 500, 600, 700) — **v3.1 spec now matches implementation** (was `Instrument Sans` in v3.0; `Instrument Sans` retained as docs-optional editorial fallback).
+- Monospace / Tabular (`--font-mono` / `font-mono`): `JetBrains Mono`, "Fira Code", monospace (`tabular-nums` — tabular numbers for pricing/metrics)
 - Editorial Serif (`--font-serif` / `font-serif`): `Source Serif 4`, serif
-- Type Scale Tokens:
-  - `text-2xs`: `0.625rem` (`10px`) — Technical tags, badges, uppercase labels
-  - `text-xs`: `0.75rem` (`12px`) — Dense controls, table cells, secondary copy
-  - `text-sm`: `0.875rem` (`14px`) — Standard body copy and document prose
+- Type Scale Tokens (canonical):
+  - `text-2xs`: `0.625rem` (`10px`) — badges, uppercase labels
+  - `text-xs`: `0.75rem` (`12px`) — dense controls, table cells, secondary
+  - `text-sm`: `0.875rem` (`14px`) — body prose
+  - `text-hero`: `3rem`/`3.25rem` `-0.02em` — landing hero H1 (`text-ink-strong`)
+  - `text-section`: `1.875rem`/`2.25rem` `-0.01em` — section H2s
+  - `text-card-title`: `1rem`/`1.5rem` — feature/testimonial card titles
+  - `text-metric-value`: `2.25rem`/`2.5rem` — metrics bar
+  - Aliases: `text-display` (=`text-section`), `text-body` (=`text-sm`) for legacy compat
 
 ### Geometry, Elevation & Control Height Tokens
 - `rounded-xs`: `3px` (`--radius-xs`) — Compact badges, inline code, inner segmented tab pills
