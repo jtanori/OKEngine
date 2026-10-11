@@ -8,7 +8,7 @@
 // ============================================================================
 
 import React from 'react';
-import { EmbedConfigView, EmbedConfigSection } from '../../../../../pages/EmbedConfigView';
+import { EmbedConfigView, EmbedConfigSection } from '../../../../../views-legacy/EmbedConfigView';
 import { useParams, useRouter } from '../../../../router';
 
 export default function WorkspaceEmbedsPage() {

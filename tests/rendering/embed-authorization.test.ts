@@ -36,7 +36,7 @@ import { ES_DICTIONARY } from '../../src/i18n/locales/es';
 import {
   formatCacheDecisionLabel,
   resolveScenarioInspectorTab,
-} from '../../src/pages/TestConsoleView';
+} from '../../src/views-legacy/TestConsoleView';
 import {
   Collection,
   EmbedInstance,
@@ -1233,7 +1233,7 @@ describe('Canonical Mixed-Visibility Embed Authorization & Progressive Identity 
         identityToken: undefined,
         expectedWorkspaceId: okengWorkspace.id,
         expectedEmbedId: homeEmbed.id,
-        signingSecret: okengWorkspace.signingSecret,
+        signingSecret: TEST_SECRET,
       });
       expect(identityRes.ok).toBe(true);
       if (!identityRes.ok) return;
@@ -1309,14 +1309,14 @@ describe('Canonical Mixed-Visibility Embed Authorization & Progressive Identity 
           iat: now,
           exp: now + 300,
         },
-        okengWorkspace.signingSecret
+        TEST_SECRET
       );
 
       const identityRes = await resolveRequestEmbedIdentity({
         identityToken: memberToken,
         expectedWorkspaceId: okengWorkspace.id,
         expectedEmbedId: homeEmbed.id,
-        signingSecret: okengWorkspace.signingSecret,
+        signingSecret: TEST_SECRET,
       });
       expect(identityRes.ok).toBe(true);
       if (!identityRes.ok) return;
@@ -1383,14 +1383,14 @@ describe('Canonical Mixed-Visibility Embed Authorization & Progressive Identity 
           iat: now,
           exp: now + 300,
         },
-        okengWorkspace.signingSecret
+        TEST_SECRET
       );
 
       const identityRes = await resolveRequestEmbedIdentity({
         identityToken: adminToken,
         expectedWorkspaceId: okengWorkspace.id,
         expectedEmbedId: homeEmbed.id,
-        signingSecret: okengWorkspace.signingSecret,
+        signingSecret: TEST_SECRET,
       });
       expect(identityRes.ok).toBe(true);
       if (!identityRes.ok) return;
@@ -1449,7 +1449,7 @@ describe('Canonical Mixed-Visibility Embed Authorization & Progressive Identity 
         identityToken: tamperedToken,
         expectedWorkspaceId: okengWorkspace.id,
         expectedEmbedId: homeEmbed.id,
-        signingSecret: okengWorkspace.signingSecret,
+        signingSecret: TEST_SECRET,
       });
       expect(tamperedRes.ok).toBe(false);
       if (!tamperedRes.ok) {
@@ -1519,14 +1519,14 @@ describe('Canonical Mixed-Visibility Embed Authorization & Progressive Identity 
           iat: now,
           exp: now + 300,
         },
-        okengWorkspace.signingSecret
+        TEST_SECRET
       );
 
       const identityRes = await resolveRequestEmbedIdentity({
         identityToken: adminTokenOnDocsEmbed,
         expectedWorkspaceId: okengWorkspace.id,
         expectedEmbedId: docsEmbed.id,
-        signingSecret: okengWorkspace.signingSecret,
+        signingSecret: TEST_SECRET,
       });
       expect(identityRes.ok).toBe(true);
       if (!identityRes.ok) return;

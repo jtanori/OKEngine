@@ -8,7 +8,7 @@
 // ============================================================================
 
 import React from 'react';
-import { EmbedInstallationView } from '../../../../../../pages/EmbedInstallationView';
+import { EmbedInstallationView } from '../../../../../../views-legacy/EmbedInstallationView';
 import { useParams, useRouter } from '../../../../../router';
 
 export default function WorkspaceEmbedInstallationPage() {

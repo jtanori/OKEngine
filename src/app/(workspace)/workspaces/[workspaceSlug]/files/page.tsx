@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React from 'react';
-import { GlobalFilesView } from '../../../../../pages/GlobalFilesView';
+import { GlobalFilesView } from '../../../../../views-legacy/GlobalFilesView';
 import { useParams, useRouter } from '../../../../router';
 
 export default function WorkspaceFilesPage() {

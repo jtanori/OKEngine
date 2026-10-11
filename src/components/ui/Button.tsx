@@ -40,33 +40,27 @@ const sizeClasses: Record<ButtonSize, string> = {
   lg: 'h-10 px-4 text-sm gap-2',
 };
 
-export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  (
-    {
-      variant = 'primary',
-      size = 'md',
-      isLoading = false,
-      disabled,
-      className = '',
-      children,
-      type = 'button',
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <button
-        ref={ref}
-        type={type}
-        disabled={disabled || isLoading}
-        className={`inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`.trim()}
-        {...props}
-      >
-        {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
-        {children}
-      </button>
-    );
-  }
-);
-
-Button.displayName = 'Button';
+export function Button({
+  variant = 'primary',
+  size = 'md',
+  isLoading = false,
+  disabled,
+  className = '',
+  children,
+  type = 'button',
+  ref,
+  ...props
+}: ButtonProps & { ref?: React.Ref<HTMLButtonElement> }) {
+  return (
+    <button
+      ref={ref}
+      type={type}
+      disabled={disabled || isLoading}
+      className={`inline-flex items-center justify-center font-medium rounded-sm transition-colors duration-150 select-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]} ${className}`.trim()}
+      {...props}
+    >
+      {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
+      {children}
+    </button>
+  );
+}

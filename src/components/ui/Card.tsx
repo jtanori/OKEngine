@@ -55,31 +55,26 @@ const paddingMap: Record<NonNullable<BoxProps['padding']>, string> = {
   lg: 'p-8',
 };
 
-export const Box = React.forwardRef<HTMLDivElement, BoxProps>(
-  (
-    {
-      surface = 'surface',
-      bordered = true,
-      radius = 'sm',
-      padding = 'none',
-      className = '',
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    return (
-      <div
-        ref={ref}
-        className={`${surfaceMap[surface]} ${bordered ? `border ${borderMap[surface]}` : ''} ${radiusMap[radius]} ${paddingMap[padding]} ${className}`.trim()}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  }
-);
-Box.displayName = 'Box';
+export function Box({
+  surface = 'surface',
+  bordered = true,
+  radius = 'sm',
+  padding = 'none',
+  className = '',
+  children,
+  ref,
+  ...props
+}: BoxProps & { ref?: React.Ref<HTMLDivElement> }) {
+  return (
+    <div
+      ref={ref}
+      className={`${surfaceMap[surface]} ${bordered ? `border ${borderMap[surface]}` : ''} ${radiusMap[radius]} ${paddingMap[padding]} ${className}`.trim()}
+      {...props}
+    >
+      {children}
+    </div>
+  );
+}
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?: 'surface' | 'elevated' | 'subtle' | 'warning' | 'danger' | 'success';
@@ -87,55 +82,50 @@ export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
 }
 
-export const Card = React.forwardRef<HTMLDivElement, CardProps>(
-  (
-    {
-      variant = 'surface',
-      padding = 'md',
-      interactive = false,
-      onClick,
-      onKeyDown,
-      role,
-      tabIndex,
-      className = '',
-      children,
-      ...props
-    },
-    ref
-  ) => {
-    const isActionable = interactive && Boolean(onClick);
-    const interactiveClasses = isActionable
-      ? 'hover:border-ink transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
-      : '';
+export function Card({
+  variant = 'surface',
+  padding = 'md',
+  interactive = false,
+  onClick,
+  onKeyDown,
+  role,
+  tabIndex,
+  className = '',
+  children,
+  ref,
+  ...props
+}: CardProps & { ref?: React.Ref<HTMLDivElement> }) {
+  const isActionable = interactive && Boolean(onClick);
+  const interactiveClasses = isActionable
+    ? 'hover:border-ink transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent'
+    : '';
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-      if (isActionable && onClick && (e.key === 'Enter' || e.key === ' ')) {
-        e.preventDefault();
-        onClick(e as unknown as React.MouseEvent<HTMLDivElement>);
-      }
-      onKeyDown?.(e);
-    };
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (isActionable && onClick && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      onClick(e as unknown as React.MouseEvent<HTMLDivElement>);
+    }
+    onKeyDown?.(e);
+  };
 
-    return (
-      <Box
-        ref={ref}
-        surface={variant}
-        bordered
-        radius="sm"
-        padding={padding}
-        onClick={onClick}
-        onKeyDown={isActionable ? handleKeyDown : onKeyDown}
-        role={isActionable ? role ?? 'button' : role}
-        tabIndex={isActionable ? tabIndex ?? 0 : tabIndex}
-        className={`${interactiveClasses} ${className}`.trim()}
-        {...props}
-      >
-        {children}
-      </Box>
-    );
-  }
-);
-Card.displayName = 'Card';
+  return (
+    <Box
+      ref={ref}
+      surface={variant}
+      bordered
+      radius="sm"
+      padding={padding}
+      onClick={onClick}
+      onKeyDown={isActionable ? handleKeyDown : onKeyDown}
+      role={isActionable ? role ?? 'button' : role}
+      tabIndex={isActionable ? tabIndex ?? 0 : tabIndex}
+      className={`${interactiveClasses} ${className}`.trim()}
+      {...props}
+    >
+      {children}
+    </Box>
+  );
+}
 
 export const CardHeader: React.FC<{
   title: React.ReactNode;

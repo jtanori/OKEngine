@@ -1,30 +1,22 @@
 'use client';
 
 // ============================================================================
-// ARCH-001 & PUBLIC-01: Public Documentation Hub (PAGE-PUB-06 / PAGE-PUB-07)
-// Route Group: (public) -> /docs and /docs/[slug]
+// PA-DOCS — Public Documentation Hub v3.0 dedicated route /docs
+// Route Group: (public) -> /docs
+// DocsView v3.0 with PA-DOCS archetype, editorial whitespace, ridiculously easy additions
 // ============================================================================
 
 import React from 'react';
-import { PublicSurfaceView } from '../../../pages/PublicSurfaceView';
-import { useParams, useRouter } from '../../router';
+import { DocsView } from '../../../components/docs/DocsView';
+import { useRouter } from '../../router';
 
 export default function PublicDocsPage() {
-  const { slug } = useParams<{ slug?: string }>();
-  const { push, navigateRoute } = useRouter();
+  const { push } = useRouter();
 
   return (
-    <PublicSurfaceView
-      initialPage="docs"
-      initialDocSlug={slug}
+    <DocsView
+      initialSlug="getting-started"
       onNavigatePath={(path) => push(path)}
-      onEnterWorkspace={(wsSlug, editDocId) => {
-        if (editDocId) {
-          navigateRoute('file-edit', { workspaceSlug: wsSlug, documentId: editDocId });
-        } else {
-          navigateRoute('collections', { workspaceSlug: wsSlug });
-        }
-      }}
     />
   );
 }

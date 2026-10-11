@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React from 'react';
-import { TestConsoleView } from '../../../../../pages/TestConsoleView';
+import { TestConsoleView } from '../../../../../views-legacy/TestConsoleView';
 import { useParams, useRouter } from '../../../../router';
 
 export default function WorkspaceTestConsolePage() {

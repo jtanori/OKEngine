@@ -35,7 +35,7 @@ export const CANONICAL_HOMEPAGE_CAPABILITY_INVENTORY: CanonicalCapabilityEntry[]
     id: 'CAP-SIGNED-HOST-IDENTITY',
     domain: 'Signed Host Identity Assertions (HS256)',
     status: 'Verified',
-    implementationEvidence: ['src/services/embedAuthorization.ts', 'server.ts'],
+    implementationEvidence: ['src/services/embedAuthorization.ts', 'docs/archive/server-74K-legacy.ts'],
     verifiedBehaviorAndBounds:
       'Verifies short-lived HMAC-SHA256 (HS256) tokens with a 4-case boundary; invalid, expired, tampered, wrong-workspace, or unverified role assertions fail closed with HTTP 401 before retrieval.',
     acceptanceTestIds: ['READINESS-SEC-02', 'READINESS-SEC-03', 'TOUR-STAGE-04'],
@@ -117,10 +117,10 @@ export const CANONICAL_HOMEPAGE_CAPABILITY_INVENTORY: CanonicalCapabilityEntry[]
     domain: 'Embed Presentation Modes (Live Public vs. Simulator)',
     status: 'Limited',
     implementationEvidence: [
-      'src/pages/PublicSurfaceView.tsx',
+      'src/views-legacy/PublicSurfaceView.tsx',
       'public/widget.js',
-      'src/pages/EmbedConfigView.tsx',
-      'src/pages/WidgetPreviewView.tsx',
+      'src/views-legacy/EmbedConfigView.tsx',
+      'src/views-legacy/WidgetPreviewView.tsx',
     ],
     verifiedBehaviorAndBounds:
       'inline (EMB-PUBLIC-HOME on /) and documentation (EMB-PUBLIC-DOCS on /docs) are live on public pages; /widget.js provides a standalone drop-in floating launcher and drawer; all 6 modes (widget, panel, fullscreen, inline, documentation, contextual) are configurable in Embed Studio and previewable in the Host Simulator.',
@@ -131,8 +131,8 @@ export const CANONICAL_HOMEPAGE_CAPABILITY_INVENTORY: CanonicalCapabilityEntry[]
     domain: 'Configuration-Driven Embed Installation & Verification',
     status: 'Verified',
     implementationEvidence: [
-      'src/pages/EmbedInstallationView.tsx',
-      'src/pages/TestConsoleView.tsx',
+      'src/views-legacy/EmbedInstallationView.tsx',
+      'src/views-legacy/TestConsoleView.tsx',
     ],
     verifiedBehaviorAndBounds:
       'Generates framework-specific installation recipes (React, Vue, JavaScript) distinguishing frontend-only public embeds from backend+frontend signed-token embeds, paired with Test Console (PAGE-APP-06) verification.',
@@ -155,7 +155,7 @@ export const CANONICAL_HOMEPAGE_CAPABILITY_INVENTORY: CanonicalCapabilityEntry[]
     id: 'CAP-GENERATIVE-FALLBACK',
     domain: 'Optional Gemini Synthesis with Deterministic Fallback',
     status: 'Limited',
-    implementationEvidence: ['server.ts', 'src/services/api.ts'],
+    implementationEvidence: ['docs/archive/server-74K-legacy.ts', 'src/services/api.ts'],
     verifiedBehaviorAndBounds:
       'Server-side /api/chat/stream optionally synthesizes over pre-filtered authorizedDocs via Gemini when GEMINI_API_KEY is configured and falls back deterministically to compileKnowledgeResponse when unconfigured.',
     acceptanceTestIds: ['READINESS-SEC-01'],
