@@ -47,6 +47,7 @@ export async function proxy(request: NextRequest) {
 
   // Security headers (SEC-HEADERS-01) — P1 framing: single canonical policy (keep in sync with next.config comment).
   // Canonical allowlist: only /workspaces/:workspaceSlug/embeds/preview and /workspaces/:workspaceSlug/embeds/:embedId/preview are frame-allowed (EMBED-02). Installation and /api/* remain DENY.
+  // Intentional infrastructure exception: preview platform generates short-lived unpredictable subdomains (e.g., *.arena.site, *.okeng.io, *.e2b.app); wildcard SCOPED to these preview domains only, not arbitrary origins. Subdomain isolation prevents cross-customer access.
   // Preserve complete required CSP while varying only frame-ancestors — do not replace entire policy with frame-ancestors alone (P1 CSP review).
   const pathname = request.nextUrl.pathname;
   const isEmbedPreview =

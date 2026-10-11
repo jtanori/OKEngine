@@ -1,10 +1,12 @@
-// CO-LANDING-PRICING — Pricing 3 tiers + toggle — single source of truth per review P2
+// CO-LANDING-PRICING — Pricing 3 tiers + toggle — entitlements via PLAN_LIMITS single source (P2 audit)
+// Do not hardcode limits here — import from src/lib/billing.ts to keep UI and enforcement in sync.
 import React, { useState } from 'react';
 import { PricingToggle } from '../ui/PricingToggle';
 import { PricingCard } from '../ui/PricingCard';
 import { SectionPill } from '../ui/SectionPill';
+import { PLAN_LIMITS } from '../../lib/billing';
 
-// Single source of truth — monthly and annual derived, 20% discount verified
+// Pricing display — derived, 20% discount verified
 export const PRICING = {
   pro: {
     monthly: 39,
@@ -38,7 +40,13 @@ export function LandingPricing() {
           price="0€"
           description="Para probar y proyectos personales"
           priceNote=""
-          features={['1 proyecto y 1 colección', '1.000 consultas al mes', 'Widget flotante con marca OKEng', 'Citas verificables incluidas', 'Soporte de la comunidad']}
+          features={[
+            `${PLAN_LIMITS.starter.maxCollections} colección y ${PLAN_LIMITS.starter.maxFiles} archivos`,
+            `${PLAN_LIMITS.starter.maxQueriesPerMonth.toLocaleString('es-ES')} consultas al mes`,
+            'Widget flotante con marca OKEng',
+            'Citas verificables incluidas',
+            'Soporte de la comunidad',
+          ]}
           ctaLabel="Empieza gratis"
           ctaHref="/signup?plan=starter"
         />
@@ -47,7 +55,15 @@ export function LandingPricing() {
           price={`${proDisplayPrice}€`}
           priceNote={proPriceLabel}
           description="Para equipos de producto en serio"
-          features={['Colecciones y proyectos ilimitados', '10.000 consultas al mes', 'Permisos por colección, rol y miembro', 'Widget, panel o pantalla completa', 'Sin marca · tu dominio y tu tema', 'Tu propia clave de proveedor de IA', 'Analítica de conocimiento']}
+          features={[
+            `${PLAN_LIMITS.pro.maxCollections} colecciones y ${PLAN_LIMITS.pro.maxFiles.toLocaleString('es-ES')} archivos`,
+            `${PLAN_LIMITS.pro.maxQueriesPerMonth.toLocaleString('es-ES')} consultas al mes`,
+            'Permisos por colección, rol y miembro',
+            'Widget, panel o pantalla completa',
+            'Sin marca · tu dominio y tu tema',
+            'Tu propia clave de proveedor de IA',
+            'Analítica de conocimiento',
+          ]}
           ctaLabel="Empieza con Pro"
           ctaHref={`/signup?plan=pro&interval=${interval}`}
           popular
