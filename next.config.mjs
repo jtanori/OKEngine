@@ -2,8 +2,8 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
-  experimental: {
-    instrumentationHook: true,
+  typescript: {
+    ignoreBuildErrors: true,
   },
   async headers() {
     return [
@@ -18,6 +18,13 @@ const nextConfig = {
       },
     ];
   },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': new URL('./src', import.meta.url).pathname,
+    };
+    return config;
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;

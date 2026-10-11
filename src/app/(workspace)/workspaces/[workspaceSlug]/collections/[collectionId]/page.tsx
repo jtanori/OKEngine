@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React from 'react';
-import { CollectionDetailView } from '../../../../../../pages/CollectionDetailView';
+import { CollectionDetailView } from '../../../../../../views-legacy/CollectionDetailView';
 import { useParams, useRouter } from '../../../../../router';
 
 export default function WorkspaceCollectionDetailPage() {

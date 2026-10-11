@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React from 'react';
-import { ConversationsView } from '../../../../../pages/ConversationsView';
+import { ConversationsView } from '../../../../../views-legacy/ConversationsView';
 import { useParams, useRouter } from '../../../../router';
 
 export default function WorkspaceConversationsPage() {

@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React from 'react';
-import { SettingsView } from '../../../../../pages/SettingsView';
+import { SettingsView } from '../../../../../views-legacy/SettingsView';
 
 export default function WorkspaceSettingsPage() {
   return <SettingsView />;

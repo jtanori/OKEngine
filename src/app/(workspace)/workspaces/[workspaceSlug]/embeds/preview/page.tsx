@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React from 'react';
-import { WidgetPreviewView } from '../../../../../../pages/WidgetPreviewView';
+import { WidgetPreviewView } from '../../../../../../views-legacy/WidgetPreviewView';
 import { useParams, useRouter } from '../../../../../router';
 
 export default function WorkspaceEmbedPreviewPage() {

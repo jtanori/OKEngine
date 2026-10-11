@@ -7,8 +7,8 @@
 // ============================================================================
 
 import React from 'react';
-import { LandingView } from '@/components/landing/LandingView';
-import { PublicSurfaceView, PublicPageType } from '../../pages/PublicSurfaceView';
+import { LandingView } from '../../components/landing/LandingView';
+import { PublicSurfaceView, PublicPageType } from '../../views-legacy/PublicSurfaceView';
 import { usePathname, useRouter } from '../router';
 
 export default function PublicHomePage() {

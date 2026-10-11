@@ -36,7 +36,7 @@ import { ES_DICTIONARY } from '../../src/i18n/locales/es';
 import {
   formatCacheDecisionLabel,
   resolveScenarioInspectorTab,
-} from '../../src/pages/TestConsoleView';
+} from '../../src/views-legacy/TestConsoleView';
 import {
   Collection,
   EmbedInstance,

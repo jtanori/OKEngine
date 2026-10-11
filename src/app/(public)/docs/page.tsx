@@ -6,7 +6,7 @@
 // ============================================================================
 
 import React from 'react';
-import { PublicSurfaceView } from '../../../pages/PublicSurfaceView';
+import { PublicSurfaceView } from '../../../views-legacy/PublicSurfaceView';
 import { useParams, useRouter } from '../../router';
 
 export default function PublicDocsPage() {
