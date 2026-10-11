@@ -1,37 +1,19 @@
 'use client';
 
 // ============================================================================
-// ARCH-001 & AUTH-04: Authentication Login Route (SURF-AUTH)
-// Route Group: (auth) -> /login and /signup
+// ARCH-001 & AUTH-04: Authentication Login Route (SURF-AUTH) v3.0
+// Route Group: (auth) -> /login
+// PA-AUTH archetype, proper Next.js App Router, new AuthView
 // ============================================================================
 
 import React from 'react';
-import { PublicSurfaceView } from '../../../pages/PublicSurfaceView';
-import { usePathname, useRouter } from '../../router';
+import { AuthView } from '@/components/auth/AuthView';
+import { useRouter } from '../../router';
 
-export default function LoginPage({ authRedirectMessage }: { authRedirectMessage?: string }) {
-  const pathname = usePathname();
+export default function LoginPage() {
   const { push, navigateRoute } = useRouter();
 
-  const initialAuthPage =
-    pathname === '/signup'
-      ? 'signup'
-      : pathname === '/forgot-password' || pathname === '/password/reset'
-      ? 'forgot-password'
-      : 'login';
-
-  return (
-    <PublicSurfaceView
-      initialPage={initialAuthPage}
-      authRedirectMessage={authRedirectMessage}
-      onNavigatePath={(path) => push(path)}
-      onEnterWorkspace={(wsSlug, editDocId) => {
-        if (editDocId) {
-          navigateRoute('file-edit', { workspaceSlug: wsSlug, documentId: editDocId });
-        } else {
-          navigateRoute('collections', { workspaceSlug: wsSlug });
-        }
-      }}
-    />
-  );
+  // For now, AuthView handles its own submit via /api/auth/login
+  // Preserve router for future workspace navigation if needed
+  return <AuthView initialPage="login" />;
 }
