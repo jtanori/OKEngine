@@ -7,7 +7,11 @@
 | **Owner** | Design System |
 | **Authority** | Blocking |
 | **Dependencies** | `00_product_contract`, `SEC-01`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006` |
-| **Revision** | `3.3 (2026-10-11)` — Auth split: PA-AUTH-SPLIT 55/45 product-rehearsal + form |
+| **Revision** | `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer About·TOS·Privacy·Contact, hidden dev |
+
+## v3.4 Changelog (from v3.3)
+
+- **Auth defects 1-4**: `1` header single `Globe` — removed duplicate custom `<svg>` in `AuthSplitLayout`, keep single `LanguageSelector showIcon` per `I18N-001`; `2` corporate footer — replaced duplicated `AuthTrustFooter Citas... + Al continuar... + ©` 3-line block with single horizontal `flex gap-3 text-2xs text-ink-muted` `About · TOS · Privacy Policy · Contact` on all `Login/Signup/Forgot/Reset trustFooter`; `3` `DEV LOGIN` `hidden` attribute keeps DOM for future arena use, `display:none` not removed; `4` removed `¿Necesitas ayuda? Contáctanos` second line from `Login footer`, keep only `¿No tienes cuenta? Regístrate`.
 
 ## v3.3 Changelog (from v3.2)
 

@@ -3,7 +3,11 @@
 **Status:** Canonical UI & Interaction Architecture Specification (v3.1)  
 **Type:** Design System / Primitive & Component Catalog / Page Archetypes / Workflows  
 **Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006`, `SEC-01`, `API-01`  
-**Revision:** `3.3 (2026-10-11)` — Auth split: PA-AUTH-SPLIT product-rehearsal + form (aligns with `01 v3.3` + `02 v3.3`)
+**Revision:** `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer (aligns with `01 v3.4` + `02 v3.4`)
+
+## v3.4 Changelog (from v3.3)
+
+- **Defects 1-4**: single Globe header (custom SVG removed), corporate footer `About·TOS·Privacy·Contact` replaces `Citas...` duplication, `DEV LOGIN hidden` not removed, `Login footer` single line. See `01 v3.4` + `02 v3.4` + `7a15944`.
 
 ## v3.3 Changelog (from v3.2)
 

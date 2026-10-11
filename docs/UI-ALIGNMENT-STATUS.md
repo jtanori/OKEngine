@@ -1,11 +1,11 @@
-# UI Alignment Status — Continuing v3.3 Auth Split (liked v2 locked)
+# UI Alignment Status — Continuing v3.4 Auth Defects 1-4
 
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `UI-ALIGNMENT-STATUS` |
-| **Status** | `LIVE — v3.3 auth split (liked v2 locked) 2026-10-11` |
+| **Status** | `LIVE — v3.4 auth defects 1-4 fixed 2026-10-11` |
 | **Owner** | Design System & Agent Mode |
-| **Authority** | Informational — tracks implementation vs `01_ui_foundation v3.3`, `02_component_catalog v3.3`, `03_page_specifications v3.0`, `04_top_screens_audit_and_standardization`, `UI-01 v3.3`, `PLAN-001`, `PLAN-002`, `PLAN-006` |
+| **Authority** | Informational — tracks implementation vs `01_ui_foundation v3.4`, `02_component_catalog v3.4`, `03_page_specifications v3.0`, `04_top_screens_audit_and_standardization`, `UI-01 v3.4`, `PLAN-001`, `PLAN-002`, `PLAN-006` |
 | **Branch** | `arena/c1ccdf80-okengine` |
 | **Base** | `2c6381f (main)` — after PLAN-001 landing, PLAN-002 auth, PLAN-006 docs/public pages landing |
 | **Ground-up** | DS → PR → CO → SU → PA (AGENTS.md §2 hierarchy) — target `https://01a1278b-f5a1-71f6-830f-8c5c544d4689.arena.site/` |

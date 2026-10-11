@@ -7,7 +7,14 @@
 | **Owner** | Component Catalog |
 | **Authority** | Blocking |
 | **Dependencies** | `01_ui_foundation`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
-| **Revision** | `3.3 (2026-10-11)` — Auth split: PA-AUTH-SPLIT 55/45 + Login reordered SSO top + error/loading inferred |
+| **Revision** | `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer About·TOS·Privacy·Contact |
+
+## v3.4 Changelog — Auth Defects 1-4 (7a15944)
+
+- **Defect 1 header**: `CO-AUTH-SPLIT-LAYOUT` header now single `LanguageSelector showIcon` — removed duplicate custom SVG globe (was `custom SVG + LanguageSelector Globe`).
+- **Defect 2 corporate footer**: `trustFooter` on `Login/Signup/Forgot/Reset` replaced `AuthTrustFooter Citas... + Al continuar... + ©` 3-line duplicated block with single horizontal `About · TOS · Privacy Policy · Contact` `flex gap-3 text-2xs text-ink-muted hover:text-ink` per user request.
+- **Defect 3 dev**: `Login` `DEV LOGIN` `details hidden` keeps DOM (`hidden` attribute `display:none`) not removed, future arena use.
+- **Defect 4 footer**: `Login` `footer` removed second line `¿Necesitas ayuda? Contáctanos`, keep only `¿No tienes cuenta? Regístrate` inside `border-t`.
 
 ## v3.3 Changelog — Auth Split (liked v2 locked, per_surface plan)
 
