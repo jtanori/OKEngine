@@ -7,8 +7,10 @@ import { AuthCard } from '../ui/AuthCard';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { validateEmailInput } from '../../services/formSecurity';
+import { useI18n } from '../../i18n/I18nContext';
 
 export function ForgotPasswordForm() {
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -43,8 +45,8 @@ export function ForgotPasswordForm() {
 
   return (
     <AuthCard
-      title="Restablece tu contraseña"
-      subtitle="Te enviaremos un enlace para restablecerla"
+      title={t('auth.form.forgot_title')}
+      subtitle={t('auth.form.forgot_subtitle')}
       hideLogo
       variant="borderless"
       footer={<div className="text-xs text-ink-secondary"><a href="/login" className="text-accent hover:underline">Volver a iniciar sesión</a></div>}

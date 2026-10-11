@@ -16,7 +16,7 @@ export interface AuthViewProps {
 
 export function AuthView({ initialPage }: AuthViewProps) {
   return (
-    <AuthShell>
+    <AuthShell variant={initialPage}>
       {initialPage === 'login' && <LoginForm />}
       {initialPage === 'signup' && <SignupForm />}
       {initialPage === 'forgot-password' && <ForgotPasswordForm />}

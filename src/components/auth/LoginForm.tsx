@@ -13,6 +13,7 @@ import { SsoButtons } from './SsoButtons';
 import { validateEmailInput, validatePasswordInput, containsUnsafePayload } from '../../services/formSecurity';
 import { useRouter } from '../../app/router';
 import { authService } from '../../services/auth';
+import { useI18n } from '../../i18n/I18nContext';
 
 export interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void>;
@@ -20,6 +21,7 @@ export interface LoginFormProps {
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
   const { push } = useRouter();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
@@ -105,8 +107,8 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
   return (
     <AuthCard
-      title="Bienvenido de nuevo"
-      subtitle="Accede a tu espacio de conocimiento."
+      title={t('auth.form.login_title')}
+      subtitle={t('auth.form.login_subtitle')}
       hideLogo
       variant="borderless"
       footer={

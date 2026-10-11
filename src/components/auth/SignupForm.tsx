@@ -12,9 +12,11 @@ import { AuthDivider } from '../ui/AuthDivider';
 import { SsoButtons } from './SsoButtons';
 import { validateEmailInput, validatePasswordInput, validatePlainText, containsUnsafePayload } from '../../services/formSecurity';
 import { useRouter } from '../../app/router';
+import { useI18n } from '../../i18n/I18nContext';
 
 export function SignupForm() {
   const { push } = useRouter();
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -80,8 +82,8 @@ export function SignupForm() {
 
   return (
     <AuthCard
-      title="Crea tu cuenta"
-      subtitle="Empieza gratis con 1.000 consultas/mes. Sin tarjeta."
+      title={t('auth.form.signup_title')}
+      subtitle={t('auth.form.signup_subtitle')}
       hideLogo
       variant="borderless"
       footer={<div className="text-xs text-ink-secondary">¿Ya tienes cuenta? <a href="/login" className="text-accent hover:underline">Inicia sesión</a></div>}

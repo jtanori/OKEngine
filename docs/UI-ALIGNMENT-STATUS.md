@@ -261,5 +261,37 @@ None of the above blocks v3.1 — current state is **production-ready** with `bu
 
 ---
 
-*Status v3.5 auth borderless shell — ready for review. Continue alignment by picking any item in §8 or opening a new `PLAN-00X`.*
+## 12. Auth Redesign v3.6 — Navbar-less 40/60 + per-page left copy (2026-10-11) — spec-update-gated per AGENTS §7
+
+> **Spec gate**: No header, 40/60 flush, logo inside left, right semi-header + equal padding, per-page knowledge-focused copy all touch user-facing `CO-AUTH-SHELL` + `PR-AUTH-CARD` + `i18n` — changelog drafted before code per `AGENTS §7` (reuse `ink-strong` as Brand, violet/indigo aliases remain). Affected normative docs: `01 v3.6` (`PA-AUTH flush navbar-less 40/60 p-8/10 gap-8 h-screen sticky`, headline 36-40 + support 8-16w per page), `02 v3.6` (`CO-AUTH-SHELL` variant `navbar:false`, left 3 layers, right semi-header + centered form, `PR-AUTH-CARD borderless 400`), `03 v3.6` (per-page left copy table 5 pages EN/ES), `UI-01 v3.6` (400-460 → 400 centered, no vertical center). Approved 2026-10-11: `Retoma donde lo dejaste. Proceed.`.
+
+### 12.1 Design direction — per-page left copy (EN + ES, restrained)
+
+| variant | Left headline | Left support (8-16w) | Form title | ES headline | ES support | ES form title |
+|---|---|---|---|---|---|---|
+| `login` | Your knowledge, connected. | Find the answers your team needs, right when they need them. | Welcome back | Tu conocimiento, conectado. | Encuentra las respuestas que tu equipo necesita, justo cuando las necesita. | Bienvenido de nuevo |
+| `signup` | Make knowledge work for everyone. | Bring your team's knowledge together and make useful answers easier to find. | Create your account | Haz que el conocimiento trabaje para todos. | Reúne el conocimiento de tu equipo y haz que las respuestas útiles sean más fáciles de encontrar. | Crea tu cuenta |
+| `forgot-password` | Let's get you back to what matters. | Your knowledge workspace is just a few steps away. We'll help you regain access. | Reset your password | Volvamos a lo que importa. | Tu espacio de conocimiento está a pocos pasos. Te ayudamos a recuperar el acceso. | Restablece tu contraseña |
+| `reset-password` | A fresh start for your account. | Choose a new password and get ready to continue where you left off. | Choose a new password | Un nuevo comienzo para tu cuenta. | Elige una nueva contraseña y retoma donde lo dejaste. | Elige una nueva contraseña |
+| `verify-email` | One small step. A more connected team. | Verify your email to finish setting up your account and access your workspace. | Verify your email | Un pequeño paso. Un equipo más conectado. | Verifica tu correo para terminar de configurar tu cuenta y acceder a tu espacio de trabajo. | Verifica tu correo |
+
+Rules: headline 2-3 lines @ 40% (~380 inner), support 1 short sentence, don't repeat form title, preview stays consistent (flattened single white card), mobile hides support / shows only minimal bar.
+
+### 12.2 Implementation — this session
+- **`src/i18n/locales/en|es.ts` DS-i18n v3.6**: added 20 keys `auth.left.*_headline/support` + `auth.form.*_title/subtitle` (10+5 EN + 10+5 ES) with 1:1 parity, restrained voice.
+- **`src/components/auth/AuthShell.tsx` CO v3.6**: `variant?: AuthPageType` prop + `useI18n().t()` map `LEFT_COPY_KEYS`, headline `{headline}` support `{support}` dynamic (h2 `text-auth-headline`, p `text-white/70`); header removed → left top logo replaces pill, right `semi-header` `hidden lg:flex w-full justify-end gap-3` inside right panel, right `p-8 lg:p-10 gap-8` equal left, `max-w [400px]` centered not vertically, mobile minimal bar `lg:hidden h-14 bg-brand` (logo+Volver+Lang `showIcon false`), left `h-screen sticky` 100% + inner `overflow-y-auto` only on overflow, copyright inside left `pt-6 text-white/40`.
+- **`src/components/auth/AuthView.tsx`**: passes `variant={initialPage}` to `AuthShell`.
+- **`Login/Signup/Forgot/Reset`**: `title={t('auth.form.*_title')} subtitle={t('auth.form.*_subtitle')}` via `useI18n` (EN `Welcome back`/`Create your account`/… ES `Bienvenido…`/`Crea tu cuenta`/…); keeps `FORM-SEC-01`/`useRouter`.
+- **Grid 52/48 → 40/60** (`lg:grid-cols-[40fr_60fr]`), **form 440 → 400** (`max-w-[400px]` in `AuthShell` + `AuthCard`), **semi-header flush top/right** (`p-0 m-0` inside panel `p-8` only, `gap-8` parent), **no vertical center** (`flex items-center` only).
+- **Spec doc update**: this §12 + `01/02/03/UI-01 v3.6` pending file-level bumps — STATUS is planning source of truth before those file bumps (per gate).
+
+### 12.3 Verification
+- `npm run build` **PASS** `~1s` `26 routes` (auth 4 routes render per-page headline correctly, `en→es` switch via `LanguageSelector` updates left + form).
+- `npm run lint` **0 errors** (warnings pre-existing).
+- `tsc --noEmit` 24 pre-existing (cache/docs) unchanged.
+- Manual: `/login` `Tu conocimiento, conectado.` + `Bienvenido de nuevo`, `/signup` `Haz que…` + `Crea tu cuenta`, `/forgot-password` `Volvamos…` + `Restablece…`, `/reset-password` `Un nuevo comienzo…` + `Elige…`, toggle `EN` → `Your knowledge, connected.` / `Welcome back` etc, left 40% `h-screen` no scroll, right `60%` semi-header flush, form `400` centered horizontally, mobile bar `logo+Volver+Lang` only.
+
+---
+
+*Status v3.6 auth per-page copy — ready for review. Continue alignment by picking any item in §8 or opening a new `PLAN-00X`.*
 

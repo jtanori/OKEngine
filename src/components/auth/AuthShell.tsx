@@ -5,12 +5,26 @@
 // Changes per 2026-10-11: remove header, logo inside left (replaces pill), Volver+Lang top-right inside right, minimal mobile left bar (logo+Volver+Lang), flatten rehearsal, copyright inside left, left 100% height no scroll unless overflow
 import React from 'react';
 import { LanguageSelector } from '../LanguageSelector';
+import { useI18n } from '../../i18n/I18nContext';
+import type { AuthPageType } from './AuthView';
 
 export interface AuthShellProps {
   children: React.ReactNode;
+  variant?: AuthPageType;
 }
 
-export function AuthShell({ children }: AuthShellProps) {
+const LEFT_COPY_KEYS: Record<AuthPageType, { headline: string; support: string }> = {
+  login: { headline: 'auth.left.login_headline', support: 'auth.left.login_support' },
+  signup: { headline: 'auth.left.signup_headline', support: 'auth.left.signup_support' },
+  'forgot-password': { headline: 'auth.left.forgot_headline', support: 'auth.left.forgot_support' },
+  'reset-password': { headline: 'auth.left.reset_headline', support: 'auth.left.reset_support' },
+};
+
+export function AuthShell({ children, variant = 'login' }: AuthShellProps) {
+  const { t } = useI18n();
+  const keys = LEFT_COPY_KEYS[variant] ?? LEFT_COPY_KEYS.login;
+  const headline = t(keys.headline);
+  const support = t(keys.support);
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
       {/* Mobile minimal left — reduced height, logo + Volver+Lang inline (replaces header on <lg) */}
@@ -57,18 +71,10 @@ export function AuthShell({ children }: AuthShellProps) {
                 </a>
               </div>
 
-              {/* Layer 2: headline 36-44 */}
+              {/* Layer 2: per-page headline + support (knowledge-focused, 2-3 lines / 8-16w) */}
               <div className="flex flex-col gap-4">
-                <h2 className="text-auth-headline lg:text-[40px] lg:leading-[1] font-bold tracking-tight text-white">
-                  Vuelve a las respuestas
-                  <br />
-                  <span className="text-accent-violet-light">que tu equipo puede</span>
-                  <br />
-                  <span className="text-accent-violet-light">verificar.</span>
-                </h2>
-                <p className="text-sm leading-relaxed text-white/70 max-w-md">
-                  Gestiona tus colecciones, revisa las preguntas sin respuesta y mide cómo tu conocimiento ayuda a cada usuario.
-                </p>
+                <h2 className="text-auth-headline lg:text-[40px] lg:leading-[1] font-bold tracking-tight text-white">{headline}</h2>
+                <p className="text-sm leading-relaxed text-white/70 max-w-md">{support}</p>
               </div>
 
               {/* Layer 3: flattened rehearsal — single white card, no box-in-box */}

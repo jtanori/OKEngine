@@ -8,9 +8,11 @@ import { Button } from '../ui/Button';
 import { PasswordInput } from '../ui/PasswordInput';
 import { validatePasswordInput } from '../../services/formSecurity';
 import { useRouter } from '../../app/router';
+import { useI18n } from '../../i18n/I18nContext';
 
 export function ResetPasswordForm() {
   const { push } = useRouter();
+  const { t } = useI18n();
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState<{ newPassword?: string; confirm?: string }>({});
@@ -63,8 +65,8 @@ export function ResetPasswordForm() {
 
   return (
     <AuthCard
-      title="Nueva contraseña"
-      subtitle="Elige una contraseña segura"
+      title={t('auth.form.reset_title')}
+      subtitle={t('auth.form.reset_subtitle')}
       hideLogo
       variant="borderless"
       footer={<div className="text-xs text-ink-secondary"><a href="/login" className="text-accent hover:underline">Volver a iniciar sesión</a></div>}
