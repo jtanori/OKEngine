@@ -11,11 +11,11 @@ export interface AnnouncementBannerProps {
 export function AnnouncementBanner({ children, icon, className = '' }: AnnouncementBannerProps) {
   return (
     <div
-      className={`w-full bg-subtle border-b border-line px-4 py-2.5 text-center text-xs text-ink-secondary ${className}`}
+      className={`w-full bg-ink-strong text-surface border-0 px-4 py-2 text-center text-xs leading-6 ${className}`}
       role="banner"
     >
       <div className="mx-auto max-w-7xl flex items-center justify-center gap-2">
-        {icon && <span className="inline-flex items-center">{icon}</span>}
+        {icon && <span className="inline-flex items-center text-surface">{icon}</span>}
         <span className="font-medium tracking-wide">{children}</span>
       </div>
     </div>
