@@ -347,3 +347,52 @@ No `public/` assets added; no DS token drift (all Tailwind via `@theme`).
 *Status v3.7 landing plan 2 — Top+5 pasos aligned to Left target; Metrics/Testimonials/Pricing kept verified per Gate C. Remaining before claiming complete: curl -I header check (external 502 noted), file-level doc bumps 02/03/04/UI-01 mirror this § (STATUS is source of truth per AGENTS §7).*
 
 
+---
+
+## 14. SBS Rounds 2–4 — Hero upper, Metrics/Logos, 5 pasos/Product/Integration, Lower, Pricing, Footer, Docs, Integration mode-specific (2026-10-11) — spec-update-gated per AGENTS §7
+
+> **Spec gate** per AGENTS §7 — changelog drafted before code, reused DS tokens (`@theme`), inline SVG/CSS only (<10KB). Affected normative docs: `02 v3.7→v3.8` (PR-SECTION-PILL, PR-HOW-IT-WORKS-STEP, PR-METRIC, PR-LOGO-STRIP, PR-PRICING-CARD, PR-PRICING-TOGGLE, PR-DOCS-SIDEBAR, PR-CHAT-MOCK), `03 v3.7→v3.8` (CO-LANDING-HERO, CO-LANDING-METRICS, CO-LANDING-LOGO-STRIP, CO-LANDING-HOW-IT-WORKS, CO-LANDING-PRODUCT-FEATURES, CO-LANDING-INTEGRATION, CO-LANDING-DEVELOPERS, CO-LANDING-TESTIMONIALS, CO-LANDING-PRICING, CO-LANDING-FAQ, CO-LANDING-FINAL-CTA, CO-LANDING-FOOTER, CO-DOCS-SIDEBAR), `04 v3.7→v3.8` (WF-PUB-01 5 pasos + integration 3 modos), `UI-01 v3.7→v3.8` (DS→PR→CO→SU→PA), `.gitignore` (next-env.d.ts). Approved: `go hero full` + SBS rounds.
+
+| Spec doc | Bump | What changed | Why |
+|---|---|---|---|
+| `02 — UI Primitives` | v3.7→v3.8 | `PR-SECTION-PILL` taller `py-1 text-2xs`→`py-1.5 text-xs` (50% taller); `PR-HOW-IT-WORKS-STEP` numbers `rounded-full w-7`→`rounded-md w-8` square; `PR-METRIC` vertical `py-6 md:py-7` + `normal-case text-sm` (was uppercase xs); `PR-LOGO-STRIP` logos `text-sm→15px`; `PR-PRICING-CARD` reorder name→desc→price→facturado→CTA→benefits; `PR-PRICING-TOGGLE` segmented dark `rounded-full bg-ink-strong` (was light); `PR-DOCS-SIDEBAR` keys composite `collectionId-slug-idx` + filter before map; `PR-CHAT-MOCK` single Q/A + glow | SBS pixel match Right target |
+| `03 — Components/Surfaces` | v3.7→v3.8 | `CO-LANDING-HERO` H1 `text-hero 48px leading[0.95]`→`2.75rem/3.5rem leading[0.92]` larger, CTA `rounded-full→rounded-lg`, badges pill→plain `text-sm` no bg, mock glow `blur-2xl`; `CO-LANDING-METRICS` bg-surface→transparent + `bg-transparent` border; `CO-LANDING-LOGO-STRIP` heading `2xs 0.2em→xs 0.14em`; `CO-LANDING-HOW-IT-WORKS` header `30px→32/36px`, subtitle `sm→15px`, gap 8→10; `CO-LANDING-PRODUCT-FEATURES` same; `CO-LANDING-INTEGRATION` segmented restored centered dark + mode-specific bullets + widget representation per mode, background preview switches (widget floating / panel side / fullscreen search); `CO-LANDING-DEVELOPERS/FINAL-CTA/FOOTER` added fading glow `blur 80-100px` behind dark | SBS rounds 2-4 + dark lightning |
+| `04 — Workflows` | v3.7→v3.8 | `WF-PUB-01` integration 3 modos now interactive (widget/panel/fullscreen) with mode-specific copy | User expected segmented control to do something |
+| `UI-01 — IA` | v3.7→v3.8 | DS→PR→CO→SU→PA chain for `02/03/04` v3.8 | Hierarchy |
+
+### 14.1 SBS findings — rounds 2-4 (Left=current, Right=target)
+
+* **Hero upper (image-1):** H1 larger `48px→56px`, mock glow `shadow-lg→shadow-[0_20px_60px]+blur-2xl`, CTA `rounded-full→rounded-lg` border style not pill, badges pill `bg-surface border`→plain `text-sm` no bg → fixed `c55eda3`+`6236d53`.
+* **Metrics/Logos strip (image-1 lower):** segments `bg-surface`→`bg-transparent` border, `py-0→py-6`, title-subtitle gap `1→2`, subtitle `uppercase xs→normal-case sm`, logos `14px→15px`, heading `10px 0.2em→12px 0.14em` → fixed `2ac70c5`.
+* **5 pasos / Producto / Integración (images 1-3):** SectionPill `4px→6px` taller, titles `30px→32/36px` 2 lines, subtitles `14px→15px` 2 lines, gap `32px→40px`, numbers circle `w-7 rounded-full`→`w-8 rounded-md` square, integration tabs `self-start light`→`centered dark bg-ink-strong` + left bullets larger `w-7 xs→w-8 sm`, then 4→2 components (removed duplication) then restored segmented control → fixed `cd85444`+`7bdabf6`+`d1d1aee`.
+* **Lower (images 1-4):** Testimonials/Pricing/FAQ/FinalCTA titles `30px→32/36px`, subtitles `14px→15px`, dark sections `Developers/FinalCTA/Footer` flat→glow `blur 80-100px violet/blue` behind → fixed `9358f66`+`da06789`.
+* **Pricing card (image pricing):** order `name→price→desc→features→CTA` → `name→desc→price→facturado→CTA→benefits` with `Facturado anualmente·2 meses gratis` / `Gratis para siempre` → fixed `907b019`.
+* **Pricing toggle:** `rounded-sm light`→`rounded-full dark` like integration → fixed `8ac8916`.
+* **DocsSidebar key (console):** `key={slug}` + `return null` without key → composite `${collectionId}-${slug}-${idx}` + filter before map → fixed `2ee1bb4`.
+* **Integration mode-specific (final):** segmented did nothing, left bullets static, widget floating for all → now mode-specific left title/desc + 3 bullets per mode + right widget resembles option (widget floating card / panel side-panel with chat / fullscreen search + collections) → fixed `28735f0`+`9e5398e`.
+
+### 14.2 Implementation — files touched since §13
+
+* `LandingHero.tsx` — H1 larger, pill `text-2xs`, CTA `rounded-lg`, badges plain `text-sm`, glow wrapper.
+* `ChatMock.tsx` — single Q/A `¿Cómo configuro SSO?` + citation, glow.
+* `SectionPill.tsx` — `px-3.5 py-1.5 text-xs` taller.
+* `HowItWorksStep.tsx` — `rounded-md w-8 h-8` square.
+* `LandingHowItWorks.tsx` / `LandingProductFeatures.tsx` / `LandingIntegration.tsx` / `LandingDevelopers.tsx` — `gap-10`, titles `32/36px`, subtitles `15px`.
+* `IntegrationTabs.tsx` — centered `rounded-full bg-ink-strong` dark.
+* `LandingTestimonials.tsx` / `LandingPricing.tsx` / `LandingFaq.tsx` / `LandingFinalCta.tsx` — `gap-10`, titles `32/36px`.
+* `PricingCard.tsx` — reorder to name→desc→price→CTA→benefits.
+* `PricingToggle.tsx` — dark segmented.
+* `DocsSidebar.tsx` — composite key + filter.
+* `LandingIntegration.tsx` — `useState<Mode>` interactive + mode-specific bullets + widget per mode.
+* `LandingFooter.tsx` / `LandingDevelopers.tsx` / `LandingFinalCta.tsx` — glow `blur 80-100px`.
+* `.gitignore` — add `next-env.d.ts`, `tsconfig.tsbuildinfo`, `.env`.
+
+### 14.3 Verification
+
+* `npx tsc --noEmit` — 24 pre-existing (cache, DocsArticle slug) — 0 new.
+* `npm run lint` — `0 errors 143 warnings`.
+* `npx next build` — `PASS 26 routes ƒ Proxy (Middleware)`.
+* Manual: hero `56px` violet underline, glow, `rounded-lg` CTA, plain badges; metrics transparent bordered `py-7`; pillars taller `py-1.5`; numbers square; integration segmented dark centered + switches left 3 bullets + right widget (floating / panel / fullscreen); pricing card order correct; toggle dark; docs `/docs` no key warning; dark glows visible on Developers/FinalCTA/Footer; `next-env.d.ts` ignored, no hydration mismatch after `rm -rf .next`.
+
+*Status v3.8 SBS rounds 2-4 complete — hero through footer pixel-matched, pricing verified per Gate C, docs key fixed, integration interactive.*
+
