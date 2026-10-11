@@ -170,31 +170,37 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           En este sandbox <code className="bg-surface border border-line rounded-xs px-1">DATABASE_URL=dummy</code>, el login normal falla. Usa un usuario mock para entrar al dashboard y probar el AppShell, colecciones y embeds.
         </p>
         <div className="grid grid-cols-1 gap-2">
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="md"
             onClick={() => handleDevLogin('usr_sarah_102')}
             disabled={isLoading}
-            className="w-full h-9 inline-flex items-center justify-center rounded-sm bg-ink text-surface border border-ink hover:bg-ink-strong text-xs font-medium transition-colors disabled:opacity-50"
+            className="w-full"
           >
             Entrar como Sarah Chen — Owner (todos los permisos)
-          </button>
+          </Button>
           <div className="grid grid-cols-2 gap-2">
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="md"
               onClick={() => handleDevLogin('usr_marcus_204')}
               disabled={isLoading}
-              className="h-9 inline-flex items-center justify-center rounded-sm bg-surface text-ink border border-line hover:bg-elevated text-xs font-medium transition-colors disabled:opacity-50"
+              className="w-full"
             >
               Marcus — Write
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="secondary"
+              size="md"
               onClick={() => handleDevLogin('usr_elena_309')}
               disabled={isLoading}
-              className="h-9 inline-flex items-center justify-center rounded-sm bg-surface text-ink border border-line hover:bg-elevated text-xs font-medium transition-colors disabled:opacity-50"
+              className="w-full"
             >
               Elena — Read
-            </button>
+            </Button>
           </div>
         </div>
         <div className="flex items-center gap-1.5 text-2xs text-ink-muted font-mono">
