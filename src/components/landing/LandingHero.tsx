@@ -41,8 +41,8 @@ export function LandingHero({ onPrimaryCta, onSecondaryCta }: LandingHeroProps) 
             </a>
           </div>
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <span className="inline-flex items-center gap-1 rounded-xs bg-surface border border-line px-2 py-1 text-2xs font-medium text-ink-secondary">
-              <span className="text-success">✓</span> ≥98% de respuestas con cita
+            <span className="inline-flex items-center gap-1 rounded-xs bg-surface border border-line px-2 py-1 text-2xs font-medium text-ink-secondary" title="Hasta 98% con cita según pruebas internas con contenido bien estructurado">
+              <span className="text-success">✓</span> Hasta 98% con cita*
             </span>
             <span className="inline-flex items-center gap-1 rounded-xs bg-surface border border-line px-2 py-1 text-2xs font-medium text-ink-secondary">
               <span>🛡</span> Permisos por colección
@@ -51,6 +51,7 @@ export function LandingHero({ onPrimaryCta, onSecondaryCta }: LandingHeroProps) 
               <span>📄</span> Markdown, PDF y web
             </span>
           </div>
+          <p className="text-2xs text-ink-muted">* Con contenido bien estructurado y permisos configurados. Ver docs para metodología.</p>
         </div>
         <div className="relative">
           <ChatMock className="w-full max-w-md mx-auto shadow-lg rounded-lg" />

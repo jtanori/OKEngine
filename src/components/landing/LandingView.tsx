@@ -19,7 +19,7 @@ export function LandingView() {
   return (
     <div className="min-h-screen bg-canvas text-ink">
       {/* SU-LANDING-ANNOUNCEMENT */}
-      <AnnouncementBanner>Citas verificables y permisos por rol — ≥98% con cita, sin alucinaciones</AnnouncementBanner>
+      <AnnouncementBanner>Citas verificables y permisos por rol — hasta 98% con cita* sin alucinaciones</AnnouncementBanner>
 
       {/* Minimal header for landing — 3-zone centered nav */}
       <header className="w-full bg-surface border-b border-line/60 sticky top-0 z-20">

@@ -108,13 +108,13 @@ export function AuthSplitLayout({ children }: AuthSplitLayoutProps) {
               </div>
             </div>
 
-            {/* Quote */}
+            {/* Quote — illustrative */}
             <div className="mt-auto flex flex-col gap-3 pt-4">
               <div className="text-[#6366F1] text-2xl leading-none">“</div>
-              <p className="text-sm text-white/80 leading-relaxed">OKEng redujo a la mitad el tiempo que pasábamos buscando información.</p>
+              <p className="text-sm text-white/80 leading-relaxed">OKEng redujo a la mitad el tiempo que pasábamos buscando información. <span className="text-white/40 text-2xs">— ejemplo ilustrativo</span></p>
               <div className="flex items-center gap-2">
                 <div className="w-7 h-7 rounded-full bg-white text-ink-strong flex items-center justify-center text-xs font-bold">A</div>
-                <span className="text-xs text-white/60">Ana Torres, Ops Manager en Acme Corp.</span>
+                <span className="text-xs text-white/60">Ana Torres, Ops Manager en Acme Corp. (ejemplo)</span>
               </div>
             </div>
 
