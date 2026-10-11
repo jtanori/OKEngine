@@ -14,7 +14,7 @@ export function LogoStrip({ title, logos, className = '' }: LogoStripProps) {
       {title && <div className="text-xs font-medium uppercase tracking-wider text-ink-muted">{title}</div>}
       <div className="flex flex-wrap items-center justify-center gap-8 md:gap-12 opacity-60">
         {logos.map((logo, idx) => (
-          <div key={idx} className="text-sm font-semibold text-ink-muted tracking-wide">
+          <div key={idx} className="text-[15px] font-semibold text-ink-muted tracking-wide">
             {logo}
           </div>
         ))}
