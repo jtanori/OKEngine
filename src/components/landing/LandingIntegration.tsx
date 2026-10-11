@@ -1,6 +1,5 @@
-// CO-LANDING-INTEGRATION — 3 modes tabs + preview with bullets and browser mock
+// CO-LANDING-INTEGRATION — 3 modes tabs + preview with bullets and browser mock — centered tabs removed per SBS (keep left/right only)
 import React from 'react';
-import { IntegrationTabs } from '../ui/IntegrationTabs';
 import { SectionPill } from '../ui/SectionPill';
 import { Shield, BarChart3, Sun } from 'lucide-react';
 
@@ -13,32 +12,7 @@ export function LandingIntegration() {
           <h2 className="text-[32px] lg:text-[36px] font-bold text-ink-strong tracking-tight leading-tight">Elige cómo se ve en tu producto</h2>
           <p className="text-[15px] leading-relaxed text-ink-secondary max-w-xl mx-auto">El mismo motor, la misma seguridad y las mismas citas. Solo cambia el contenedor.</p>
         </div>
-        <div className="w-full flex flex-col gap-8">
-          <div className="flex justify-center">
-            <IntegrationTabs
-              modes={[
-                {
-                  id: 'widget',
-                  label: 'Widget flotante',
-                  description: 'Ideal para ayuda contextual sin salir del flujo. 3 líneas de código. Flota abajo-derecha, chat con citas.',
-                  code: `<OKEngWidget\n  collection="docs"\n  mode="widget"\n  theme={{ accent: "#1D4ED8" }}\n/>`,
-                },
-                {
-                  id: 'panel',
-                  label: 'Panel lateral',
-                  description: 'Documentación y chat en un panel deslizable. Perfecto para dashboards. 360px, max 40%.',
-                  code: `<OKEngWidget\n  collection="docs"\n  mode="panel"\n  width="360px"\n/>`,
-                },
-                {
-                  id: 'fullscreen',
-                  label: 'Pantalla completa',
-                  description: 'Base de conocimiento completa. Para centros de ayuda dedicados. Búsqueda + filtros + respuestas.',
-                  code: `<OKEngWidget\n  collection="docs"\n  mode="fullscreen"\n  permissions={{ role: user.role }}\n/>`,
-                },
-              ]}
-            />
-          </div>
-          <div className="grid md:grid-cols-2 gap-12 items-start max-w-7xl w-full">
+        <div className="grid md:grid-cols-2 gap-12 items-start max-w-7xl w-full">
             <div className="flex flex-col gap-6">
               <div className="flex flex-col gap-2">
                 <h3 className="text-lg font-semibold text-ink">Widget flotante</h3>
@@ -68,7 +42,7 @@ export function LandingIntegration() {
                 </div>
               </div>
             </div>
-            <div className="bg-surface border border-line rounded-xl shadow-lg overflow-hidden">
+            <div className="relative bg-surface border border-line rounded-xl shadow-lg overflow-hidden">
               <div className="h-8 bg-elevated border-b border-line flex items-center gap-1.5 px-3">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F56]"></span>
                 <span className="w-2.5 h-2.5 rounded-full bg-[#FFBD2E]"></span>
@@ -101,7 +75,6 @@ export function LandingIntegration() {
               </div>
             </div>
           </div>
-        </div>
       </div>
     </section>
   );
