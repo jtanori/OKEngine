@@ -6,12 +6,12 @@ import { MessageCircle, Mail } from 'lucide-react';
 
 export function LandingFaq() {
   return (
-    <section id="faq" className="w-full bg-canvas py-16 md:py-20">
+    <section id="faq" className="w-full bg-canvas py-16 md:py-24">
       <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-[360px_1fr] gap-12 items-start">
         <div className="flex flex-col gap-4">
           <SectionPill label="Preguntas frecuentes" />
-          <h2 className="text-section font-bold text-ink-strong tracking-tight">Las dudas que siempre aparecen</h2>
-          <p className="text-sm text-ink-secondary">Y si te falta alguna, responde una persona, no un bot.</p>
+          <h2 className="text-[30px] lg:text-[34px] font-bold text-ink-strong tracking-tight leading-tight">Las dudas que siempre aparecen</h2>
+          <p className="text-[15px] leading-relaxed text-ink-secondary">Y si te falta alguna, responde una persona, no un bot.</p>
           <div className="bg-elevated/50 border border-line rounded-xl p-6 flex flex-col gap-4">
             <span className="w-8 h-8 rounded-lg bg-accent-subtle text-accent flex items-center justify-center">
               <MessageCircle className="w-4 h-4" />

@@ -1,10 +1,15 @@
-// CO-LANDING-DEVELOPERS — Dark code section
+// CO-LANDING-DEVELOPERS — Dark code section with glow (like Right target)
 import React from 'react';
 
 export function LandingDevelopers() {
   return (
-    <section id="desarrolladores" className="w-full bg-ink-strong py-16 md:py-24">
-      <div className="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
+    <section id="desarrolladores" className="w-full bg-ink-strong py-16 md:py-24 relative overflow-hidden">
+      {/* Glow behind */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-[700px] h-[500px] bg-[#1D4ED8]/15 blur-[100px] rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-[600px] h-[400px] bg-[#8B5CF6]/15 blur-[90px] rounded-full" />
+      </div>
+      <div className="relative max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 items-start">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col gap-4">
             <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/10 border border-white/20 px-3.5 py-1.5 text-xs font-medium tracking-wide text-white/80">

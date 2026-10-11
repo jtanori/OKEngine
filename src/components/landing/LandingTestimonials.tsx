@@ -15,12 +15,12 @@ function UseCaseCard({ title, desc, icon, color }: { title: string; desc: string
 
 export function LandingTestimonials() {
   return (
-    <section id="clientes" className="w-full bg-canvas py-16 md:py-20">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col gap-8 items-center">
+    <section id="clientes" className="w-full bg-canvas py-16 md:py-24">
+      <div className="max-w-7xl mx-auto px-6 flex flex-col gap-10 items-center">
         <SectionPill label="Casos de uso" />
-        <div className="max-w-3xl flex flex-col gap-3 text-center">
-          <h2 className="text-section font-bold text-ink-strong tracking-tight">Cómo los equipos usan OKEng</h2>
-          <p className="text-sm text-ink-secondary">Ejemplos de uso ilustrativos — no son testimonios de clientes verificados ni compromisos de resultado.</p>
+        <div className="max-w-2xl flex flex-col gap-4 text-center">
+          <h2 className="text-[32px] lg:text-[36px] font-bold text-ink-strong tracking-tight leading-tight">Cómo los equipos usan OKEng</h2>
+          <p className="text-[15px] leading-relaxed text-ink-secondary">Ejemplos de uso ilustrativos — no son testimonios de clientes verificados ni compromisos de resultado.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-6 w-full">
           <UseCaseCard

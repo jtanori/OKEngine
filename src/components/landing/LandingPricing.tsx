@@ -26,11 +26,11 @@ export function LandingPricing() {
   const proPriceLabel = PRICING.pro.getLabel(interval);
 
   return (
-    <section id="precios" className="w-full max-w-7xl mx-auto px-6 py-16 md:py-24 flex flex-col gap-8 items-center">
-      <div className="flex flex-col items-center gap-4 text-center max-w-3xl mx-auto">
+    <section id="precios" className="w-full max-w-7xl mx-auto px-6 py-16 md:py-24 flex flex-col gap-10 items-center">
+      <div className="flex flex-col items-center gap-4 text-center max-w-2xl mx-auto">
         <SectionPill label="Precios" />
-        <h2 className="text-section font-bold text-ink-strong tracking-tight">Empieza gratis. Paga cuando escale.</h2>
-        <p className="text-sm text-ink-secondary">Sin costes de infraestructura ocultos. Si tu uso crece, te avisamos antes de facturar nada.</p>
+        <h2 className="text-[32px] lg:text-[36px] font-bold text-ink-strong tracking-tight leading-tight">Empieza gratis. Paga cuando escale.</h2>
+        <p className="text-[15px] leading-relaxed text-ink-secondary">Sin costes de infraestructura ocultos. Si tu uso crece, te avisamos antes de facturar nada.</p>
         <PricingToggle interval={interval} onChange={setInterval} />
         <p className="text-xs text-ink-muted">Precios en EUR, sin IVA. Cancela cuando quieras. {isAnnual && `Ahorras ${PRICING.pro.discountPercent}% frente a pago mensual.`}</p>
       </div>
