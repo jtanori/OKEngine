@@ -117,9 +117,9 @@ export function AuthShell({ children }: AuthShellProps) {
           </div>
 
           {/* Right — borderless form area transparent on bg-canvas, two components: semi-header + form container, standard padding = left */}
-          <div className="order-first lg:order-last flex flex-col p-8 lg:p-10 min-h-0">
-            {/* Semi-header — full width of right panel, holds Volver + Lang top-right */}
-            <div className="hidden lg:flex w-full items-center justify-end gap-3 pb-8 shrink-0">
+          <div className="order-first lg:order-last flex flex-col p-8 lg:p-10 gap-8 min-h-0">
+            {/* Semi-header — full width of right panel, holds Volver + Lang top-right, no extra margin/padding — same level as left logo */}
+            <div className="hidden lg:flex w-full items-center justify-end gap-3 shrink-0">
               <a href="/" className="inline-flex items-center gap-1.5 text-xs text-ink-secondary hover:text-ink">
                 <span aria-hidden>←</span> Volver a la web
               </a>
