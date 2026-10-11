@@ -9,7 +9,6 @@ import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
 import { PasswordInput } from '../ui/PasswordInput';
 import { AuthDivider } from '../ui/AuthDivider';
-import { AuthTrustFooter } from './AuthTrustFooter';
 import { SsoButtons } from './SsoButtons';
 import { validateEmailInput, validatePasswordInput, containsUnsafePayload } from '../../services/formSecurity';
 import { useRouter } from '../../app/router';
@@ -110,26 +109,27 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       subtitle="Accede a tu espacio de conocimiento."
       hideLogo
       footer={
-        <div className="flex flex-col gap-2 text-xs text-ink-secondary">
-          <div>
-            ¿No tienes cuenta? <a href="/signup" className="text-accent hover:underline font-medium">Regístrate</a>
-          </div>
-          <div>
-            ¿Necesitas ayuda? <a href="/contact" className="text-accent hover:underline">Contáctanos</a>
-          </div>
+        <div className="text-xs text-ink-secondary">
+          ¿No tienes cuenta? <a href="/signup" className="text-accent hover:underline font-medium">Regístrate</a>
         </div>
       }
       trustFooter={
-        <div className="flex flex-col gap-3 pt-4">
-          <AuthTrustFooter />
-          <div className="text-2xs text-ink-muted">
-            Al continuar, aceptas <a href="/terms" className="underline hover:text-ink">Términos</a> y{' '}
-            <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
-          </div>
-          <div className="text-2xs text-ink-muted">
-            © {new Date().getFullYear()} OKEng • <a href="/terms" className="underline hover:text-ink">Términos</a> •{' '}
-            <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
-          </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-2xs text-ink-muted pt-2">
+          <a href="/about" className="hover:text-ink hover:underline">
+            About
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/terms" className="hover:text-ink hover:underline">
+            TOS
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/privacy" className="hover:text-ink hover:underline">
+            Privacy Policy
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/contact" className="hover:text-ink hover:underline">
+            Contact
+          </a>
         </div>
       }
     >
@@ -175,8 +175,8 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         </Button>
       </form>
 
-      {/* DEV LOGIN — collapsed details per v3.3, keeps arena bypass but not bloating */}
-      <details open={devOpen} onToggle={(e) => setDevOpen((e.target as HTMLDetailsElement).open)} className="rounded-md border border-dashed border-line bg-elevated/60 open:p-4 p-0 overflow-hidden">
+      {/* DEV LOGIN — hidden per defect #3, keep DOM for future arena use */}
+      <details hidden open={devOpen} onToggle={(e) => setDevOpen((e.target as HTMLDetailsElement).open)} className="rounded-md border border-dashed border-line bg-elevated/60 open:p-4 p-0 overflow-hidden">
         <summary className="cursor-pointer list-none flex items-center justify-between px-4 py-3 open:px-0 open:py-0 open:mb-3">
           <span className="text-2xs font-semibold tracking-widest uppercase text-ink-muted">Dev login — sin DB / sin contraseña</span>
           <span className="text-2xs bg-warning-subtle text-warning border border-warning/30 px-1.5 py-0.5 rounded-xs font-mono">arena</span>

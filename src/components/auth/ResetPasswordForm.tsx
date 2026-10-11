@@ -67,6 +67,25 @@ export function ResetPasswordForm() {
       subtitle="Elige una contraseña segura"
       hideLogo
       footer={<div className="text-xs text-ink-secondary"><a href="/login" className="text-accent hover:underline">Volver a iniciar sesión</a></div>}
+      trustFooter={
+        <div className="flex flex-wrap items-center justify-center gap-3 text-2xs text-ink-muted pt-2">
+          <a href="/about" className="hover:text-ink hover:underline">
+            About
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/terms" className="hover:text-ink hover:underline">
+            TOS
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/privacy" className="hover:text-ink hover:underline">
+            Privacy Policy
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/contact" className="hover:text-ink hover:underline">
+            Contact
+          </a>
+        </div>
+      }
     >
       {success ? (
         <div className="bg-success-subtle border border-line rounded-sm p-4 text-sm text-success">Contraseña restablecida, redirigiendo a login...</div>

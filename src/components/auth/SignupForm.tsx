@@ -9,7 +9,6 @@ import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
 import { PasswordInput } from '../ui/PasswordInput';
 import { AuthDivider } from '../ui/AuthDivider';
-import { AuthTrustFooter } from './AuthTrustFooter';
 import { SsoButtons } from './SsoButtons';
 import { validateEmailInput, validatePasswordInput, validatePlainText, containsUnsafePayload } from '../../services/formSecurity';
 import { useRouter } from '../../app/router';
@@ -86,12 +85,22 @@ export function SignupForm() {
       hideLogo
       footer={<div className="text-xs text-ink-secondary">¿Ya tienes cuenta? <a href="/login" className="text-accent hover:underline">Inicia sesión</a></div>}
       trustFooter={
-        <div className="flex flex-col gap-3 pt-4">
-          <AuthTrustFooter />
-          <div className="text-2xs text-ink-muted">
-            Al crear tu cuenta, aceptas <a href="/terms" className="underline hover:text-ink">Términos</a> y{' '}
-            <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
-          </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 text-2xs text-ink-muted pt-2">
+          <a href="/about" className="hover:text-ink hover:underline">
+            About
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/terms" className="hover:text-ink hover:underline">
+            TOS
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/privacy" className="hover:text-ink hover:underline">
+            Privacy Policy
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/contact" className="hover:text-ink hover:underline">
+            Contact
+          </a>
         </div>
       }
     >
