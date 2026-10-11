@@ -1,6 +1,5 @@
-// CO-AUTH-SIGNUP-FORM — Signup form with name, email, password, terms, FORM-SEC-01
-// PA-AUTH — canvas #F8F7F4 centered card max-w-md white surface rounded-lg shadow-md cobalt accent
-// Uses PR-AUTH-CARD + PR-INPUT + PR-PASSWORD-INPUT + PR-BUTTON + PR-CHECKBOX + PR-AUTH-DIVIDER + CO-AUTH-SSO-BUTTONS + CO-AUTH-TRUST-FOOTER
+// CO-AUTH-SIGNUP-FORM — Signup split v3.3: SSO top → Divider o → Name/Email/Password/terms → Gradient CTA
+// PA-AUTH-SPLIT 55/45 — hideLogo, FORM-SEC-01, showStrength
 'use client';
 import React, { useState } from 'react';
 import { AlertCircle } from 'lucide-react';
@@ -27,22 +26,18 @@ export function SignupForm() {
 
   const validate = () => {
     const e: typeof errors = {};
-
-    // Name — FORM-SEC-01 via validatePlainText
     const nameCheck = validatePlainText(name, { required: true, minLength: 1, maxLength: 80, fieldLabel: 'Nombre' });
     if (!nameCheck.valid) {
       if (!name.trim()) e.name = 'Nombre requerido';
       else if (containsUnsafePayload(name)) e.name = 'Contenido no permitido';
       else e.name = nameCheck.errorMessage || 'Nombre inválido';
     }
-
     const emailCheck = validateEmailInput(email);
     if (!emailCheck.valid) {
       if (!email.trim()) e.email = 'Correo requerido';
       else if (containsUnsafePayload(email)) e.email = 'Contenido no permitido';
       else e.email = emailCheck.errorMessage || 'Correo inválido';
     }
-
     const pwdCheck = validatePasswordInput(password, 'signup');
     if (!pwdCheck.valid) {
       if (!password) e.password = 'Contraseña requerida';
@@ -50,7 +45,6 @@ export function SignupForm() {
       else if (containsUnsafePayload(password)) e.password = 'Contenido no permitido';
       else e.password = pwdCheck.errorMessage || 'Contraseña inválida';
     }
-
     if (!terms) e.terms = 'Debes aceptar términos';
     return e;
   };
@@ -89,11 +83,22 @@ export function SignupForm() {
     <AuthCard
       title="Crea tu cuenta"
       subtitle="Empieza gratis con 1.000 consultas/mes. Sin tarjeta."
+      hideLogo
       footer={<div className="text-xs text-ink-secondary">¿Ya tienes cuenta? <a href="/login" className="text-accent hover:underline">Inicia sesión</a></div>}
-      trustFooter={<AuthTrustFooter />}
+      trustFooter={
+        <div className="flex flex-col gap-3 pt-4">
+          <AuthTrustFooter />
+          <div className="text-2xs text-ink-muted">
+            Al crear tu cuenta, aceptas <a href="/terms" className="underline hover:text-ink">Términos</a> y{' '}
+            <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
+          </div>
+        </div>
+      }
     >
+      <SsoButtons />
+      <AuthDivider label="o continúa con correo" />
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        {error && <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
+        {error && <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
         <Input
           id="name"
           label="Nombre"
@@ -107,7 +112,7 @@ export function SignupForm() {
         />
         <Input
           id="email"
-          label="Correo electrónico"
+          label="Correo de trabajo"
           type="email"
           value={email}
           onChange={e => setEmail(e.target.value)}
@@ -116,6 +121,7 @@ export function SignupForm() {
           error={errors.email || null}
           sizeVariant="md"
           autoComplete="email"
+          leadingIcon={<span className="text-ink-muted">✉</span>}
         />
         <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={errors.password} id="password" showStrength hint="Mínimo 8 caracteres" />
         <Checkbox
@@ -130,11 +136,9 @@ export function SignupForm() {
             </span>
           }
         />
-        <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full">
-          Crear cuenta
+        <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5855EB] hover:to-[#7C3AED] text-white border-0 shadow-md justify-center gap-1.5">
+          Crear cuenta <span aria-hidden>→</span>
         </Button>
-        <AuthDivider label="o" />
-        <SsoButtons />
       </form>
     </AuthCard>
   );
