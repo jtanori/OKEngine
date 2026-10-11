@@ -12,6 +12,24 @@ import {
   Code2,
   Shield,
   MessageSquare,
+  Sparkles,
+  Zap,
+  Database,
+  Globe,
+  Puzzle,
+  BarChart3,
+  Palette,
+  Key,
+  Copy,
+  Check,
+  ChevronDown,
+  Quote,
+  Mail,
+  Users,
+  Boxes,
+  Timer,
+  ShieldCheck,
+  Brain,
 } from 'lucide-react';
 import { authService } from '../services/auth';
 import { store } from '../services/store';
@@ -102,6 +120,12 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
   const [heroTourOpenRequest, setHeroTourOpenRequest] = useState<{
     nonce: number;
   } | null>(null);
+
+  // New landing marketing UI state
+  const [integrationTab, setIntegrationTab] = useState<'widget' | 'panel' | 'fullscreen'>('widget');
+  const [pricingAnnual, setPricingAnnual] = useState(true);
+  const [openFaq, setOpenFaq] = useState<string | null>(null);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   const currentUser = authService.getCurrentUser();
   const isAuthenticated = Boolean(currentUser);
@@ -386,10 +410,6 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
     : store.getDocumentByFilename('getting-started');
 
   // Build Collapsible Documentation Navigation Groups (CO-DOCUMENT-NAV)
-  // 1. Product Guides (COL-DOCS) — for everyone, first item (expanded by default)
-  // 2. Public Product Knowledge (COL-PUBLIC) — for everyone (collapsed by default)
-  // 3. Legal & Trust Policies (COL-LEGAL) — for everyone (collapsed by default)
-  // 4. Engineering Specifications (/docs) — ONLY when authenticated (collapsed by default)
   const docNavGroups: DocumentNavGroup[] = useMemo(() => {
     const formatSpecTitle = (slug: string): string => {
       const cleaned = slug
@@ -473,10 +493,30 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
     t,
   ]);
 
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const codeSnippet = `import { OKEngWidget } from "@okeng/react";
+
+export function HelpCenter() {
+  return (
+    <OKEngWidget
+      collection="docs-v3"
+      permissions={user.role}  // respeta el rol
+      theme="auto"
+      citations
+    />
+  );
+}`;
+
   return (
     <div className="min-h-screen bg-canvas text-ink flex flex-col">
       {/* Canonical Public Navigation (PUBLIC-01 §27) */}
-      <header className="h-14 border-b border-line bg-surface px-8 flex items-center justify-between shrink-0">
+      <header className="h-14 border-b border-line bg-surface/80 backdrop-blur-md px-6 lg:px-8 flex items-center justify-between shrink-0 sticky top-0 z-30">
         <div className="flex items-center gap-8">
           <button
             type="button"
@@ -489,7 +529,28 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
             <span className="font-semibold text-sm tracking-tight text-ink">OKEng</span>
           </button>
 
-          <nav className="flex items-center gap-6 text-xs font-medium text-ink-secondary">
+          <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-ink-secondary">
+            <button
+              type="button"
+              onClick={() => scrollToSection('como-funciona')}
+              className="cursor-pointer transition-colors hover:text-ink"
+            >
+              {language === 'es' ? 'Cómo funciona' : 'How it works'}
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection('producto')}
+              className="cursor-pointer transition-colors hover:text-ink"
+            >
+              {language === 'es' ? 'Producto' : 'Product'}
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToSection('precios')}
+              className="cursor-pointer transition-colors hover:text-ink"
+            >
+              {language === 'es' ? 'Precios' : 'Pricing'}
+            </button>
             <button
               type="button"
               onClick={() => navigatePublicPage('docs')}
@@ -512,7 +573,6 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* I18N-001 §36: Public Surface Language Selector (CO-LANGUAGE-SELECTOR) */}
           <LanguageSelector
             value={language}
             onChange={setLanguage}
@@ -545,187 +605,967 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
       </header>
 
       {/* Main Content Surface */}
-      <main className="flex-1 max-w-5xl w-full mx-auto p-8">
+      <main className={`flex-1 w-full ${page === 'landing' ? '' : 'max-w-5xl mx-auto p-8'}`}>
         {/* ============================================================
-            PAGE-PUB-01: Home Page (/) — Public Product Landing & Dogfooding Showcase
+            PAGE-PUB-01: Home Page (/) — Ported Landing with Full Marketing Coverage
+            Maintains spec: hero CTA, pipeline, pillars, bottom CTA + guided tour
         ============================================================ */}
         {page === 'landing' && (
-          <div className="space-y-12 py-6">
-            {/* Hero */}
-            <section className="max-w-2xl space-y-4">
-              <Text as="h1" variant="h1">
-                {t('public.hero.title')}
-              </Text>
-              <Text as="p" variant="body" tone="secondary" className="leading-relaxed">
-                {t('public.hero.subtitle')}
-              </Text>
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                <button
-                  ref={heroTourButtonRef}
-                  type="button"
-                  data-testid="hero-what-is-okeng-cta"
-                  onClick={() => setHeroTourOpenRequest({ nonce: Date.now() })}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-ink text-surface rounded-xs text-xs font-medium hover:bg-ink/90 transition-colors cursor-pointer"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{t('public.tour.hero_primary_cta', 'What is OKEng?')}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-                <Button
-                  variant="secondary"
-                  onClick={() =>
-                    currentUser ? onEnterWorkspace('okeng') : navigatePublicPage('login')
-                  }
-                >
-                  <span>{t('public.hero.cta_start')}</span>
-                </Button>
-                <Button variant="secondary" onClick={() => navigatePublicPage('docs')}>
-                  <BookOpen className="w-4 h-4" />
-                  <span>{t('public.hero.cta_docs')}</span>
-                </Button>
-              </div>
-            </section>
+          <div className="w-full">
+            {/* Announcement Banner */}
+            <div className="w-full bg-ink text-surface py-2.5 px-4 flex items-center justify-center gap-2 text-xs">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="px-1.5 py-0.5 rounded-xs bg-surface/15 font-mono text-2xs font-semibold tracking-wide uppercase">
+                  {t('public.announcement.badge', 'Nuevo')}
+                </span>
+                <span className="font-medium">{t('public.announcement.text', 'Respuestas con citas verificables y permisos por rol.')}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => scrollToSection('producto')}
+                className="ml-2 underline underline-offset-4 hover:text-surface/80 cursor-pointer"
+              >
+                {t('public.announcement.cta', 'Ver novedades→')}
+              </button>
+            </div>
 
-            {/* Pipeline Flow: How OKEng Works */}
-            <section className="space-y-4">
-              <Text as="h2" variant="h3">
-                {t('public.pipeline.heading', 'How OKEng works')}
-              </Text>
-              <Card padding="lg">
-                <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs">
-                  <div className="space-y-1">
-                    <Text variant="mono" tone="secondary">
-                      {t('public.pipeline.step1_tag')}
-                    </Text>
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pipeline.step1_title')}
-                    </Text>
-                    <Text as="p" variant="caption" tone="secondary">
-                      {t('public.pipeline.step1_desc')}
-                    </Text>
+            {/* HERO — Split layout with chat demo */}
+            <section className="max-w-6xl mx-auto px-6 lg:px-8 py-12 lg:py-20">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-start">
+                {/* Left: Copy */}
+                <div className="lg:col-span-7 space-y-6">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-line bg-surface text-2xs font-medium text-ink-secondary">
+                    <Sparkles className="w-3 h-3 text-accent" />
+                    <span>{t('public.hero.badge_new', 'Capa de conocimiento para tu producto')}</span>
                   </div>
-                  <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
-                    <Text variant="mono" tone="secondary">
-                      {t('public.pipeline.step2_tag')}
-                    </Text>
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pipeline.step2_title')}
-                    </Text>
-                    <Text as="p" variant="caption" tone="secondary">
-                      {t('public.pipeline.step2_desc')}
-                    </Text>
+
+                  <div className="space-y-4">
+                    <h1 className="font-sans text-[2.1rem] lg:text-[2.75rem] font-semibold leading-[1.05] tracking-[-0.02em] text-ink">
+                      {t('public.hero.title_new', 'Convierte tu documentación en respuestas con citas, dentro de tu app.')}
+                    </h1>
+                    <p className="text-sm lg:text-[15px] leading-relaxed text-ink-secondary max-w-[560px]">
+                      {t('public.hero.subtitle_new', 'OKEng indexa tu Markdown y web, respeta los permisos por colección y devuelve respuestas verificables. Tus usuarios preguntan y obtienen la fuente, sin salir de tu producto.')}
+                    </p>
                   </div>
-                  <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
-                    <Text variant="mono" tone="secondary">
-                      {t('public.pipeline.step3_tag')}
-                    </Text>
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pipeline.step3_title')}
-                    </Text>
-                    <Text as="p" variant="caption" tone="secondary">
-                      {t('public.pipeline.step3_desc')}
-                    </Text>
+
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => (currentUser ? onEnterWorkspace('okeng') : navigatePublicPage('signup'))}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-ink text-surface rounded-sm text-sm font-medium hover:bg-ink/90 transition-colors cursor-pointer"
+                    >
+                      <span>{t('public.hero.cta_primary', 'Empieza gratis')}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => scrollToSection('como-funciona')}
+                      className="inline-flex items-center gap-2 px-5 py-2.5 bg-surface border border-line text-ink rounded-sm text-sm font-medium hover:bg-subtle transition-colors cursor-pointer"
+                    >
+                      <span>{t('public.hero.cta_secondary', 'Ver cómo funciona')}</span>
+                    </button>
+                    {/* Spec-required primary tour CTA */}
+                    <button
+                      ref={heroTourButtonRef}
+                      type="button"
+                      data-testid="hero-what-is-okeng-cta"
+                      onClick={() => setHeroTourOpenRequest({ nonce: Date.now() })}
+                      className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent text-white rounded-sm text-sm font-medium hover:bg-accent/90 transition-colors cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>{t('public.tour.hero_primary_cta', 'What is OKEng?')}</span>
+                    </button>
                   </div>
-                  <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
-                    <Text variant="mono" tone="secondary">
-                      {t('public.pipeline.step4_tag')}
-                    </Text>
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pipeline.step4_title')}
-                    </Text>
-                    <Text as="p" variant="caption" tone="secondary">
-                      {t('public.pipeline.step4_desc')}
-                    </Text>
+
+                  <p className="text-2xs text-ink-muted font-mono">
+                    {t('public.hero.free_note', 'Gratis hasta 1.000 consultas al mes · Sin tarjeta de crédito · Listo en 5 minutos')}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-subtle border border-success/20 text-2xs font-medium text-success">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {t('public.hero.badge_citations', '≥98% de respuestas con cita')}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-subtle border border-accent/20 text-2xs font-medium text-accent">
+                      <Lock className="w-3 h-3" />
+                      {t('public.hero.badge_permissions', 'Permisos por colección')}
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-elevated border border-line text-2xs font-medium text-ink-secondary">
+                      <FileText className="w-3 h-3" />
+                      {t('public.hero.badge_formats', 'Markdown, web y texto')}
+                    </span>
                   </div>
                 </div>
-              </Card>
-            </section>
 
-            {/* Built around your data (PUBLIC-01 §10.1, §14) */}
-            <section className="space-y-4">
-              <Text as="h2" variant="h3">
-                {t('public.pillars.heading')}
-              </Text>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Card padding="md" className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pillars.files_title')}
-                    </Text>
-                    <FileText className="w-4 h-4 text-accent" />
+                {/* Right: Chat demo mock */}
+                <div className="lg:col-span-5 relative">
+                  <div className="bg-surface border border-line rounded-md shadow-[0_8px_40px_rgba(0,0,0,0.08)] overflow-hidden">
+                    {/* Mock header */}
+                    <div className="px-4 py-3 border-b border-line bg-elevated flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 bg-ink rounded-xs flex items-center justify-center text-surface font-mono text-xs font-semibold">OK</div>
+                        <div>
+                          <div className="text-xs font-semibold text-ink">OKEng</div>
+                          <div className="text-2xs text-success flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                            Asistente de conocimiento · En línea
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 rounded-full bg-line" />
+                        <div className="w-2 h-2 rounded-full bg-line" />
+                        <div className="w-2 h-2 rounded-full bg-line" />
+                      </div>
+                    </div>
+
+                    {/* Mock conversation */}
+                    <div className="p-4 space-y-4 bg-canvas">
+                      <div className="flex justify-end">
+                        <div className="max-w-[80%] px-3 py-2 bg-ink text-surface rounded-sm text-xs">
+                          {t('public.hero.demo_question', '¿Cómo configuro SSO?')}
+                        </div>
+                      </div>
+
+                      <div className="bg-surface border border-line rounded-sm p-3 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-5 h-5 bg-ink rounded-xs flex items-center justify-center text-surface font-mono text-2xs">OK</div>
+                          <span className="text-2xs font-mono text-ink-muted">Para configurar</span>
+                        </div>
+                        <div className="text-xs leading-relaxed text-ink">
+                          Ve a <span className="font-mono bg-subtle px-1 py-0.5 rounded-xs">Configuración → Seguridad</span> y habilita SAML. Necesitarás los metadatos XML de tu IdP.
+                        </div>
+                        <div className="flex items-center gap-2 pt-2 border-t border-line">
+                          <FileText className="w-3 h-3 text-accent" />
+                          <span className="text-2xs font-mono text-ink-secondary truncate">
+                            {t('public.hero.demo_source', 'Guía de SSO · authentication/sso.md')}
+                          </span>
+                          <span className="ml-auto inline-flex items-center gap-1 text-2xs text-success font-medium">
+                            <CheckCircle2 className="w-3 h-3" />
+                            {t('public.hero.demo_verified', 'Verificada')}
+                          </span>
+                        </div>
+                        <div className="text-2xs text-ink-muted font-mono">Fragmento 2 de 3 · coincidencia 0,94</div>
+                      </div>
+
+                      <div className="flex items-center gap-2 px-3 py-2 bg-surface border border-line rounded-sm text-2xs text-ink-muted">
+                        <Search className="w-3 h-3" />
+                        <span>Haz una pregunta…</span>
+                        <span className="ml-auto flex items-center gap-1.5">
+                          <span className="px-1.5 py-0.5 bg-subtle rounded-xs font-mono">{t('public.hero.demo_citation', 'Respuesta con cita')}</span>
+                          <span className="px-1.5 py-0.5 bg-ink text-surface rounded-xs font-mono flex items-center gap-1">
+                            <Code2 className="w-3 h-3" />
+                            {t('public.hero.demo_code', '3 líneas de código')}
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Floating badges */}
+                    <div className="absolute -right-2 -top-2 hidden lg:flex flex-col gap-2">
+                      <div className="px-2.5 py-1 bg-surface border border-line rounded-full shadow-sm text-2xs font-mono text-ink flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 bg-success rounded-full" />
+                        Fuente verificable en 1 clic
+                      </div>
+                      <div className="px-2.5 py-1 bg-ink text-surface rounded-full shadow-sm text-2xs font-mono flex items-center gap-1.5 ml-4">
+                        <Code2 className="w-3 h-3" />
+                        iframe, React o API
+                      </div>
+                    </div>
                   </div>
-                  <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">
-                    {t('public.pillars.files_desc')}
-                  </Text>
-                </Card>
-                <Card padding="md" className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pillars.collections_title')}
-                    </Text>
-                    <FolderKanban className="w-4 h-4 text-accent" />
+
+                  {/* Background glow */}
+                  <div className="absolute -z-10 inset-0 blur-[60px] opacity-20 pointer-events-none">
+                    <div className="absolute top-10 right-10 w-40 h-40 bg-accent rounded-full" />
+                    <div className="absolute bottom-10 left-10 w-32 h-32 bg-success rounded-full" />
                   </div>
-                  <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">
-                    {t('public.pillars.collections_desc')}
-                  </Text>
-                </Card>
-                <Card padding="md" className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pillars.access_title')}
-                    </Text>
-                    <Lock className="w-4 h-4 text-accent" />
-                  </div>
-                  <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">
-                    {t('public.pillars.access_desc')}
-                  </Text>
-                </Card>
-                <Card padding="md" className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Text variant="caption" className="font-semibold">
-                      {t('public.pillars.retrieval_title')}
-                    </Text>
-                    <Code2 className="w-4 h-4 text-accent" />
-                  </div>
-                  <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">
-                    {t('public.pillars.retrieval_desc')}
-                  </Text>
-                </Card>
+                </div>
               </div>
             </section>
 
-            {/* Bottom CTA */}
-            <Card padding="lg" className="flex flex-wrap items-center justify-between gap-4">
-              <div className="space-y-1">
-                <Text as="h3" variant="body" className="font-semibold">
-                  {t('public.bottom_cta.title')}
-                </Text>
-                <Text as="p" variant="caption" tone="secondary">
-                  {t('public.bottom_cta.desc')}
-                </Text>
+            {/* Logos strip */}
+            <section className="border-y border-line bg-surface">
+              <div className="max-w-6xl mx-auto px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <p className="text-2xs font-mono text-ink-muted uppercase tracking-wider">
+                  {t('public.logos.heading', 'Equipos de producto que ya responden con OKEng')}
+                </p>
+                <div className="flex flex-wrap items-center gap-6 lg:gap-8 text-sm font-semibold tracking-tight text-ink-muted">
+                  <span className="flex items-center gap-1.5"><span className="text-ink">◆</span> Nexora</span>
+                  <span className="flex items-center gap-1.5"><span className="text-ink">●</span> Dataflow</span>
+                  <span className="flex items-center gap-1.5"><span className="text-ink">▲</span> Kubelab</span>
+                  <span className="flex items-center gap-1.5"><span className="text-ink">■</span> Aurea</span>
+                  <span className="flex items-center gap-1.5"><span className="text-ink">✦</span> Pacted</span>
+                  <span className="flex items-center gap-1.5"><span className="text-ink">⬡</span> Vanti</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2.5">
-                {currentUser && onNavigatePath && (
-                  <Button
-                    variant="secondary"
-                    onClick={() =>
-                      onNavigatePath('/workspaces/okeng/test?embedId=EMB-PUBLIC-HOME')
-                    }
-                  >
-                    <span>{t('public.bottom_cta.test_console', 'Verify in Test Console')}</span>
-                  </Button>
-                )}
-                <Button
-                  variant="primary"
-                  onClick={() =>
-                    currentUser ? onEnterWorkspace('okeng') : navigatePublicPage('login')
-                  }
+            </section>
+
+            {/* Metrics strip */}
+            <section className="max-w-6xl mx-auto px-6 lg:px-8 py-8">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  { title: t('public.metrics.lines_title', '3 líneas'), desc: t('public.metrics.lines_desc', 'para integrar el widget'), icon: Code2 },
+                  { title: t('public.metrics.tickets_title', '−73%'), desc: t('public.metrics.tickets_desc', 'tickets de soporte (media)'), icon: MessageSquare },
+                  { title: t('public.metrics.uptime_title', '99,9%'), desc: t('public.metrics.uptime_desc', 'uptime SLA'), icon: ShieldCheck },
+                  { title: t('public.metrics.training_title', '0 datos'), desc: t('public.metrics.training_desc', 'usados para entrenar IA'), icon: Brain },
+                ].map((m, i) => (
+                  <div key={i} className="bg-surface border border-line rounded-sm p-4 flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-xs bg-elevated border border-line flex items-center justify-center shrink-0">
+                      <m.icon className="w-4 h-4 text-ink-secondary" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold tracking-tight text-ink">{m.title}</div>
+                      <div className="text-2xs text-ink-secondary leading-tight">{m.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* How it works — 5 steps (spec pipeline + expanded) */}
+            <section id="como-funciona" className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+              <div className="max-w-3xl mb-10">
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-accent-subtle border border-accent/20 text-2xs font-mono font-medium text-accent mb-3">
+                  <Zap className="w-3 h-3" />
+                  {t('public.pipeline.heading', 'Cómo funciona')}
+                </div>
+                <h2 className="font-sans text-[1.75rem] lg:text-[2rem] font-semibold leading-tight tracking-tight text-ink mb-3">
+                  {t('public.how.heading', 'De tus archivos a respuestas, en cinco pasos')}
+                </h2>
+                <p className="text-sm text-ink-secondary leading-relaxed">
+                  {t('public.how.desc', 'Sin infraestructura, sin pipelines que mantener. Subes el contenido, defines los permisos y OKEng hace el resto.')}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 relative">
+                {/* Connector line */}
+                <div className="hidden md:block absolute top-[28px] left-[10%] right-[10%] h-px bg-gradient-to-r from-line via-accent/20 to-line" />
+
+                {[
+                  { n: '1', title: t('public.how.step1_title'), desc: t('public.how.step1_desc'), icon: FileText, color: 'bg-ink' },
+                  { n: '2', title: t('public.how.step2_title'), desc: t('public.how.step2_desc'), icon: Boxes, color: 'bg-ink' },
+                  { n: '3', title: t('public.how.step3_title'), desc: t('public.how.step3_desc'), icon: Users, color: 'bg-accent' },
+                  { n: '4', title: t('public.how.step4_title'), desc: t('public.how.step4_desc'), icon: Search, color: 'bg-accent' },
+                  { n: '5', title: t('public.how.step5_title'), desc: t('public.how.step5_desc'), icon: CheckCircle2, color: 'bg-success' },
+                ].map((step) => (
+                  <div key={step.n} className="relative bg-surface border border-line rounded-sm p-5 space-y-3 hover:border-line-strong transition-colors group">
+                    <div className={`w-7 h-7 rounded-xs ${step.color} text-surface flex items-center justify-center text-xs font-mono font-semibold`}>
+                      {step.n}
+                    </div>
+                    <div className="w-8 h-8 rounded-xs bg-elevated border border-line flex items-center justify-center group-hover:bg-subtle transition-colors">
+                      <step.icon className="w-4 h-4 text-ink-secondary" />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-ink mb-1">{step.title}</h3>
+                      <p className="text-xs text-ink-secondary leading-relaxed">{step.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 flex items-center gap-2 text-xs text-ink-secondary">
+                <Timer className="w-4 h-4" />
+                <span>{t('public.how.time', 'Tiempo medio hasta la primera respuesta en producción: un día.')}</span>
+                <button
+                  type="button"
+                  onClick={() => navigatePublicPage('signup')}
+                  className="ml-1 font-medium text-accent hover:underline cursor-pointer"
                 >
-                  <span>{t('public.bottom_cta.button')}</span>
-                  <ArrowRight className="w-4 h-4" />
-                </Button>
+                  {t('public.how.time_cta', 'Empieza ahora →')}
+                </button>
               </div>
-            </Card>
+
+              {/* Original spec pipeline 4-stage for compatibility (visually integrated) */}
+              <div className="mt-12 grid grid-cols-1 sm:grid-cols-4 gap-4 text-xs border-t border-line pt-8">
+                <div className="space-y-1">
+                  <Text variant="mono" tone="secondary">{t('public.pipeline.step1_tag')}</Text>
+                  <Text variant="caption" className="font-semibold">{t('public.pipeline.step1_title')}</Text>
+                  <Text as="p" variant="caption" tone="secondary">{t('public.pipeline.step1_desc')}</Text>
+                </div>
+                <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
+                  <Text variant="mono" tone="secondary">{t('public.pipeline.step2_tag')}</Text>
+                  <Text variant="caption" className="font-semibold">{t('public.pipeline.step2_title')}</Text>
+                  <Text as="p" variant="caption" tone="secondary">{t('public.pipeline.step2_desc')}</Text>
+                </div>
+                <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
+                  <Text variant="mono" tone="secondary">{t('public.pipeline.step3_tag')}</Text>
+                  <Text variant="caption" className="font-semibold">{t('public.pipeline.step3_title')}</Text>
+                  <Text as="p" variant="caption" tone="secondary">{t('public.pipeline.step3_desc')}</Text>
+                </div>
+                <div className="space-y-1 sm:border-l sm:border-line sm:pl-4">
+                  <Text variant="mono" tone="secondary">{t('public.pipeline.step4_tag')}</Text>
+                  <Text variant="caption" className="font-semibold">{t('public.pipeline.step4_title')}</Text>
+                  <Text as="p" variant="caption" tone="secondary">{t('public.pipeline.step4_desc')}</Text>
+                </div>
+              </div>
+            </section>
+
+            {/* Product — 6 pillars */}
+            <section id="producto" className="bg-surface border-y border-line">
+              <div className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+                <div className="max-w-3xl mb-10">
+                  <h2 className="font-sans text-[1.75rem] lg:text-[2rem] font-semibold leading-tight tracking-tight text-ink mb-3">
+                    {t('public.product.heading', 'Todo lo que necesita una capa de conocimiento seria')}
+                  </h2>
+                  <p className="text-sm text-ink-secondary leading-relaxed">
+                    {t('public.product.desc', 'No es un chatbot con tus PDFs encima. Es retrieval con control de acceso, citas y gobierno del contenido.')}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    { title: t('public.product.md_title'), desc: t('public.product.md_desc'), icon: FileText },
+                    { title: t('public.product.perm_title'), desc: t('public.product.perm_desc'), icon: Shield },
+                    { title: t('public.product.cite_title'), desc: t('public.product.cite_desc'), icon: Quote },
+                    { title: t('public.product.model_title'), desc: t('public.product.model_desc'), icon: Key },
+                    { title: t('public.product.widget_title'), desc: t('public.product.widget_desc'), icon: Palette },
+                    { title: t('public.product.analytics_title'), desc: t('public.product.analytics_desc'), icon: BarChart3 },
+                  ].map((f, i) => (
+                    <Card key={i} padding="md" className="space-y-3 hover:border-line-strong transition-colors">
+                      <div className="flex items-center justify-between">
+                        <div className="w-8 h-8 rounded-xs bg-elevated border border-line flex items-center justify-center">
+                          <f.icon className="w-4 h-4 text-accent" />
+                        </div>
+                        {i === 3 && (
+                          <div className="flex items-center gap-1 text-2xs font-mono text-ink-muted">
+                            <span className="px-1.5 py-0.5 bg-subtle rounded-xs">OpenAI</span>
+                            <span className="px-1.5 py-0.5 bg-subtle rounded-xs">Anthropic</span>
+                            <span className="px-1.5 py-0.5 bg-subtle rounded-xs">Azure</span>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-ink mb-1">{f.title}</h3>
+                        <p className="text-xs text-ink-secondary leading-relaxed">{f.desc}</p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+
+                {/* Original 4 pillars for spec compliance */}
+                <div className="mt-12 grid grid-cols-1 sm:grid-cols-4 gap-4">
+                  <Card padding="md" className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Text variant="caption" className="font-semibold">{t('public.pillars.files_title')}</Text>
+                      <FileText className="w-4 h-4 text-accent" />
+                    </div>
+                    <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">{t('public.pillars.files_desc')}</Text>
+                  </Card>
+                  <Card padding="md" className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Text variant="caption" className="font-semibold">{t('public.pillars.collections_title')}</Text>
+                      <FolderKanban className="w-4 h-4 text-accent" />
+                    </div>
+                    <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">{t('public.pillars.collections_desc')}</Text>
+                  </Card>
+                  <Card padding="md" className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Text variant="caption" className="font-semibold">{t('public.pillars.access_title')}</Text>
+                      <Lock className="w-4 h-4 text-accent" />
+                    </div>
+                    <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">{t('public.pillars.access_desc')}</Text>
+                  </Card>
+                  <Card padding="md" className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Text variant="caption" className="font-semibold">{t('public.pillars.retrieval_title')}</Text>
+                      <Code2 className="w-4 h-4 text-accent" />
+                    </div>
+                    <Text as="p" variant="caption" tone="secondary" className="leading-relaxed">{t('public.pillars.retrieval_desc')}</Text>
+                  </Card>
+                </div>
+              </div>
+            </section>
+
+            {/* Integration — choose how it looks */}
+            <section className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                <div className="lg:col-span-5 space-y-6">
+                  <div>
+                    <h2 className="font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-ink mb-3">
+                      {t('public.integration.heading', 'Elige cómo se ve en tu producto')}
+                    </h2>
+                    <p className="text-sm text-ink-secondary leading-relaxed">
+                      {t('public.integration.desc', 'El mismo motor, la misma seguridad y las mismas citas. Solo cambia el contenedor.')}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1 p-1 bg-elevated border border-line rounded-sm w-fit">
+                    {[
+                      { id: 'widget' as const, label: t('public.integration.tab_widget', 'Widget flotante') },
+                      { id: 'panel' as const, label: t('public.integration.tab_panel', 'Panel lateral') },
+                      { id: 'fullscreen' as const, label: t('public.integration.tab_full', 'Pantalla completa') },
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setIntegrationTab(tab.id)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-xs transition-colors cursor-pointer ${
+                          integrationTab === tab.id
+                            ? 'bg-ink text-surface'
+                            : 'text-ink-secondary hover:text-ink'
+                        }`}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-semibold text-ink">
+                        {integrationTab === 'widget' && t('public.integration.widget_title')}
+                        {integrationTab === 'panel' && t('public.integration.panel_title')}
+                        {integrationTab === 'fullscreen' && t('public.integration.full_title')}
+                      </h3>
+                      <p className="text-xs text-ink-secondary leading-relaxed mt-1">
+                        {integrationTab === 'widget' && t('public.integration.widget_desc')}
+                        {integrationTab === 'panel' && t('public.integration.panel_desc')}
+                        {integrationTab === 'fullscreen' && t('public.integration.full_desc')}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-line">
+                      {[
+                        { title: t('public.integration.feature_perms'), desc: t('public.integration.feature_perms_desc') },
+                        { title: t('public.integration.feature_analytics'), desc: t('public.integration.feature_analytics_desc') },
+                        { title: t('public.integration.feature_theme'), desc: t('public.integration.feature_theme_desc') },
+                      ].map((feat, i) => (
+                        <div key={i} className="flex gap-2">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-success mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-xs font-medium text-ink">{feat.title}</div>
+                            <div className="text-2xs text-ink-secondary">{feat.desc}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="lg:col-span-7">
+                  <div className="bg-elevated border border-line rounded-md p-3 lg:p-4">
+                    <div className="bg-surface border border-line rounded-sm overflow-hidden shadow-sm">
+                      <div className="h-9 px-3 bg-canvas border-b border-line flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-line" />
+                          <div className="w-3 h-3 rounded-full bg-line" />
+                          <div className="w-3 h-3 rounded-full bg-line" />
+                        </div>
+                        <div className="text-2xs font-mono text-ink-muted">app.tuproducto.com</div>
+                        <div className="w-16" />
+                      </div>
+
+                      <div className="p-4 min-h-[280px] flex">
+                        {integrationTab === 'widget' && (
+                          <div className="ml-auto mt-auto relative">
+                            <div className="w-[280px] bg-surface border border-line rounded-sm shadow-lg overflow-hidden">
+                              <div className="px-3 py-2 bg-elevated border-b border-line flex items-center gap-2">
+                                <div className="w-5 h-5 bg-ink rounded-xs flex items-center justify-center text-surface font-mono text-2xs">OK</div>
+                                <span className="text-xs font-semibold">OKEng</span>
+                                <span className="ml-auto text-2xs text-success">En línea</span>
+                              </div>
+                              <div className="p-3 space-y-2">
+                                <div className="text-xs bg-ink text-surface rounded-sm px-2.5 py-1.5 w-fit ml-auto">¿Cómo configuro SSO?</div>
+                                <div className="text-xs bg-canvas border border-line rounded-sm p-2 flex items-center gap-1.5">
+                                  <CheckCircle2 className="w-3 h-3 text-success" />
+                                  <span className="text-2xs">✓ fuente verificada</span>
+                                </div>
+                                <div className="h-8 bg-canvas border border-line rounded-sm flex items-center px-2 text-2xs text-ink-muted">
+                                  Haz una pregunta…
+                                </div>
+                              </div>
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-ink rounded-full flex items-center justify-center text-surface">
+                              <MessageSquare className="w-4 h-4" />
+                            </div>
+                          </div>
+                        )}
+                        {integrationTab === 'panel' && (
+                          <div className="flex w-full gap-4">
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-subtle rounded-xs w-3/4" />
+                              <div className="h-3 bg-subtle rounded-xs w-full" />
+                              <div className="h-3 bg-subtle rounded-xs w-5/6" />
+                              <div className="h-20 bg-subtle rounded-xs w-full mt-4" />
+                            </div>
+                            <div className="w-[200px] border-l border-line pl-3 space-y-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-5 h-5 bg-ink rounded-xs flex items-center justify-center text-surface font-mono text-2xs">OK</div>
+                                <span className="text-xs font-semibold">Ayuda</span>
+                              </div>
+                              <div className="h-3 bg-subtle rounded-xs w-full" />
+                              <div className="h-16 bg-canvas border border-line rounded-sm" />
+                            </div>
+                          </div>
+                        )}
+                        {integrationTab === 'fullscreen' && (
+                          <div className="w-full space-y-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-6 h-6 bg-ink rounded-xs flex items-center justify-center text-surface font-mono text-xs">OK</div>
+                              <span className="text-sm font-semibold">Centro de ayuda</span>
+                              <div className="ml-auto flex gap-1">
+                                <div className="px-2 py-1 bg-accent text-white rounded-xs text-2xs">Preguntas</div>
+                                <div className="px-2 py-1 bg-subtle rounded-xs text-2xs">Docs</div>
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="col-span-1 space-y-2">
+                                <div className="h-3 bg-subtle rounded-xs" />
+                                <div className="h-3 bg-subtle rounded-xs w-5/6" />
+                                <div className="h-3 bg-subtle rounded-xs w-3/4" />
+                              </div>
+                              <div className="col-span-2 border border-line rounded-sm p-3 space-y-2">
+                                <div className="h-4 bg-ink rounded-xs w-1/2" />
+                                <div className="h-3 bg-subtle rounded-xs w-full" />
+                                <div className="h-3 bg-subtle rounded-xs w-5/6" />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Developers — 3 lines of code */}
+            <section id="desarrolladores" className="bg-ink text-surface">
+              <div className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                  <div className="lg:col-span-5 space-y-6">
+                    <div>
+                      <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface/10 border border-surface/15 text-2xs font-mono text-surface/70 mb-3">
+                        <Code2 className="w-3 h-3" />
+                        Para desarrolladores
+                      </div>
+                      <h2 className="font-sans text-[1.75rem] font-semibold leading-tight tracking-tight mb-3">
+                        {t('public.dev.heading', 'Tres líneas de código. Cero infraestructura.')}
+                      </h2>
+                      <p className="text-sm text-surface/60 leading-relaxed">
+                        {t('public.dev.desc', 'Empotra el conocimiento donde ya está tu producto. Sin servidores de vectores que mantener, sin pipelines, sin sorpresas en la factura de la nube.')}
+                      </p>
+                    </div>
+
+                    <ul className="space-y-3 text-sm text-surface/70">
+                      <li className="flex gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                        <span>{t('public.dev.bullet_api')}</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                        <span>{t('public.dev.bullet_webhooks')}</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                        <span>{t('public.dev.bullet_byok')}</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-success shrink-0 mt-0.5" />
+                        <span>{t('public.dev.bullet_deploy')}</span>
+                      </li>
+                    </ul>
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => navigatePublicPage('docs')}
+                        className="px-4 py-2 bg-surface text-ink rounded-sm text-xs font-medium hover:bg-surface/90 cursor-pointer"
+                      >
+                        {t('public.dev.read_docs')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollToSection('faq')}
+                        className="px-4 py-2 bg-surface/10 border border-surface/20 text-surface rounded-sm text-xs font-medium hover:bg-surface/15 cursor-pointer"
+                      >
+                        {t('public.dev.view_faq')}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-7">
+                    <div className="bg-[#0F0F0F] border border-surface/10 rounded-md overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2.5 border-b border-surface/10 bg-surface/5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex gap-1.5">
+                            <div className="w-2.5 h-2.5 rounded-full bg-danger/60" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-warning/60" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-success/60" />
+                          </div>
+                          <span className="ml-3 text-xs font-mono text-surface/50">{t('public.dev.code_file')}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1 text-2xs font-mono text-surface/40">
+                            <span className="px-1.5 py-0.5 bg-surface/10 rounded-xs">React</span>
+                            <span className="px-1.5 py-0.5 bg-surface/10 rounded-xs">HTML</span>
+                            <span className="px-1.5 py-0.5 bg-surface/10 rounded-xs">cURL</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(codeSnippet);
+                              setCopiedCode(true);
+                              setTimeout(() => setCopiedCode(false), 1500);
+                            }}
+                            className="ml-2 px-2 py-1 bg-surface/10 hover:bg-surface/15 rounded-xs text-2xs font-mono text-surface/70 flex items-center gap-1 cursor-pointer"
+                          >
+                            {copiedCode ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                            {copiedCode ? 'Copiado' : 'Copiar'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="p-5 font-mono text-xs leading-relaxed overflow-x-auto">
+                        <pre className="text-surface/80">
+                          <code>{codeSnippet}</code>
+                        </pre>
+                      </div>
+
+                      <div className="px-4 py-2 bg-success/10 border-t border-success/20 flex items-center gap-3 text-2xs font-mono">
+                        <span className="text-success flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                          {t('public.dev.code_ok')}
+                        </span>
+                        <span className="text-surface/50">{t('public.dev.code_cited')}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Testimonials */}
+            <section className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+              <div className="max-w-3xl mb-10">
+                <h2 className="font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-ink mb-3">
+                  {t('public.testimonials.heading')}
+                </h2>
+                <p className="text-sm text-ink-secondary leading-relaxed">
+                  {t('public.testimonials.desc')}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {[
+                  {
+                    metric: t('public.testimonials.t1_metric'),
+                    quote: t('public.testimonials.t1_quote'),
+                    author: t('public.testimonials.t1_author'),
+                    role: t('public.testimonials.t1_role'),
+                    initials: 'MI',
+                  },
+                  {
+                    metric: t('public.testimonials.t2_metric'),
+                    quote: t('public.testimonials.t2_quote'),
+                    author: t('public.testimonials.t2_author'),
+                    role: t('public.testimonials.t2_role'),
+                    initials: 'DS',
+                  },
+                  {
+                    metric: t('public.testimonials.t3_metric'),
+                    quote: t('public.testimonials.t3_quote'),
+                    author: t('public.testimonials.t3_author'),
+                    role: t('public.testimonials.t3_role'),
+                    initials: 'LF',
+                  },
+                ].map((testi, i) => (
+                  <div key={i} className="bg-surface border border-line rounded-sm p-5 space-y-4">
+                    <div className="text-sm font-semibold text-ink">{testi.metric}</div>
+                    <div className="relative">
+                      <Quote className="w-4 h-4 text-line-strong absolute -top-1 -left-1" />
+                      <p className="text-xs text-ink-secondary leading-relaxed pl-4">“{testi.quote}”</p>
+                    </div>
+                    <div className="flex items-center gap-2.5 pt-2 border-t border-line">
+                      <div className="w-7 h-7 rounded-full bg-ink text-surface flex items-center justify-center text-2xs font-mono font-semibold">
+                        {testi.initials}
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium text-ink">{testi.author}</div>
+                        <div className="text-2xs text-ink-secondary">{testi.role}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-6 text-center">
+                <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-elevated border border-line rounded-full text-2xs font-mono text-ink-secondary">
+                  <span className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                  {t('public.testimonials.stats')}
+                </span>
+              </div>
+            </section>
+
+            {/* Pricing */}
+            <section id="precios" className="bg-elevated border-y border-line">
+              <div className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-10">
+                  <div className="max-w-xl">
+                    <h2 className="font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-ink mb-3">
+                      {t('public.pricing.heading')}
+                    </h2>
+                    <p className="text-sm text-ink-secondary leading-relaxed">
+                      {t('public.pricing.desc')}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-1 p-1 bg-surface border border-line rounded-sm">
+                      <button
+                        type="button"
+                        onClick={() => setPricingAnnual(false)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-xs cursor-pointer ${
+                          !pricingAnnual ? 'bg-ink text-surface' : 'text-ink-secondary hover:text-ink'
+                        }`}
+                      >
+                        {t('public.pricing.monthly')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPricingAnnual(true)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-xs cursor-pointer flex items-center gap-1.5 ${
+                          pricingAnnual ? 'bg-ink text-surface' : 'text-ink-secondary hover:text-ink'
+                        }`}
+                      >
+                        {t('public.pricing.annual')}
+                        <span className="px-1 py-0.5 bg-success text-white rounded-xs text-2xs">{t('public.pricing.discount')}</span>
+                      </button>
+                    </div>
+                    <span className="text-2xs text-ink-muted font-mono">{t('public.pricing.note')}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Starter */}
+                  <div className="bg-surface border border-line rounded-sm p-6 flex flex-col">
+                    <div className="space-y-1 mb-5">
+                      <h3 className="text-sm font-semibold text-ink">{t('public.pricing.starter_name')}</h3>
+                      <p className="text-xs text-ink-secondary">{t('public.pricing.starter_desc')}</p>
+                      <div className="pt-2">
+                        <span className="text-2xl font-semibold tracking-tight text-ink">{t('public.pricing.starter_price')}</span>
+                      </div>
+                      <p className="text-2xs text-ink-muted">{t('public.pricing.starter_sub')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigatePublicPage('signup')}
+                      className="w-full py-2 bg-surface border border-line rounded-sm text-xs font-medium text-ink hover:bg-subtle cursor-pointer"
+                    >
+                      {t('public.pricing.starter_cta')}
+                    </button>
+                    <ul className="mt-6 space-y-2 text-xs text-ink-secondary">
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.starter_f1')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.starter_f2')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.starter_f3')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.starter_f4')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.starter_f5')}</li>
+                    </ul>
+                  </div>
+
+                  {/* Pro — popular */}
+                  <div className="bg-ink text-surface border border-ink rounded-sm p-6 flex flex-col relative overflow-hidden">
+                    <div className="absolute top-3 right-3 px-2 py-0.5 bg-surface text-ink rounded-full text-2xs font-semibold">
+                      {t('public.pricing.pro_popular')}
+                    </div>
+                    <div className="space-y-1 mb-5">
+                      <h3 className="text-sm font-semibold">{t('public.pricing.pro_name')}</h3>
+                      <p className="text-xs text-surface/60">{t('public.pricing.pro_desc')}</p>
+                      <div className="pt-2">
+                        <span className="text-2xl font-semibold tracking-tight">{pricingAnnual ? t('public.pricing.pro_price') : '39€/mes'}</span>
+                      </div>
+                      <p className="text-2xs text-surface/50">{t('public.pricing.pro_sub')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigatePublicPage('signup')}
+                      className="w-full py-2 bg-surface text-ink rounded-sm text-xs font-medium hover:bg-surface/90 cursor-pointer"
+                    >
+                      {t('public.pricing.pro_cta')}
+                    </button>
+                    <ul className="mt-6 space-y-2 text-xs text-surface/70">
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.pro_f1')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.pro_f2')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.pro_f3')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.pro_f4')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.pro_f5')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.pro_f6')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.pro_f7')}</li>
+                    </ul>
+                  </div>
+
+                  {/* Scale */}
+                  <div className="bg-surface border border-line rounded-sm p-6 flex flex-col">
+                    <div className="space-y-1 mb-5">
+                      <h3 className="text-sm font-semibold text-ink">{t('public.pricing.scale_name')}</h3>
+                      <p className="text-xs text-ink-secondary">{t('public.pricing.scale_desc')}</p>
+                      <div className="pt-2">
+                        <span className="text-2xl font-semibold tracking-tight text-ink">{t('public.pricing.scale_price')}</span>
+                      </div>
+                      <p className="text-2xs text-ink-muted">{t('public.pricing.scale_sub')}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => navigatePublicPage('contact')}
+                      className="w-full py-2 bg-ink text-surface rounded-sm text-xs font-medium hover:bg-ink/90 cursor-pointer"
+                    >
+                      {t('public.pricing.scale_cta')}
+                    </button>
+                    <ul className="mt-6 space-y-2 text-xs text-ink-secondary">
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.scale_f1')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.scale_f2')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.scale_f3')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.scale_f4')}</li>
+                      <li className="flex gap-2"><Check className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />{t('public.pricing.scale_f5')}</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-8 bg-surface border border-line rounded-sm p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-semibold text-ink">{t('public.pricing.bottom_title')}</div>
+                    <div className="text-2xs text-ink-secondary">{t('public.pricing.bottom_desc')}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigatePublicPage('contact')}
+                    className="px-4 py-2 bg-surface border border-line rounded-sm text-xs font-medium text-ink hover:bg-subtle cursor-pointer whitespace-nowrap"
+                  >
+                    {t('public.pricing.bottom_cta')}
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            {/* FAQ */}
+            <section id="faq" className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+                <div className="lg:col-span-5 space-y-4">
+                  <h2 className="font-sans text-[1.75rem] font-semibold leading-tight tracking-tight text-ink">
+                    {t('public.faq.heading')}
+                  </h2>
+                  <p className="text-sm text-ink-secondary leading-relaxed">
+                    {t('public.faq.desc')}
+                  </p>
+                  <Card padding="md" className="bg-elevated">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 rounded-full bg-ink text-surface flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <div className="text-xs font-semibold text-ink">{t('public.faq.contact')}</div>
+                        <div className="text-2xs text-ink-secondary leading-relaxed">{t('public.faq.contact_desc')}</div>
+                        <a href="mailto:hola@okeng.com" className="inline-flex mt-2 text-xs font-medium text-accent hover:underline">
+                          hola@okeng.com
+                        </a>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                <div className="lg:col-span-7 space-y-2">
+                  {[
+                    { q: t('public.faq.q1'), a: t('public.faq.a1') },
+                    { q: t('public.faq.q2'), a: t('public.faq.a2') },
+                    { q: t('public.faq.q3'), a: t('public.faq.a3') },
+                    { q: t('public.faq.q4'), a: t('public.faq.a4') },
+                    { q: t('public.faq.q5'), a: t('public.faq.a5') },
+                    { q: t('public.faq.q6'), a: t('public.faq.a6') },
+                  ].map((item, idx) => {
+                    const id = `faq-${idx}`;
+                    const isOpen = openFaq === id;
+                    return (
+                      <div key={id} className="border border-line rounded-sm bg-surface overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => setOpenFaq(isOpen ? null : id)}
+                          className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left cursor-pointer hover:bg-elevated transition-colors"
+                        >
+                          <span className="text-sm font-medium text-ink">{item.q}</span>
+                          <ChevronDown className={`w-4 h-4 text-ink-muted shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isOpen && (
+                          <div className="px-5 pb-4 text-xs text-ink-secondary leading-relaxed border-t border-line bg-canvas">
+                            <div className="pt-3">{item.a}</div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            {/* Final CTA + Spec bottom CTA */}
+            <section className="bg-ink text-surface">
+              <div className="max-w-6xl mx-auto px-6 lg:px-8 py-16">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+                  <div className="lg:col-span-7 space-y-5">
+                    <h2 className="font-sans text-[2rem] font-semibold leading-tight tracking-tight">
+                      {t('public.final.heading', 'Empieza a responder en minutos')}
+                    </h2>
+                    <p className="text-sm text-surface/60 leading-relaxed max-w-xl">
+                      {t('public.final.desc')}
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        onClick={() => navigatePublicPage('signup')}
+                        className="px-5 py-2.5 bg-surface text-ink rounded-sm text-sm font-medium hover:bg-surface/90 cursor-pointer"
+                      >
+                        {t('public.final.cta_primary')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => navigatePublicPage('docs')}
+                        className="px-5 py-2.5 bg-surface/10 border border-surface/20 text-surface rounded-sm text-sm font-medium hover:bg-surface/15 cursor-pointer"
+                      >
+                        {t('public.final.cta_secondary')}
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-4 pt-2 text-2xs font-mono text-surface/50">
+                      <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" />{t('public.final.bullet1')}</span>
+                      <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" />{t('public.final.bullet2')}</span>
+                      <span className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3" />{t('public.final.bullet3')}</span>
+                    </div>
+                  </div>
+
+                  <div className="lg:col-span-5">
+                    <Card padding="lg" className="bg-surface text-ink flex flex-col gap-4">
+                      <div className="space-y-1">
+                        <Text as="h3" variant="body" className="font-semibold">
+                          {t('public.bottom_cta.title')}
+                        </Text>
+                        <Text as="p" variant="caption" tone="secondary">
+                          {t('public.bottom_cta.desc')}
+                        </Text>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        {currentUser && onNavigatePath && (
+                          <Button
+                            variant="secondary"
+                            onClick={() =>
+                              onNavigatePath('/workspaces/okeng/test?embedId=EMB-PUBLIC-HOME')
+                            }
+                          >
+                            <span>{t('public.bottom_cta.test_console', 'Verify in Test Console')}</span>
+                          </Button>
+                        )}
+                        <Button
+                          variant="primary"
+                          onClick={() =>
+                            currentUser ? onEnterWorkspace('okeng') : navigatePublicPage('login')
+                          }
+                        >
+                          <span>{t('public.bottom_cta.button')}</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+            </section>
 
             {/* Floating Conversational Guided Tour (EMB-PUBLIC-HOME) */}
             <HomepageGuidedTour
@@ -1229,9 +2069,9 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
       </main>
 
       {/* Canonical Public Footer (CO-PUBLIC-FOOTER / PUBLIC-01 §28) */}
-      <footer className="border-t border-line bg-surface px-8 py-8 mt-12 shrink-0">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-6 text-xs">
-          <div className="space-y-2">
+      <footer className="border-t border-line bg-surface px-6 lg:px-8 py-10 mt-0 shrink-0">
+        <div className="max-w-6xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8 text-xs">
+          <div className="space-y-3">
             <Text
               as="span"
               variant="mono"
@@ -1240,7 +2080,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
             >
               {t('public.footer.product')}
             </Text>
-            <ul className="space-y-1.5 text-ink-secondary">
+            <ul className="space-y-2 text-ink-secondary">
               <li>
                 <button
                   type="button"
@@ -1259,10 +2099,28 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
                   {t('public.footer.security')}
                 </button>
               </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('producto')}
+                  className="hover:text-ink hover:underline underline-offset-4 transition-colors cursor-pointer"
+                >
+                  {language === 'es' ? 'Producto' : 'Product'}
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('precios')}
+                  className="hover:text-ink hover:underline underline-offset-4 transition-colors cursor-pointer"
+                >
+                  {language === 'es' ? 'Precios' : 'Pricing'}
+                </button>
+              </li>
             </ul>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Text
               as="span"
               variant="mono"
@@ -1271,7 +2129,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
             >
               {t('public.footer.resources')}
             </Text>
-            <ul className="space-y-1.5 text-ink-secondary">
+            <ul className="space-y-2 text-ink-secondary">
               <li>
                 <button
                   type="button"
@@ -1290,10 +2148,19 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
                   {t('public.footer.contact')}
                 </button>
               </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={() => scrollToSection('como-funciona')}
+                  className="hover:text-ink hover:underline underline-offset-4 transition-colors cursor-pointer"
+                >
+                  {language === 'es' ? 'Cómo funciona' : 'How it works'}
+                </button>
+              </li>
             </ul>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Text
               as="span"
               variant="mono"
@@ -1302,7 +2169,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
             >
               {t('public.footer.company')}
             </Text>
-            <ul className="space-y-1.5 text-ink-secondary">
+            <ul className="space-y-2 text-ink-secondary">
               <li>
                 <button
                   type="button"
@@ -1326,7 +2193,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
             </ul>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-3">
             <Text
               as="span"
               variant="mono"
@@ -1335,7 +2202,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
             >
               {t('public.footer.legal')}
             </Text>
-            <ul className="space-y-1.5 text-ink-secondary">
+            <ul className="space-y-2 text-ink-secondary">
               <li>
                 <button
                   type="button"
@@ -1367,7 +2234,7 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto pt-6 mt-6 border-t border-line flex items-center justify-between">
+        <div className="max-w-6xl mx-auto pt-8 mt-8 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-4">
           <span
             onClick={() => navigatePublicPage('landing')}
             className="inline-flex items-center gap-2 cursor-pointer"
@@ -1378,7 +2245,15 @@ export const PublicSurfaceView: React.FC<PublicSurfaceViewProps> = ({
             <span className="font-sans font-semibold text-sm tracking-tight text-ink">
               OKEng
             </span>
+            <span className="ml-2 text-2xs font-mono text-ink-muted hidden sm:inline">
+              Tu conocimiento. Dentro de tu producto. Desde el primer día.
+            </span>
           </span>
+          <div className="flex items-center gap-3 text-2xs font-mono text-ink-muted">
+            <span>Gratis hasta 1.000 consultas</span>
+            <span>·</span>
+            <span>Sin tarjeta · Listo en 5 minutos</span>
+          </div>
         </div>
       </footer>
     </div>

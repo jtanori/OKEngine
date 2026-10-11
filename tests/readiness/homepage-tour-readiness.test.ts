@@ -727,6 +727,7 @@ describe('OKEng Homepage Guided Tour Readiness Suite (PAGE-PUB-01)', () => {
 
     it('READINESS-SEC-02 (Case 2 — Signed Member/Admin + EffectiveScope = Role ∩ Embed Binding): Valid member/admin tokens unlock bound collections on EMB-PUBLIC-HOME but cannot access unbound collections on EMB-PUBLIC-DOCS', async () => {
       const now = Math.floor(Date.now() / 1000);
+      const devSigningSecret = process.env.OKENG_SIGNING_SECRET || 'dev-only-workspace-secret-ws_okeng_01-min-32-chars-okeng-2026';
       const adminTokenForDocsEmbed = await createEmbedIdentityToken(
         {
           workspace_id: workspace.id,
@@ -736,14 +737,14 @@ describe('OKEng Homepage Guided Tour Readiness Suite (PAGE-PUB-01)', () => {
           iat: now,
           exp: now + 300,
         },
-        workspace.signingSecret
+        devSigningSecret
       );
 
       const resolved = await resolveRequestEmbedIdentity({
         identityToken: adminTokenForDocsEmbed,
         expectedWorkspaceId: workspace.id,
         expectedEmbedId: docsEmbed.id,
-        signingSecret: workspace.signingSecret,
+        signingSecret: devSigningSecret,
       });
       assert.strictEqual(resolved.ok, true);
       if (!resolved.ok) return;
@@ -768,6 +769,7 @@ describe('OKEng Homepage Guided Tour Readiness Suite (PAGE-PUB-01)', () => {
 
     it('READINESS-SEC-03 (Case 3 — Invalid / Expired / Tampered Token): Rejects with 401 before retrieval and never falls back to anonymous scope', async () => {
       const now = Math.floor(Date.now() / 1000);
+      const devSigningSecret = process.env.OKENG_SIGNING_SECRET || 'dev-only-workspace-secret-ws_okeng_01-min-32-chars-okeng-2026';
       const expiredToken = await createEmbedIdentityToken(
         {
           workspace_id: workspace.id,
@@ -777,14 +779,14 @@ describe('OKEng Homepage Guided Tour Readiness Suite (PAGE-PUB-01)', () => {
           iat: now - 900,
           exp: now - 300,
         },
-        workspace.signingSecret
+        devSigningSecret
       );
 
       const expiredRes = await resolveRequestEmbedIdentity({
         identityToken: expiredToken,
         expectedWorkspaceId: workspace.id,
         expectedEmbedId: homeEmbed.id,
-        signingSecret: workspace.signingSecret,
+        signingSecret: devSigningSecret,
       });
       assert.strictEqual(expiredRes.ok, false);
       if (!expiredRes.ok) {
