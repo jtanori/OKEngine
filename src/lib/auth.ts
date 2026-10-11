@@ -33,11 +33,13 @@ export function getSystemRole(user: any): SystemRole {
 }
 
 // Session helpers — JWT style for Next.js, httpOnly cookie
+// Phase 5: extended with workspaceRole for consistent workspace auth
 export interface SessionData {
   userId: string;
   email: string;
   role: SystemRole;
   workspaceId?: string;
+  workspaceRole?: string; // WORKSPACE_OWNER, WORKSPACE_EDITOR, admin, etc.
   createdAt: number;
 }
 

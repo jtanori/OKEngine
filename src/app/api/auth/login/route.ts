@@ -1,9 +1,12 @@
-// POST /api/auth/login — Login with rate limiting TIER_AUTH_5_PER_15M, CSRF, validation, session regeneration
+// POST /api/auth/login — Login with rate limiting, CSRF, validation, session regeneration, primary workspace deterministic (P1 Phase 5)
+// Implements: primary workspace most recent active membership ORDER BY created_at DESC LIMIT 1, populate session workspaceId and workspaceRole
+
 import { NextRequest, NextResponse } from 'next/server';
 import { loginSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rateLimit';
 import { validateCsrf, createSessionResponse } from '@/lib/auth';
 import { getPool } from '@/lib/db';
+import { getPrimaryWorkspaceForUser } from '@/lib/workspaceAuth';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
@@ -50,11 +53,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'unauthorized', message: 'Credenciales inválidas' }, { status: 401 });
     }
 
-    // Session creation with regeneration
+    // Phase 5: Get primary workspace — most recent active membership ORDER BY created_at DESC LIMIT 1
+    // Deterministic default but not proof for billing — billing operations still validate membership
+    let primaryWorkspace: { workspaceId: string; role: string } | null = null;
+    try {
+      primaryWorkspace = await getPrimaryWorkspaceForUser(user.id);
+    } catch (err) {
+      console.warn('[auth/login] Failed to get primary workspace, continuing without', err);
+    }
+
+    // Session creation with regeneration, including workspaceId and workspaceRole
     const sessionData = {
       userId: user.id,
       email: user.email,
       role: user.role || 'member',
+      workspaceId: primaryWorkspace?.workspaceId,
+      workspaceRole: primaryWorkspace?.role,
       createdAt: Date.now(),
     };
 

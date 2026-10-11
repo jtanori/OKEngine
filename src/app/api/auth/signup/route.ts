@@ -194,6 +194,7 @@ export async function POST(request: NextRequest) {
       email,
       role: 'admin' as const,
       workspaceId,
+      workspaceRole: 'WORKSPACE_OWNER',
       createdAt: Date.now(),
     };
 
