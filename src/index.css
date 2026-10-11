@@ -34,10 +34,29 @@
   --text-xs--line-height: 1rem;
   --text-sm: 0.875rem;
   --text-sm--line-height: 1.25rem;
+  --text-hero: 3rem;
+  --text-hero--line-height: 3.25rem;
+  --text-hero--letter-spacing: -0.02em;
+  --text-section: 1.875rem;
+  --text-section--line-height: 2.25rem;
+  --text-section--letter-spacing: -0.01em;
+  --text-card-title: 1rem;
+  --text-card-title--line-height: 1.5rem;
+  --text-metric-value: 2.25rem;
+  --text-metric-value--line-height: 2.5rem;
 
   --radius-xs: 3px;
   --radius-sm: 4px;
   --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  --spacing-section-y: 6rem;
+  --spacing-section-y-mobile: 4rem;
 }
 
 :root {
@@ -51,6 +70,7 @@
   --bg-subtle: #F4F4F0;
 
   --text-primary: #171717;
+  --text-strong: #0F172A;
   --text-secondary: #6B6B67;
   --text-muted: #8C8B85;
 
