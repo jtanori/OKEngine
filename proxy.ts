@@ -49,8 +49,24 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  // Security headers (SEC-HEADERS-01)
-  response.headers.set('X-Frame-Options', 'DENY');
+  // Security headers (SEC-HEADERS-01) — P1 restore framing protection, scoped CSP per review
+  const pathname = request.nextUrl.pathname;
+  const isEmbedPreview =
+    pathname.includes('/embeds/preview') ||
+    (pathname.includes('/embeds/') && pathname.endsWith('/installation')) ||
+    pathname.startsWith('/api/embed/');
+  if (isEmbedPreview) {
+    // Embeddable route — allow framing from verified origins only (EMBED-02 contract)
+    response.headers.set('X-Frame-Options', 'SAMEORIGIN');
+    response.headers.set(
+      'Content-Security-Policy',
+      "frame-ancestors 'self' https://*.okeng.io https://*.arena.site https://*.e2b.app"
+    );
+  } else {
+    // Sensitive routes (/, /login, /workspaces/* except preview) — deny framing
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('Content-Security-Policy', "frame-ancestors 'none'");
+  }
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');

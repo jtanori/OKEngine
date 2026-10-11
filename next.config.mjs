@@ -14,9 +14,33 @@ const nextConfig = {
       {
         source: '/(.*)',
         headers: [
+          { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+          { key: 'Content-Security-Policy', value: "frame-ancestors 'none'" },
+        ],
+      },
+      {
+        // Embeddable preview — explicitly allow framing from self + verified embed origins (per EMBED-02 contract)
+        // Sensitive routes (/, /login, /signup, /workspaces/* except preview) remain DENY via above + proxy
+        source: '/workspaces/:workspaceSlug/embeds/preview',
+        headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://*.okeng.io https://*.arena.site https://*.e2b.app",
+          },
+        ],
+      },
+      {
+        source: '/workspaces/:workspaceSlug/embeds/:embedId/preview',
+        headers: [
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://*.okeng.io https://*.arena.site https://*.e2b.app",
+          },
         ],
       },
     ];
