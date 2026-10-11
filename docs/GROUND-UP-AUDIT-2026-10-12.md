@@ -113,3 +113,91 @@ All PR consume DS only, no `bg-[#]`. Control heights verified: `Button xs6/sm8/m
 4. **Legacy `src/views-legacy/PublicSurfaceView.tsx` 2262 lines** — archive after tour confirm
 — None blocks v3.1 archetype completeness; next `PLAN-00X` can take them.
 
+---
+
+# Home Page Pixel Audit 2026-10-11 — Target `01a1278b-…arena.site` vs Current `119c9ea` — Full File Map + Code Plan (batch, not yet applied)
+
+**Scope:** `PA-LANDING` 13 surfaces top→bottom. **Ignore:** `N` Next.js dev balloon (left) + `Built with Arena` badge (target overlays). **Authority:** `AGENTS.md §2 DS→PR→CO→SU→PA` — styles via **DS tokens / PR primitives**, `CO` composes only. **Branch:** `arena/c1ccdf80-okengine` `119c9ea` (banner dark already applied). **Build gate:** `26 routes PASS` + `lint 0 errors` after batch.
+
+## 0. Spec Deltas — What the audit forces us to amend (nothing is stone)
+
+**DS `src/index.css @theme`**
+- `DS-COLOR-INK-STRONG` `#0F172A → #05081A` ✅ **DONE `119c9ea`** — matches target `rgb(5,8,26)` banner + `Developers/FinalCTA/Footer` dark `bg-ink-strong`
+- Keep `DS-COLOR-SUBTLE #F4F4F0` `LINE #DEDDD8` `ACCENT #1D4ED8` `SUCCESS/WARNING/DANGER` as-is — do **not** invent `bg-[#6366F1]` per-component
+- If we adopt target purple ` #6366F1 → #8B5CF6` gradient for `accent` buttons/pills, amend `01 v3.2`: `--accent-primary: #6366F1` `--accent-hover: #4F46E5` (1 token change, propagates to `Button accent`, `Badge accent-subtle`, `span underline`). **Decision deferred:** keep cobalt `#1D4ED8` for batch v1 to avoid global recolor, use `bg-accent` for purple-ish `accent` (target purple is close enough). Can be v3.3 if we want exact gradient.
+
+**New / Extended PR** (all DS-only, `sizeVariant`, `aria-*`):
+- Extend `PR-BUTTON` — already `accent/ghost` `sm 32 h-8 / md 36 h-9` `rounded-sm 4px`; batch will use `size=sm` `rounded-md 6px` + `shadow-sm` where target shows `rounded-lg 12px shadow-lg` — add `rounded` token usage via `className="rounded-md"` (no new primitive), keep `PR-BUTTON` geometry as-is and compose via `className`
+- Extend `PR-BADGE` — add `pill` variant `rounded-full bg-accent-subtle border text-accent text-2xs` for section pills `“• Producto”` etc (currently `Badge` has `solid-*`; add `pill-accent` variant)
+- Extend `PR-CARD` — confirm `rounded-xl 16px` `shadow-sm/md/xl` already in DS; `Feature/Testimonial/Pricing/Faq` will compose `Card rounded-xl`
+- New `PR-SECTION-PILL` (thin wrapper over `Badge pill-accent`) — `• Cómo funciona` `• Producto` `• Integración` `• Para desarrolladores` `• Clientes` `• Precios` `• Preguntas frecuentes` — `inline-flex rounded-full bg-accent-subtle border text-accent text-2xs px-3 py-1 gap-1.5`
+- New `PR-ICON-TILE` — `w-9 h-9 rounded-lg bg-accent-subtle text-accent flex items-center justify-center` for `Product` 6 icons `FileText Shield Quote Key Palette ChartBar` + `Integration` 3 bullets `Shield Chart Sun` + `HowItWorks` illustration headers
+
+**New CO slots:** `HowItWorksStep` gets `illustration?: ReactNode` (pastel header), `FeatureCard` gets `icon` + `illustration` (code/bars), `PricingCard` gets `dark` variant, `Faq` gets `leftCard` slot.
+
+**SU / PA:** no new archetype — `PA-LANDING` header `h-14 sticky top-0 z-20 max-w-7xl px-6` + 13 `SU-LANDING-*` each `max-w-7xl px-6 py-16 md:py-24` (or `bg-ink-strong` dark) — keep. Add `SU-LANDING-HEADER` composition note.
+
+## 1. File Map — Every file we will touch and exact code change (batch)
+
+### DS
+| File | Change |
+|---|---|
+| `src/index.css` | `DS-COLOR-INK-STRONG #05081A` ✅ done; no further token change for batch v1 |
+
+### PR — `src/components/ui/*` (DS-only)
+| File | Change |
+|---|---|
+| `AnnouncementBanner.tsx` | `bg-subtle border-b text-ink-secondary py-2.5 → bg-ink-strong text-surface border-0 py-2 leading-6` ✅ done `119c9ea` |
+| `Button.tsx` | no file change — batch uses existing `variant=accent/ghost primary secondary` `size=sm/md` `rounded-sm` + `className="rounded-md shadow-sm"` per `CO` |
+| `Badge.tsx` | add `pill-accent` variant: `inline-flex rounded-full bg-accent-subtle border border-accent/10 text-accent text-2xs px-2.5 py-1 font-medium` |
+| `Card.tsx` | no change — use `rounded-xl` via `className` |
+| `Tabs.tsx` / `SegmentedTabs` | no file change — `LandingIntegration` will compose `SegmentedTabs size=sm variant=ink` with `rounded-full` track via `className` |
+| `FeatureCard.tsx` | add `icon?: ReactNode` + `illustration?: ReactNode` props; render `iconTile` `w-9 h-9 rounded-lg bg-accent-subtle text-accent` + `illustration` `mt-4 p-3 bg-elevated border rounded-lg` |
+| `HowItWorksStep.tsx` | add `illustration?: ReactNode` `color?: string` props; render `Card rounded-xl border shadow-sm overflow-hidden` top `illustration bg-subtle h-28` + `number` `w-7 h-7 rounded-full bg-[color] text-white shadow-md absolute -top-3 left-3` `→` centered |
+| `TestimonialCard.tsx` | add `quoteIcon` `avatar` `badge` props; `rounded-xl` `quote text-accent/20` `badge top rounded-full bg-accent-subtle text-accent` |
+| `PricingCard.tsx` | add `dark?: boolean` variant; when `dark` `bg-ink-strong text-white border-0 rounded-xl shadow-xl` `button bg-white text-ink-strong rounded-full` + `badge Más popular gradient purple absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-1 text-2xs` |
+| `FaqAccordion.tsx` | change trigger `+` `w-7 h-7 rounded-full border bg-white text-ink-muted` `open X bg-accent text-white` `border-t only` not `border rounded-lg divide-y` |
+| `CodeSnippet.tsx` / `CodeBlock.tsx` | no file change — `LandingDevelopers` composes existing with `dots ●●●` + `tabs React/HTML/cURL` + `Copiar` via `headerActions` |
+| **New** `SectionPill.tsx` | `export function SectionPill({label}) { return <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-subtle border border-accent/10 px-3 py-1 text-2xs font-medium text-accent">• {label}</span> }` |
+| **New** `IconTile.tsx` | `w-9 h-9 rounded-lg bg-accent-subtle text-accent` |
+
+### CO — `src/components/landing/*` (compose PR, `useI18n` later, no `window.location`, no bracket hex)
+| File | Change |
+|---|---|
+| `LandingView.tsx:25` header | `w-full border-b border-line bg-surface/80 backdrop-blur-sm` `h-14 flex justify-between` with left `gap-8` + right `gap-3` → **3-zone**: `logo left shrink-0` `nav flex-1 justify-center gap-8 text-sm font-medium text-ink-secondary` `CTAs right shrink-0 gap-3` `logo h-6 w-6 rounded-md bg-ink shadow-sm` `nav Producto/Integración/Precios/FAQ gap-8 text-sm` `Iniciar sesión ghost sm` `Empieza gratis accent sm rounded-md shadow-sm px-5 py-2` |
+| `LandingHero.tsx` | **copy swap**: `badge “Capa de conocimiento para tu producto”` `pill bg-surface border` `H1 “Convierte tu documentación en <span className="text-accent underline decoration-2">respuestas con citas,</span> dentro de tu app.” text-hero` `sub “OKEng indexa tu Markdown…” text-lg` `trust “Gratis hasta 1.000 consultas al mes · Sin tarjeta · Listo en 5 minutos” text-xs` `CTAs Button accent rounded-lg shadow-lg purple` `Button secondary rounded-lg` `badges → white bg-surface border + icons ✓ Shield Doc` `avatars -space-x-2` keep `ChatMock max-w-md shadow-lg` richer bubbles |
+| `LandingLogoStrip.tsx` | `USADO POR EQUIPOS QUE ESCALAN SOPORTE → EQUIPOS DE PRODUCTO QUE YA RESPONDEN CON OKENG` `tracking-[0.2em] uppercase text-2xs` + **icons** `◆ Nexora • Dataflow ▲ Kubelab ■ Aurea ✦ Pacted ○ Vanti` `w-2 h-2` `gap-2 gap-8 opacity-60 → 100` |
+| `LandingMetrics.tsx` | `naked grid → Card rounded-xl border border-line bg-surface divide-x p-6 text-center` `numbers text-metric-value font-bold text-ink-strong` `labels normal-case text-2xs text-ink-muted` `99.9% → 99,9%` comma `para integrar el widget / tickets de soporte (media) / uptime comprometido (SLA) / datos usados para entrenar IA` remove `según clientes/BYOK` sub |
+| `LandingHowItWorks.tsx` | add `SectionPill “• Cómo funciona”` `center` `H2 center` `p max-w-2xl center` `grid grid-cols-5 gap-4` `Cards rounded-xl border shadow-sm` `illustrations pastel h-28` per step `1 blue #6366F1 2 #0EA5E9 3 #10B981 4 #8B5CF6 5 #F43F5E` numbers `absolute colored` |
+| `LandingProductFeatures.tsx` | add `SectionPill “• Producto”` `center` `H2 “Todo lo que necesita una capa de conocimiento seria” center` `p “No es un chatbot…” max-w-2xl center` `Cards rounded-xl` `icon w-9 h-9 bg-accent-subtle purple` `titles Permisos que se respetan / Un widget… / Analítica de conocimiento` **copy sync** `illustrations` code `docs/sso.md v3.2` + model pills `OpenAI…Local` + bar chart |
+| `LandingIntegration.tsx` | add `SectionPill “• Integración”` `center` `tabs centered pill bg-white border rounded-full p-1` `active bg-ink-strong text-white rounded-full` `left bullets 3× Permit… Analítica… Claro… icon w-7 h-7 bg-accent-subtle` `right preview browser mock + widget overlay shadow-lg rounded-xl` replace placeholder gray bars+blue dot+code snippet two-card |
+| `LandingDevelopers.tsx` | add `SectionPill “> Para desarrolladores” rounded-full bg-white/10 border-white/20 text-white/80` `bullets — → ✓ green w-5 h-5 rounded-full bg-emerald-500/20` `CTAs rounded-md shadow-sm px-5 py-2.5` `Code top bar ●●● + tabs React/HTML/cURL + Copiar` `Code rounded-xl shadow-xl` `floating badge Card bg-ink-strong border` |
+| `LandingTestimonials.tsx` | add `SectionPill “• Clientes” center` `H2 center` `p max-w-2xl center` `Cards rounded-xl quote text-accent/20 top` `badge top lavender rounded-full bg-accent-subtle text-accent` `avatar w-9 h-9 rounded-full bg-accent text-white MI/DS/LF` `name/role` `border-t` `footer +400… text-sm ink strong center` |
+| `LandingPricing.tsx` | add `SectionPill “• Precios” center` `H2 “Empieza gratis. Paga cuando escale.” center` `p max-w-2xl center` `Toggle centered pill rounded-full active bg-ink-strong text-white -20% green pill` `Cards rounded-xl` `Pro dark bg-ink-strong text-white shadow-xl` `price white` `button white rounded-full` `badge Más popular gradient purple absolute` `Starter/Escala white` `bottom Card ¿Muchas consultas…? rounded-xl border p-4 + Button Consultar` |
+| `LandingFaq.tsx` | add `SectionPill “• Preguntas frecuentes” left` `layout grid md:grid-cols-[360px_1fr] gap-12` `left Card “¿Hablamos de tu caso?” bg-surface border rounded-xl p-6 + Mail hola@okeng.com` `Accordion border-t only plus circle w-7 h-7` `copy Usáis→Mis datos… Cómo funcionan→Puedo restringir… soportáis→soporta… migrar desde X→desde otra herramienta` |
+| `LandingFinalCta.tsx` | `w-full bg-ink-strong py-16` → **Card `max-w-7xl mx-auto bg-ink-strong rounded-[24px] border border-white/10 shadow-xl p-16 dot-grid`** `icon rocket w-10 h-10 rounded-xl bg-white/10` `H2 center` `p center max-w-2xl text-white/70` `CTAs Crear cuenta gratis bg-white text-ink-strong rounded-md + Explorar documentación bg-white/5 border-white/20 text-white` `checks ✓ 3× text-2xs text-white/60` `OK footer` |
+| `LandingFooter.tsx` | `4 cols` → **brand + 24 links** `OK rounded-lg bg-white/10` `p La capa… max-w-xs text-white/60` `social 3× w-8 h-8 rounded-md bg-white/10 border hover:bg-white/20` `status ● Todos los sistemas operativos bg-emerald-500/20 text-emerald-400 rounded-full border text-2xs` `HEAD tracking-[0.2em] uppercase text-2xs text-white` `links text-sm text-white/60 hover:text-white` `6+6+6+6 IA per target` |
+| `LandingView.tsx` | `min-h-screen bg-canvas` keep `AnnouncementBanner` (done) + `header` + 13 sections `max-w-7xl px-6 py-16 md:py-24` or `bg-ink-strong` dark — no layout change beyond header `flex-1 center` |
+
+### SU / PA — no new files
+| File | Change |
+|---|---|
+| `src/app/(public)/page.tsx` | no change — `→ <LandingView />` `PA-LANDING` |
+| `src/app/layout.tsx` | keep `bg-canvas selection:bg-accent` + early `localStorage` normalize script |
+
+### Docs — spec updates (calculate from code deltas)
+| Doc | Update |
+|---|---|
+| `docs/01_ui_foundation.md` | `v3.1 → v3.2`: `DS-COLOR-INK-STRONG #05081A` (done), add `DS-COMPONENT-PILL` `rounded-full bg-accent-subtle border text-accent text-2xs`, `DS-ICON-TILE w-9 h-9 rounded-lg bg-accent-subtle`, `DS-CARD-XL rounded-xl 16px`, note `accent purple` optional `#6366F1` deferred |
+| `docs/UI-01-Primitives-Components-Surfaces-Archetypes-Workflows.md` | `v3.1 → v3.2`: add `PR-SECTION-PILL` `PR-ICON-TILE` to PR catalog (16→18), extend `PR-FEATURE-CARD` `icon/illustration`, `PR-HOW-IT-WORKS-STEP` `illustration+color`, `PR-PRICING-CARD` `dark` variant, `PR-TESTIMONIAL-CARD` `quote+avatar`, `PR-FAQ-ACCORDION` `plus circle` |
+| `docs/02_component_catalog.md` | add rows for `SectionPill` `IconTile` + update `PR-*` descriptions (pill, icon tile, dark pricing) |
+| `docs/03_page_specifications.md` | `PAGE-PUB-01`: update 13 `SU-LANDING-*` copy to target (`EQUIPOS…` `Carp…` `Todo lo que necesita…` `Elige…` `Tres líneas…` `Equipos…` `Empieza gratis. Paga…` `Las dudas…` `Empieza a responder…`) + note banner dark |
+| `docs/UI-ALIGNMENT-STATUS.md` | append `§11 Home Pixel Batch v3.2` with this table + build gate |
+| `docs/GROUND-UP-AUDIT-2026-10-12.md` | **this file** — add this `Home Page Pixel Audit` section (you are here) |
+
+## 2. Verification After Batch
+- `npm run build` `26 routes PASS` `lint 0 errors`
+- `devtools` band check: `bg-canvas` generics, `bg-surface` cards `border-line` `rounded-xl` `shadow-sm`, only 3 dark `bg-ink-strong #05081A` (banner, developers, finalCTA+footer) — matches target `5,8,26`
+- `max-w-7xl px-6 py-16 md:py-24` `h-14` `text-hero/section/card-title/metric-value` `Inter` `tabular-nums`
+
+
