@@ -266,7 +266,23 @@ export class AuthService {
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         const raw = window.localStorage.getItem(key);
-        if (raw !== null) return JSON.parse(raw);
+        if (raw !== null) {
+          try {
+            return JSON.parse(raw);
+          } catch {
+            // Tolerate legacy plain-string writes (e.g. "usr_sarah_102" without quotes)
+            // from manual console snippets — treat raw as value if it looks like a user id.
+            if (typeof fallback === 'string' || fallback === null) {
+              if (raw.startsWith('usr_') || raw.startsWith('"usr_')) {
+                const cleaned = raw.replace(/^"+|"+$/g, '');
+                return cleaned as unknown as T;
+              }
+            }
+            // For other keys, if parse failed, fall back
+            console.warn(`Failed to parse ${key} as JSON, using fallback. raw=`, raw);
+            return fallback;
+          }
+        }
       }
     } catch (e) {
       console.warn(`Failed to load ${key} from storage:`, e);
