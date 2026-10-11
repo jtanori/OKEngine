@@ -127,7 +127,7 @@ export function AuthShell({ children }: AuthShellProps) {
             </div>
             {/* Form container — centered horizontally when panel wider than form, not vertically centered */}
             <div className="flex flex-col items-center w-full">
-              <div className="w-full max-w-[440px] flex flex-col gap-6">{children}</div>
+              <div className="w-full max-w-[400px] flex flex-col gap-6">{children}</div>
             </div>
           </div>
         </div>

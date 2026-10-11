@@ -16,7 +16,7 @@ export interface AuthCardProps {
 export function AuthCard({ title, subtitle, children, footer, trustFooter, className = '', hideLogo = false, variant = 'card' }: AuthCardProps) {
   if (variant === 'borderless') {
     return (
-      <div className={`w-full max-w-[440px] mx-auto flex flex-col gap-6 ${className}`}>
+      <div className={`w-full max-w-[400px] mx-auto flex flex-col gap-6 ${className}`}>
         <div className="flex flex-col gap-2">
           {!hideLogo && (
             <div className="flex items-center gap-2">
