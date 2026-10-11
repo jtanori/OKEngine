@@ -15,6 +15,7 @@ import { AuthTrustFooter } from './AuthTrustFooter';
 import { SsoButtons } from './SsoButtons';
 import { validateEmailInput, validatePasswordInput, containsUnsafePayload } from '../../services/formSecurity';
 import { useRouter } from '../../app/router';
+import { authService } from '../../services/auth';
 
 export interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void>;
@@ -63,82 +64,19 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.message || 'Dev login falló');
+        setIsLoading(false);
         return;
       }
-      // Seed localStorage store used by AppShell (AuthService) for persona + memberships
+      // Sync client AuthService (localStorage + in-memory) and force hard navigation
+      // so AppShell re-reads persona and server cookie is sent on next request.
       try {
-        const membershipsByUser: Record<string, any> = {
-          usr_sarah_102: {
-            id: 'mem_01',
-            workspaceId: 'okeng',
-            userId: 'usr_sarah_102',
-            userEmail: 'sarah.chen@okeng.io',
-            userName: 'Sarah Chen',
-            role: 'WORKSPACE_OWNER',
-            permissions: [
-              'workspace.read',
-              'workspace.settings.manage',
-              'workspace.users.manage',
-              'collection.read',
-              'collection.write',
-              'collection.delete',
-              'collection.access.manage',
-              'content.read',
-              'content.write',
-              'content.delete',
-              'embed.read',
-              'embed.manage',
-              'test.execute',
-              'conversations.read',
-            ],
-            status: 'active',
-          },
-          usr_marcus_204: {
-            id: 'mem_02',
-            workspaceId: 'okeng',
-            userId: 'usr_marcus_204',
-            userEmail: 'marcus.vance@okeng.io',
-            userName: 'Marcus Vance',
-            role: 'WORKSPACE_USER',
-            permissions: [
-              'workspace.read',
-              'collection.read',
-              'collection.write',
-              'content.read',
-              'content.write',
-              'embed.read',
-              'conversations.read',
-              'test.execute',
-            ],
-            status: 'active',
-          },
-          usr_elena_309: {
-            id: 'mem_03',
-            workspaceId: 'okeng',
-            userId: 'usr_elena_309',
-            userEmail: 'elena.rostova@okeng.io',
-            userName: 'Elena Rostova',
-            role: 'WORKSPACE_USER',
-            permissions: ['workspace.read', 'collection.read', 'content.read', 'test.execute'],
-            status: 'active',
-          },
-        };
-        const mem = membershipsByUser[userId];
-        if (mem) {
-          localStorage.setItem('okeng_current_user_id_v2', JSON.stringify(userId));
-          // AuthService stores memberships as array under okeng_memberships_v2
-          const existing = JSON.parse(localStorage.getItem('okeng_memberships_v2') || '[]');
-          const filtered = Array.isArray(existing) ? existing.filter((m: any) => m.userId !== userId) : [];
-          filtered.push(mem);
-          localStorage.setItem('okeng_memberships_v2', JSON.stringify(filtered.length ? filtered : [mem]));
-        } else {
-          localStorage.setItem('okeng_current_user_id_v2', JSON.stringify(userId));
-        }
+        authService.switchPersona(userId);
       } catch {}
-      push('/workspaces/okeng/collections');
+      // Hard reload ensures AppShell picks up new currentUserId and okeng.sid cookie
+      window.location.href = '/workspaces/okeng/collections';
+      return;
     } catch {
       setError('Error en dev login');
-    } finally {
       setIsLoading(false);
     }
   };
