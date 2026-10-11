@@ -8,14 +8,12 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
 import { PasswordInput } from '../ui/PasswordInput';
-import { AuthDivider } from '../ui/AuthDivider';
 import { SsoButtons } from './SsoButtons';
 import { validateEmailInput, validatePasswordInput, validatePlainText, containsUnsafePayload } from '../../services/formSecurity';
-import { useRouter } from '../../app/router';
+import { getAuthApiErrorMessage, navigateToAuthPath, postAuthApi } from '../../services/authApi';
 import { useI18n } from '../../i18n/I18nContext';
 
 export function SignupForm() {
-  const { push } = useRouter();
   const { t } = useI18n();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -24,6 +22,7 @@ export function SignupForm() {
   const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string; terms?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmationRequired, setConfirmationRequired] = useState(false);
 
   const validate = () => {
     const e: typeof errors = {};
@@ -58,21 +57,17 @@ export function SignupForm() {
     setIsLoading(true);
     setError(null);
     try {
-      const csrfRes = await fetch('/api/csrf-token');
-      const { csrfToken } = await csrfRes.json();
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
-        body: JSON.stringify({ name, email, password, terms: true }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        if (res.status === 429) setError(`Demasiados intentos, intenta en ${data.retryAfter || 60}s`);
-        else if (res.status === 409) setError('El correo ya existe');
-        else setError(data.message || 'Error al crear cuenta');
+      const { response, data } = await postAuthApi('signup', { name, email, password, terms: true });
+      if (!response.ok) {
+        if (response.status === 409) setError('El correo ya existe');
+        else setError(getAuthApiErrorMessage(response.status, data, 'Error al crear cuenta'));
         return;
       }
-      push('/workspaces/okeng/collections');
+      if (data.confirmationRequired === true) {
+        setConfirmationRequired(true);
+        return;
+      }
+      navigateToAuthPath(data.redirectTo, '/workspaces/okeng/collections');
     } catch {
       setError('Error interno');
     } finally {
@@ -107,8 +102,27 @@ export function SignupForm() {
         </div>
       }
     >
-      <SsoButtons />
-      <AuthDivider label="o continúa con correo" />
+      {!confirmationRequired && (
+        <Checkbox
+          id="terms"
+          checked={terms}
+          onChange={setTerms}
+          error={errors.terms || null}
+          required
+          label={(
+            <span>
+              Acepto los <a href="/terms" className="underline hover:text-ink">Términos</a> y <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
+            </span>
+          )}
+        />
+      )}
+      <SsoButtons termsAccepted={terms} />
+      {confirmationRequired ? (
+        <div role="status" className="bg-success-subtle border border-line rounded-sm p-4 text-sm text-success">
+          Revisa tu correo y confirma tu cuenta para continuar. Si no ves el mensaje, revisa también la carpeta de spam.
+          <div className="mt-3"><a href="/login" className="text-accent hover:underline">Volver a iniciar sesión</a></div>
+        </div>
+      ) : (
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {error && <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
         <Input
@@ -136,22 +150,11 @@ export function SignupForm() {
           leadingIcon={<span className="text-ink-muted">✉</span>}
         />
         <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={errors.password} id="password" showStrength hint="Mínimo 8 caracteres" />
-        <Checkbox
-          id="terms"
-          checked={terms}
-          onChange={setTerms}
-          error={errors.terms || null}
-          required
-          label={
-            <span>
-              Acepto los <a href="/terms" className="underline hover:text-ink">Términos</a> y <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
-            </span>
-          }
-        />
         <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-accent-indigo to-accent-violet hover:opacity-90 text-white border-0 shadow-md justify-center gap-1.5">
           Crear cuenta <span aria-hidden>→</span>
         </Button>
       </form>
+      )}
     </AuthCard>
   );
 }

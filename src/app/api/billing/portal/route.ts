@@ -1,22 +1,16 @@
 // POST /api/billing/portal — Secure Stripe Customer Portal Session with consistent workspace auth (P1 Phase 5)
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireSystemRole } from '@/lib/auth';
+import { getSession, validateCsrf } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
-import { getPool } from '@/lib/db';
 import { requireWorkspaceAdmin } from '@/lib/workspaceAuth';
 
 export async function POST(request: NextRequest) {
   const rl = await rateLimit(request, 'WRITE');
   if (!rl.success) return NextResponse.json({ error: 'rate_limit_exceeded' }, { status: 429 });
+  if (!validateCsrf(request)) return NextResponse.json({ error: 'csrf_invalid' }, { status: 403 });
 
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
-
-  try {
-    requireSystemRole(session.role, 'admin');
-  } catch {
-    return NextResponse.json({ error: 'forbidden' }, { status: 403 });
-  }
 
   let body: any;
   try {
@@ -26,12 +20,11 @@ export async function POST(request: NextRequest) {
   }
 
   // Phase 5: Consistent workspace auth
-  const workspaceAuth = await requireWorkspaceAdmin(session, body.workspaceId);
+  const workspaceAuth = await requireWorkspaceAdmin(request, session, body.workspaceId);
   if (!workspaceAuth.authorized) {
     return NextResponse.json({ error: workspaceAuth.error, message: workspaceAuth.message }, { status: workspaceAuth.status });
   }
 
-  const workspaceId = workspaceAuth.workspaceId;
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
@@ -43,18 +36,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const pool = getPool();
-    let customerId: string | null = null;
-    let workspaceSlug: string | null = workspaceAuth.workspace.slug;
-    try {
-      const res = await pool.query('SELECT stripe_customer_id, slug FROM workspaces WHERE id = $1', [workspaceId]);
-      if (res.rows.length > 0) {
-        customerId = res.rows[0].stripe_customer_id;
-        workspaceSlug = res.rows[0].slug || workspaceSlug;
-      }
-    } catch (err: any) {
-      console.warn('[billing/portal] DB error getting customer ID', err);
-    }
+    const customerId = workspaceAuth.workspace.stripe_customer_id || null;
+    const workspaceSlug = workspaceAuth.workspace.slug;
 
     if (!customerId) {
       return NextResponse.json({ error: 'bad_request', message: 'No Stripe customer found for workspace, create checkout first' }, { status: 400 });

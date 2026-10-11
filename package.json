@@ -13,10 +13,13 @@
     "test:staging-readiness": "tsx tests/readiness/staging-readiness.test.ts",
     "test:homepage-tour-readiness": "tsx tests/readiness/homepage-tour-readiness.test.ts",
     "test:embed-authorization": "tsx tests/rendering/embed-authorization.test.ts",
-    "test:baseline": "tsx tests/security/phase0-baseline-reproduction.test.ts"
+    "test:baseline": "tsx tests/security/phase0-baseline-reproduction.test.ts",
+    "test:supabase-integration": "tsx --test tests/security/supabase-auth-storage-integration.test.ts tests/security/private-upload-size.test.ts tests/security/auth-api-client.test.ts tests/security/auth-oauth.test.ts tests/security/auth-ui-conditional.test.ts tests/security/session-workspace.test.ts",
+    "test:supabase-live": "tsx tests/integration/supabase-local.e2e.test.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
+    "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.2",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.1",

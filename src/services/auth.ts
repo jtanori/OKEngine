@@ -1,5 +1,6 @@
 import {
   User,
+  Workspace,
   WorkspaceMembership,
   RequestContext,
   AuthorizationDecision,
@@ -240,13 +241,17 @@ export class AuthService {
   private approvals: ApprovalRequest[];
   private adminGrants: AdminGrant[];
   private listeners: Set<() => void> = new Set();
+  private serverAuthMode: 'memory' | 'supabase' | null = null;
+  private serverSessionResolved = false;
+  private serverUser: User | null = null;
+  private serverMemberships: WorkspaceMembership[] = [];
+  private serverWorkspace: Workspace | null = null;
+  private hydrationRequest: Promise<void> | null = null;
 
   constructor() {
-    // Launch unauthenticated by default on the public platform surface (AUTH-04, PUBLIC-01)
-    this.currentUserId = this.loadFromStorage<string | null>(
-      STORAGE_KEYS.CURRENT_USER_ID,
-      null
-    );
+    // A localStorage persona is not an authentication credential. Start signed
+    // out until the same-origin server validates the HttpOnly session cookie.
+    this.currentUserId = null;
     this.memberships = this.loadFromStorage(STORAGE_KEYS.MEMBERSHIPS, DEFAULT_MEMBERSHIPS);
     this.auditLogs = this.loadFromStorage(STORAGE_KEYS.AUDIT_LOGS, DEFAULT_AUDIT_LOGS);
     this.approvals = this.loadFromStorage(STORAGE_KEYS.APPROVALS, []);
@@ -260,6 +265,142 @@ export class AuthService {
 
   private notify(): void {
     this.listeners.forEach((fn) => fn());
+  }
+
+  public isSessionResolved(): boolean {
+    return this.serverSessionResolved;
+  }
+
+  public isSupabaseSessionMode(): boolean {
+    return this.serverAuthMode === 'supabase';
+  }
+
+  public getActiveWorkspace(): Workspace | null {
+    return this.serverAuthMode === 'supabase' ? this.serverWorkspace : null;
+  }
+
+  /** Hydrate UI-only identity from a safe same-origin projection; never read JWTs in the browser. */
+  public refreshServerSession(): Promise<void> {
+    if (this.hydrationRequest) return this.hydrationRequest;
+
+    this.hydrationRequest = (async () => {
+      try {
+        const response = await fetch('/api/auth/session', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+        });
+        if (!response.ok) throw new Error('Server session unavailable');
+        const payload = await response.json();
+        if (payload?.mode !== 'memory' && payload?.mode !== 'supabase') {
+          throw new Error('Invalid server session response');
+        }
+
+        this.serverAuthMode = payload.mode;
+        const session = payload.authenticated && payload.session && typeof payload.session === 'object'
+          ? payload.session
+          : null;
+        const createdAtMillis = Number(session?.createdAt);
+        const createdAt = new Date(Number.isFinite(createdAtMillis) ? createdAtMillis : Date.now()).toISOString();
+        const platformRole = session?.role === 'super_admin'
+          ? 'PLATFORM_OWNER'
+          : session?.role === 'admin'
+            ? 'PLATFORM_ADMIN'
+            : null;
+
+        if (payload.mode === 'supabase') {
+          this.currentUserId = null;
+          this.serverMemberships = [];
+          this.serverWorkspace = null;
+          this.serverUser = session ? {
+            id: String(session.userId),
+            email: String(session.email),
+            name: String(session.name || String(session.email).split('@')[0]),
+            status: 'ACTIVE',
+            platformRole,
+            createdAt,
+            updatedAt: createdAt,
+          } : null;
+
+          if (session?.workspaceId && (session.workspaceRole === 'WORKSPACE_OWNER' || session.workspaceRole === 'WORKSPACE_USER')) {
+            this.serverMemberships = [{
+              id: `server-${session.workspaceId}-${session.userId}`,
+              workspaceId: String(session.workspaceId),
+              userId: String(session.userId),
+              userEmail: String(session.email),
+              userName: String(session.name || String(session.email).split('@')[0]),
+              role: session.workspaceRole,
+              permissions: Array.isArray(session.permissions)
+                ? session.permissions.filter((permission: unknown): permission is WorkspacePermission => typeof permission === 'string')
+                : [],
+              status: 'active',
+              createdAt,
+              updatedAt: createdAt,
+            }];
+          }
+
+          if (session?.workspaceId && session?.workspaceSlug) {
+            this.serverWorkspace = {
+              id: String(session.workspaceId),
+              slug: String(session.workspaceSlug),
+              name: String(session.workspaceName || session.workspaceSlug),
+              publicKey: '',
+              createdAt,
+            };
+          }
+        } else {
+          this.currentUserId = session?.userId ? String(session.userId) : null;
+          this.serverUser = session ? {
+            id: String(session.userId),
+            email: String(session.email),
+            name: String(session.name || String(session.email).split('@')[0]),
+            status: 'ACTIVE',
+            platformRole,
+            createdAt,
+            updatedAt: createdAt,
+          } : null;
+          this.serverMemberships = [];
+          this.serverWorkspace = null;
+        }
+      } catch {
+        // If session resolution fails, do not reuse localStorage personas as auth.
+        this.serverAuthMode = 'supabase';
+        this.currentUserId = null;
+        this.serverUser = null;
+        this.serverMemberships = [];
+        this.serverWorkspace = null;
+      } finally {
+        this.serverSessionResolved = true;
+        this.hydrationRequest = null;
+        this.notify();
+      }
+    })();
+
+    return this.hydrationRequest;
+  }
+
+  public async signOut(): Promise<boolean> {
+    try {
+      const csrfResponse = await fetch('/api/csrf-token', { cache: 'no-store', credentials: 'same-origin' });
+      if (!csrfResponse.ok) return false;
+      const { csrfToken } = await csrfResponse.json();
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'x-csrf-token': String(csrfToken || '') },
+      });
+      if (!response.ok) return false;
+
+      this.currentUserId = null;
+      this.serverUser = null;
+      this.serverMemberships = [];
+      this.serverWorkspace = null;
+      this.serverSessionResolved = true;
+      this.notify();
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   private loadFromStorage<T>(key: string, fallback: T): T {
@@ -301,13 +442,15 @@ export class AuthService {
   }
 
   public getPersonas(): User[] {
-    return DEMO_USERS;
+    return this.serverAuthMode === 'supabase' ? [] : DEMO_USERS;
   }
 
   public getCurrentUser(): User | null {
+    if (this.serverAuthMode === 'supabase') return this.serverUser;
     if (!this.currentUserId) return null;
     const demoMatch = DEMO_USERS.find((u) => u.id === this.currentUserId);
     if (demoMatch) return demoMatch;
+    if (this.serverUser?.id === this.currentUserId) return this.serverUser;
 
     const memberMatch = this.memberships.find((m) => m.userId === this.currentUserId);
     if (memberMatch) {
@@ -325,6 +468,7 @@ export class AuthService {
   }
 
   public switchPersona(userId: string | null): void {
+    if (this.serverAuthMode === 'supabase') return;
     this.currentUserId = userId;
     this.saveToStorage(STORAGE_KEYS.CURRENT_USER_ID, userId);
     const activeUser = this.getCurrentUser();
@@ -344,6 +488,35 @@ export class AuthService {
   }
 
   public getRequestContext(workspaceId: string = 'okeng'): RequestContext {
+    if (this.serverAuthMode === 'supabase') {
+      const user = this.serverUser;
+      const membership = this.serverMemberships.find((candidate) =>
+        candidate.workspaceId === workspaceId ||
+        (candidate.workspaceId === this.serverWorkspace?.id && this.serverWorkspace?.slug === workspaceId)
+      );
+      const resolvedWorkspaceId = membership?.workspaceId ||
+        (this.serverWorkspace?.slug === workspaceId ? this.serverWorkspace.id : workspaceId);
+      if (!user) {
+        return {
+          userId: '',
+          platformRole: null,
+          workspaceId: resolvedWorkspaceId,
+          workspaceRole: 'WORKSPACE_USER',
+          permissions: [],
+          authMethod: 'session',
+        };
+      }
+      return {
+        userId: user.id,
+        platformRole: user.platformRole,
+        workspaceId: resolvedWorkspaceId,
+        workspaceRole: membership?.role || 'WORKSPACE_USER',
+        permissions: membership?.role === 'WORKSPACE_OWNER' ? ALL_WORKSPACE_PERMISSIONS : membership?.permissions || [],
+        authMethod: 'session',
+        sessionId: `supabase-${user.id}`,
+      };
+    }
+
     const normalizedWs = workspaceId === 'acme-cloud' ? 'okeng' : workspaceId;
     const user = this.getCurrentUser();
     if (!user) {
@@ -385,6 +558,37 @@ export class AuthService {
     requiredPermission?: WorkspacePermission,
     resource?: { workspaceId?: string }
   ): EnforcementResult {
+    if (this.serverAuthMode === 'supabase') {
+      const user = this.serverUser;
+      if (!user || user.status !== 'ACTIVE') {
+        return { authorized: false, status: 401, error: 'AUTHENTICATION_REQUIRED' };
+      }
+      const membership = this.serverMemberships.find((candidate) =>
+        candidate.workspaceId === workspaceId ||
+        (candidate.workspaceId === this.serverWorkspace?.id && this.serverWorkspace?.slug === workspaceId)
+      );
+      if (!membership) {
+        return { authorized: false, status: 403, error: 'WORKSPACE_MEMBERSHIP_REQUIRED' };
+      }
+
+      const context = this.getRequestContext(membership.workspaceId);
+      if (requiredPermission) {
+        const decision = this.authorize(context, requiredPermission, resource);
+        if (!decision.allowed) {
+          return {
+            authorized: false,
+            status: decision.reason === 'CROSS_WORKSPACE_FORBIDDEN' ? 404 : 403,
+            error: decision.reason || 'MISSING_EXPLICIT_PERMISSION',
+            context,
+          };
+        }
+      }
+      if (resource?.workspaceId && resource.workspaceId !== membership.workspaceId) {
+        return { authorized: false, status: 404, error: 'RESOURCE_WORKSPACE_MISMATCH', context };
+      }
+      return { authorized: true, status: 200, context };
+    }
+
     const user = this.getCurrentUser();
 
     // Link 1: Valid authentication

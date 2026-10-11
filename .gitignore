@@ -6,3 +6,7 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 .env
 .env.local
+
+# Local Supabase CLI state may contain generated keys, database credentials, and logs.
+supabase/.temp/
+supabase/.branches/

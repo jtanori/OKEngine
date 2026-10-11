@@ -4,6 +4,9 @@
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 // Helper to import fresh route handler with env overrides
 async function withEnv(env: Record<string, string | undefined>, fn: () => Promise<void>) {
@@ -83,6 +86,16 @@ describe('P1 dev login fail-closed', () => {
       assert.equal(res.status, 400);
       const res2 = await POST(mockRequest('POST', {}));
       assert.equal(res2.status, 400);
+    });
+  });
+
+  it('blocks legacy persona minting when Supabase Auth is selected', async () => {
+    await withEnv({ NODE_ENV: 'development', OKENG_ENV: 'development', OKENG_DATA_MODE: 'supabase', ENABLE_DEV_LOGIN: 'true', DATABASE_URL: 'postgresql://dummy', SESSION_SECRET: 'a'.repeat(32), CSRF_SECRET: 'b'.repeat(32) }, async () => {
+      const { POST } = await import('../../src/app/api/dev/login/route.ts');
+      const res = await POST(mockRequest('POST', { userId: 'usr_sarah_102' }));
+      assert.equal(res.status, 403);
+      const body = await res.json();
+      assert.equal(body.error, 'dev_login_not_available_in_supabase_mode');
     });
   });
 

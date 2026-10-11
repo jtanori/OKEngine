@@ -1,10 +1,15 @@
 /**
- * SystemPrivilegedRepository - Isolates SUPABASE_SERVICE_ROLE_KEY
- * Exports only 4 audited methods per SEC-01 §4
+ * SystemPrivilegedRepository — the only application boundary that creates a
+ * Supabase service-role client. Each method is separately allowlisted; never
+ * use this repository for ordinary tenant queries.
  */
 
+import { createHash, randomUUID } from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getSystemPrivilegedSupabaseClient } from '../lib/supabase/server';
+import {
+  getSystemPrivilegedSupabaseClient,
+  type SystemPrivilegedOperationId,
+} from '../lib/supabase/server';
 
 export interface SecurityAuditLogEntry {
   id?: string;
@@ -26,37 +31,42 @@ export interface UsageRecord {
   tokensUsed?: number;
   latencyMs?: number;
   answerMode?: string;
-  createdAt?: string;
 }
 
 export interface VerifiedEmbedCorpusRequest {
+  /** Values must come from server-side embed verification, never request JSON. */
   workspaceId: string;
   authorizedCollectionIds: string[];
   embedId?: string;
 }
 
-export interface VerifiedAuthUser {
+export interface AuthUserProfile {
   id: string;
+  auth_user_id: string;
   email: string;
-  name?: string;
-  platformRole?: string;
+  name: string;
+  account_status: string;
+  platform_role: string | null;
 }
 
-function getPrivilegedClient(): SupabaseClient | null {
+function getPrivilegedClient(operationId: SystemPrivilegedOperationId): SupabaseClient | null {
   try {
-    return getSystemPrivilegedSupabaseClient('SRV-PRIV-02_SECURITY_AUDIT_LOG_APPEND');
+    return getSystemPrivilegedSupabaseClient(operationId);
   } catch {
     return null;
   }
 }
 
-/**
- * SRV-PRIV-01: Append security audit log (append-only)
- */
+function strictSupabaseMode(): boolean {
+  const environment = (process.env.OKENG_ENV || (process.env.NODE_ENV === 'production' ? 'production' : 'development')).toLowerCase();
+  return environment === 'staging' || environment === 'production' || process.env.OKENG_DATA_MODE === 'supabase';
+}
+
+/** SRV-PRIV-01: Append a sanitized, append-only security audit event. */
 export async function appendSecurityAuditLog(entry: SecurityAuditLogEntry): Promise<void> {
-  const client = getPrivilegedClient();
+  const client = getPrivilegedClient('SRV-PRIV-01_SECURITY_AUDIT_LOG_APPEND');
   if (!client) {
-    // In dev without DB, log to console but don't fail
+    if (strictSupabaseMode()) throw new Error('Privileged audit writer is not configured.');
     console.warn('[AUDIT]', JSON.stringify({
       workspaceId: entry.workspaceId,
       action: entry.action,
@@ -66,158 +76,125 @@ export async function appendSecurityAuditLog(entry: SecurityAuditLogEntry): Prom
     return;
   }
 
-  // Sanitize PII/secrets before write
-  const sanitized = {
-    id: entry.id || `audit_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  const sanitizedReason = entry.metadata
+    ? (JSON.stringify(sanitizeMetadata(entry.metadata)) || 'No additional details').slice(0, 2000)
+    : 'No additional details';
+  const { error } = await client.from('security_audit_logs').insert({
+    id: entry.id || `audit_${randomUUID()}`,
     workspace_id: entry.workspaceId,
     actor_id: entry.actorId,
-    action: entry.action,
-    target_resource: entry.targetResource?.slice(0, 500),
-    result: entry.result,
-    metadata: entry.metadata ? JSON.stringify(sanitizeMetadata(entry.metadata)) : null,
-    ip_hash: entry.ipHash,
+    event_type: entry.action.slice(0, 200),
+    target_resource: (entry.targetResource || 'unspecified').slice(0, 500),
+    outcome: entry.result,
+    reason: sanitizedReason,
     created_at: entry.createdAt || new Date().toISOString(),
-  };
-
-  const { error } = await client.from('security_audit_logs').insert(sanitized);
+  });
   if (error) {
-    console.error('[AUDIT_WRITE_FAILED]', error.message);
-    // Don't throw - audit failure shouldn't break main flow, but log
+    if (strictSupabaseMode()) throw new Error(`Security audit append failed (${error.code || 'unknown'}).`);
+    console.error('[AUDIT_WRITE_FAILED]', error.code || 'unknown');
   }
 }
 
 function sanitizeMetadata(meta: Record<string, unknown>): Record<string, unknown> {
   const forbiddenKeys = ['password', 'token', 'signingSecret', 'secret', 'apiKey', 'authorization', 'cookie'];
   const result: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(meta)) {
-    const lower = k.toLowerCase();
-    if (forbiddenKeys.some(fk => lower.includes(fk))) {
-      result[k] = '[REDACTED]';
+  for (const [key, value] of Object.entries(meta)) {
+    if (forbiddenKeys.some((forbidden) => key.toLowerCase().includes(forbidden.toLowerCase()))) {
+      result[key] = '[REDACTED]';
     } else {
-      result[k] = v;
+      result[key] = value;
     }
   }
   return result;
 }
 
 function hashId(id: string): string {
-  const crypto = require('crypto');
-  return crypto.createHash('sha256').update(id).digest('hex').slice(0, 16);
+  return createHash('sha256').update(id).digest('hex').slice(0, 16);
 }
 
-/**
- * SRV-PRIV-02: Record usage event (append-only)
- */
+/** SRV-PRIV-02: Append usage only after the caller verified workspace access. */
 export async function recordUsageEvent(event: UsageRecord): Promise<void> {
-  const client = getPrivilegedClient();
+  const client = getPrivilegedClient('SRV-PRIV-02_USAGE_EVENT_APPEND');
   if (!client) {
-    console.warn('[USAGE]', JSON.stringify(event));
+    if (strictSupabaseMode()) throw new Error('Privileged usage writer is not configured.');
+    console.warn('[USAGE]', JSON.stringify({ workspaceId: event.workspaceId, eventType: event.eventType }));
     return;
   }
 
-  const row = {
-    id: `usage_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+  const { error } = await client.from('usage_records').insert({
+    id: `usage_${randomUUID()}`,
     workspace_id: event.workspaceId,
     event_type: event.eventType,
-    user_id: event.userId,
-    session_id: event.sessionId,
     tokens_used: event.tokensUsed || 0,
     latency_ms: event.latencyMs || 0,
-    answer_mode: event.answerMode,
-    created_at: event.createdAt || new Date().toISOString(),
-  };
-
-  const { error } = await client.from('usage_records').insert(row);
-  if (error) {
-    console.error('[USAGE_WRITE_FAILED]', error.message);
-  }
+    answer_mode: event.answerMode || 'deterministic',
+    created_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(`Usage event append failed (${error.code || 'unknown'}).`);
 }
 
 /**
- * SRV-PRIV-03: Load verified embed corpus (server-resolved scope only)
+ * SRV-PRIV-03: Load only a server-verified embed scope. This method must not be
+ * called with IDs copied from a browser request.
  */
 export async function loadVerifiedEmbedCorpus(request: VerifiedEmbedCorpusRequest): Promise<{
   documents: any[];
   chunks: any[];
 }> {
-  const client = getPrivilegedClient();
+  const client = getPrivilegedClient('SRV-PRIV-03_VERIFIED_EMBED_CORPUS_READ');
   if (!client) {
-    // Fallback to memory repositories in dev
+    if (strictSupabaseMode()) throw new Error('Verified embed corpus access is not configured.');
     const { memoryRepositories } = await import('./memory.repository');
-    const docs = await memoryRepositories.documents.listAuthorized({
+    const documents = await memoryRepositories.documents.listAuthorized({
       workspaceId: request.workspaceId,
       authorizedCollectionIds: request.authorizedCollectionIds,
     });
-    return { documents: docs, chunks: [] };
+    return { documents, chunks: [] };
   }
 
-  // Strictly filter by workspace_id and authorized collectionIds
-  const { data: documents, error: docError } = await client
+  if (!request.workspaceId || request.authorizedCollectionIds.length === 0) {
+    return { documents: [], chunks: [] };
+  }
+
+  const { data: documents, error: documentError } = await client
     .from('documents')
     .select('*')
     .eq('workspace_id', request.workspaceId)
     .in('collection_id', request.authorizedCollectionIds)
     .is('deleted_at', null)
     .eq('status', 'ready');
-
-  if (docError) {
-    throw new Error(`Failed to load verified corpus: ${docError.message}`);
-  }
+  if (documentError) throw new Error(`Verified corpus read failed (${documentError.code || 'unknown'}).`);
 
   const { data: chunks, error: chunkError } = await client
     .from('document_chunks')
     .select('*')
     .eq('workspace_id', request.workspaceId)
     .in('collection_id', request.authorizedCollectionIds);
-
-  if (chunkError) {
-    console.warn('[CORPUS_CHUNKS_FAILED]', chunkError.message);
-    return { documents: documents || [], chunks: [] };
-  }
+  if (chunkError) throw new Error(`Verified corpus chunks read failed (${chunkError.code || 'unknown'}).`);
 
   return { documents: documents || [], chunks: chunks || [] };
 }
 
-/**
- * SRV-PRIV-04: Sync authenticated user account
- */
-export async function syncAuthenticatedUserAccount(user: VerifiedAuthUser): Promise<any> {
-  const client = getPrivilegedClient();
-  if (!client) {
-    return {
-      id: user.id,
-      email: user.email,
-      name: user.name || user.email.split('@')[0],
-      platform_role: user.platformRole || 'USER',
-      account_status: 'ACTIVE',
-    };
+/** SRV-PRIV-04: Read an existing profile by verified immutable Auth UUID only. */
+export async function lookupAuthUserProfile(authUserId: string): Promise<AuthUserProfile | null> {
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(authUserId)) {
+    return null;
   }
+  const client = getPrivilegedClient('SRV-PRIV-04_AUTH_USER_PROFILE_LOOKUP');
+  if (!client) return null;
 
-  // Upsert user
   const { data, error } = await client
     .from('users')
-    .upsert({
-      id: user.id,
-      email: user.email,
-      name: user.name || user.email.split('@')[0],
-      platform_role: user.platformRole || 'USER',
-      account_status: 'ACTIVE',
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'id' })
-    .select()
-    .single();
-
-  if (error) {
-    console.error('[USER_SYNC_FAILED]', error.message);
-    throw new Error(`Failed to sync user account: ${error.message}`);
-  }
-
-  return data;
+    .select('id, auth_user_id, email, name, account_status, platform_role')
+    .eq('auth_user_id', authUserId)
+    .maybeSingle();
+  if (error) throw new Error(`Auth profile lookup failed (${error.code || 'unknown'}).`);
+  return data as AuthUserProfile | null;
 }
 
 export const SystemPrivilegedRepository = {
   appendSecurityAuditLog,
   recordUsageEvent,
   loadVerifiedEmbedCorpus,
-  syncAuthenticatedUserAccount,
+  lookupAuthUserProfile,
 };

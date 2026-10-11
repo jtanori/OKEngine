@@ -3,9 +3,8 @@
 // never fallback to caller-provided ID when session missing, lookup customer, idempotency, generic success URL, safe price map
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireSystemRole } from '@/lib/auth';
+import { getSession, validateCsrf } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
-import { getPool } from '@/lib/db';
 import { validatePlanAndInterval, PLAN_PRICE_MAP, buildPriceMap } from '@/lib/billing';
 import { requireWorkspaceAdmin } from '@/lib/workspaceAuth';
 
@@ -15,14 +14,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'rate_limit_exceeded', message: 'Too many requests', retryAfter: rl.retryAfter }, { status: 429 });
   }
 
+  if (!validateCsrf(request)) return NextResponse.json({ error: 'csrf_invalid' }, { status: 403 });
+
   const session = await getSession(request);
   if (!session) return NextResponse.json({ error: 'unauthorized', message: 'No autorizado' }, { status: 401 });
-
-  try {
-    requireSystemRole(session.role, 'admin');
-  } catch {
-    return NextResponse.json({ error: 'forbidden', message: 'No tienes permiso' }, { status: 403 });
-  }
 
   let body: any;
   try {
@@ -65,7 +60,7 @@ export async function POST(request: NextRequest) {
 
   // Phase 5: Consistent workspace auth — requireWorkspaceAdmin validates user, workspace, active membership, required role every time
   // Never fallback to caller-provided ID when session missing
-  const workspaceAuth = await requireWorkspaceAdmin(session, body.workspaceId);
+  const workspaceAuth = await requireWorkspaceAdmin(request, session, body.workspaceId);
   if (!workspaceAuth.authorized) {
     return NextResponse.json({ error: workspaceAuth.error, message: workspaceAuth.message }, { status: workspaceAuth.status });
   }
@@ -84,20 +79,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const pool = getPool();
-
-    // Get stripe_customer_id — workspace already validated, but need customer ID
-    let stripeCustomerId: string | null = null;
-    let workspaceSlug = workspace.slug;
-    try {
-      const res = await pool.query('SELECT stripe_customer_id, slug FROM workspaces WHERE id = $1', [workspaceId]);
-      if (res.rows.length > 0) {
-        stripeCustomerId = res.rows[0].stripe_customer_id;
-        workspaceSlug = res.rows[0].slug || workspaceSlug;
-      }
-    } catch (err: any) {
-      console.warn('[billing/checkout] Failed to get stripe_customer_id, using workspace from auth', err);
-    }
+    const stripeCustomerId = workspace.stripe_customer_id || null;
+    const workspaceSlug = workspace.slug;
 
     const Stripe = (await import('stripe')).default;
     const stripe = new Stripe(stripeSecret);

@@ -1,6 +1,9 @@
 // src/instrumentation.ts — Next.js instrumentation for graceful shutdown (OPS-GRACEFUL-01)
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    const { validateStartupDataMode } = await import('./repositories');
+    validateStartupDataMode();
+
     const { closePool } = await import('./lib/db');
     const { closeRedis } = await import('./lib/redis');
 
