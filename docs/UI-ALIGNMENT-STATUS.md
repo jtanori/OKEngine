@@ -234,5 +234,32 @@ None of the above blocks v3.1 — current state is **production-ready** with `bu
 
 ---
 
-*Status up to standards — ready for review. Continue alignment by picking any item in §8 or opening a new `PLAN-00X`.*
+## 11. Auth Redesign v3.5 — Borderless Shell (2026-10-11) — spec-update-gated per AGENTS §7
+
+> **Spec gate**: User-facing assets touched → spec planning required before impl. Proposed tokens `Brand navy #080B1A` vs canonical `ink-strong #05081A` surfaced 2026-10-11; decision **reuse `ink-strong #05081A` as `Brand navy` alias** (`--color-brand: var(--text-strong)`), keep `Primary #8B5CF6`/`Secondary #6366F1` as `--color-accent-violet`/`--color-accent-indigo` gradient (already marketing exception) — do not duplicate. Affected normative docs: `01_ui_foundation v3.5` (new `--text-auth-title 28px`/`--text-auth-headline 36px` + `--color-brand`/`--color-accent-violet/indigo` aliases + `PA-AUTH borderless 52/48 max-w 440 mobile form-first` archetype), `02_component_catalog v3.5` (`CO-AUTH-SHELL` replaces `CO-AUTH-SPLIT-LAYOUT card`, `PR-AUTH-CARD borderless variant` transparent), `03_page_specifications v3.5` (auth routes share `AuthShell`), `UI-01 v3.5` (DS→PR→CO→SU→PA update). Changelog drafted before code; implementation gated on approval — granted 2026-10-11.
+
+### 11.1 Design Direction (brief §1-§11)
+- **Desktop**: slim `h-14` header, restrained dark `bg-brand` panel (`3 layers max`: pill + `36-44` headline + single rehearsal card), dot-grid + `accent-indigo` blur; **borderless form area `transparent` on `bg-canvas`**, `shared max-w ~1200` (`max-w-7xl`) `~52/48`, form `max-w 400-460` (`440px`), quiet footer `©` `text-2xs text-ink-muted`; `Primary #8B5CF6`/`Secondary #6366F1` gradient via DS tokens `from-accent-indigo to-accent-violet`.
+- **Mobile `<768`**: **form-first** — compact header + short intro (`Tu conocimiento…` pill + headline 28px + 1-line desc, `lg:hidden`) then form immediate (`order-first lg:order-last`), **hide preview/testimonial/logos** (left panel `hidden lg:flex`), **no fixed heights** (`lg:min-h-[640px]` only), no card chrome.
+- **Tokens**: `Brand navy #080B1A` → alias `ink-strong #05081A`; `Primary/Secondary` documented violet/indigo; `bg #F8F7F4` = `bg-canvas`; typography `36-44 headline` (`text-auth-headline` 36px) / `28-32 auth title` (`text-auth-title` 28px); spacing `8/16-24/24-32/32-48` via Tailwind scale + `gap-6/8`.
+- **Content**: remove fabricated `Acme/Globex/Initech/Soylent` logos + `+400/1.2M` metrics + `Ana Torres` quote unless verified — left now 3 layers only.
+
+### 11.2 Implementation — this session
+- **`src/index.css` DS v3.5**: added `--text-auth-title 28px / --text-auth-headline 36px` + `--color-brand / --color-accent-violet / --color-accent-indigo / --color-accent-violet-light` aliases — zero bracket hex for gradients.
+- **`src/components/ui/AuthCard.tsx` PR v3.5**: new `variant='card'|'borderless'`; `borderless` = transparent, no `bg-surface border shadow-md p-8`, title `text-auth-title`, quiet footer, keeps `FORM-SEC-01`/`useI18n` in CO.
+- **`src/components/auth/AuthShell.tsx` CO new (CO-AUTH-SHELL)**: `max-w-7xl grid lg:grid-cols-[52fr_48fr]`, left `hidden lg:flex bg-brand rounded-[24px] p-8 lg:p-10 lg:min-h-[640px]` 3 layers, right `max-w-[440px] transparent` borderless, mobile intro `lg:hidden`, quiet footer; reuses `LanguageSelector`, `bg-canvas`, `border-line`.
+- **`src/components/auth/AuthView.tsx`**: `AuthSplitLayout → AuthShell` (PA-AUTH v3.5).
+- **`LoginForm/SignupForm/Forgot/Reset`**: `variant="borderless"` + gradient `from-accent-indigo to-accent-violet hover:opacity-90` (DS tokens, no bracket hex), keep `Input/PasswordInput/Checkbox/Button/AuthDivider/SsoButtons` + `FORM-SEC-01` + `useRouter`.
+- **`AuthSplitLayout.tsx`** kept as deprecated (not used) — `AuthShell` is canonical; legacy to be archived after verification.
+
+### 11.3 Verification
+- `npm run build` **PASS** `2.0s` `26 routes` (same).
+- `npm run lint` **0 errors 142 warn** (pre-existing `any` only).
+- `tsc --noEmit` `24` pre-existing errors (`cache/adapters`, `DocsArticle slug/frontmatter`, `PublicPage 3xl`) — unchanged, `ignoreBuildErrors:true` kept.
+- **Manual**: desktop 52/48 split, left 24px rounded dark, single rehearsal, no logos/quote; form 440 borderless centered; mobile form-first, left hidden, short intro visible, no scroll past panel — per §10 acceptance (coherent alignment, no card, mobile no scroll, route consistency, a11y+security unchanged via reuse `Input/PasswordInput` etc).
+- `gh pr view 3` `head 6946475 → new` pending push.
+
+---
+
+*Status v3.5 auth borderless shell — ready for review. Continue alignment by picking any item in §8 or opening a new `PLAN-00X`.*
 

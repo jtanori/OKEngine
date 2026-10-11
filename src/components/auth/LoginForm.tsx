@@ -108,6 +108,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       title="Bienvenido de nuevo"
       subtitle="Accede a tu espacio de conocimiento."
       hideLogo
+      variant="borderless"
       footer={
         <div className="text-xs text-ink-secondary">
           ¿No tienes cuenta? <a href="/signup" className="text-accent hover:underline font-medium">Regístrate</a>
@@ -169,7 +170,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           variant="primary"
           size="md"
           isLoading={isLoading}
-          className="w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5855EB] hover:to-[#7C3AED] text-white border-0 shadow-md justify-center gap-1.5"
+          className="w-full bg-gradient-to-r from-accent-indigo to-accent-violet hover:opacity-90 text-white border-0 shadow-md justify-center gap-1.5"
         >
           Iniciar sesión <span aria-hidden>→</span>
         </Button>

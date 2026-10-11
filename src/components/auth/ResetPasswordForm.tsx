@@ -66,6 +66,7 @@ export function ResetPasswordForm() {
       title="Nueva contraseña"
       subtitle="Elige una contraseña segura"
       hideLogo
+      variant="borderless"
       footer={<div className="text-xs text-ink-secondary"><a href="/login" className="text-accent hover:underline">Volver a iniciar sesión</a></div>}
       trustFooter={
         <div className="flex flex-wrap items-center justify-center gap-3 text-2xs text-ink-muted pt-2">
@@ -94,7 +95,7 @@ export function ResetPasswordForm() {
           {error && <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
           <PasswordInput label="Nueva contraseña" value={newPassword} onChange={setNewPassword} error={errors.newPassword} id="newPassword" showStrength />
           <PasswordInput label="Confirma contraseña" value={confirm} onChange={setConfirm} error={errors.confirm} id="confirm" />
-          <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5855EB] hover:to-[#7C3AED] text-white border-0 shadow-md">
+          <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-accent-indigo to-accent-violet hover:opacity-90 text-white border-0 shadow-md">
             Restablecer contraseña
           </Button>
         </form>

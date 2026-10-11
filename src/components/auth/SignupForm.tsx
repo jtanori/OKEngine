@@ -83,6 +83,7 @@ export function SignupForm() {
       title="Crea tu cuenta"
       subtitle="Empieza gratis con 1.000 consultas/mes. Sin tarjeta."
       hideLogo
+      variant="borderless"
       footer={<div className="text-xs text-ink-secondary">¿Ya tienes cuenta? <a href="/login" className="text-accent hover:underline">Inicia sesión</a></div>}
       trustFooter={
         <div className="flex flex-wrap items-center justify-center gap-3 text-2xs text-ink-muted pt-2">
@@ -145,7 +146,7 @@ export function SignupForm() {
             </span>
           }
         />
-        <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] hover:from-[#5855EB] hover:to-[#7C3AED] text-white border-0 shadow-md justify-center gap-1.5">
+        <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-accent-indigo to-accent-violet hover:opacity-90 text-white border-0 shadow-md justify-center gap-1.5">
           Crear cuenta <span aria-hidden>→</span>
         </Button>
       </form>
