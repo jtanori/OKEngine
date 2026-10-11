@@ -51,7 +51,7 @@ export function AuthShell({ children }: AuthShellProps) {
       <main className="flex-1 w-full max-w-7xl mx-auto px-6 py-6 lg:p-6 flex flex-col">
         <div className="flex-1 w-full grid grid-cols-1 lg:grid-cols-[52fr_48fr] gap-6 lg:gap-8 items-start lg:items-stretch">
           {/* Left — restrained dark navy: 3 layers max (pill + headline + rehearsal) — hidden <lg per mobile spec */}
-          <div className="hidden lg:flex relative bg-brand rounded-[24px] p-8 lg:p-10 flex-col gap-8 overflow-hidden lg:min-h-[640px]">
+          <div className="hidden lg:flex relative bg-brand rounded-3xl p-8 lg:p-10 flex-col gap-8 overflow-hidden lg:min-h-[640px]">
             {/* dot grid */}
             <div
               className="absolute inset-0 opacity-[0.06]"
@@ -61,8 +61,8 @@ export function AuthShell({ children }: AuthShellProps) {
                 backgroundSize: '24px 24px',
               }}
             />
-            {/* subtle gradient — uses DS accent-indigo */}
-            <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-accent-indigo opacity-[0.08] rounded-full blur-3xl pointer-events-none" aria-hidden />
+            {/* subtle gradient — uses DS accent-indigo / w-100=400px documented exception */}
+            <div className="absolute bottom-0 right-0 w-100 h-100 bg-accent-indigo opacity-[0.08] rounded-full blur-3xl pointer-events-none" aria-hidden />
 
             <div className="relative flex flex-col gap-8 flex-1">
               {/* Layer 1: pill */}
@@ -104,7 +104,7 @@ export function AuthShell({ children }: AuthShellProps) {
                 </div>
 
                 <div className="flex justify-end">
-                  <div className="max-w-[75%] bg-accent-indigo rounded-2xl rounded-br-sm px-3 py-2">
+                  <div className="max-w-3/4 bg-accent-indigo rounded-2xl rounded-br-sm px-3 py-2">
                     <p className="text-xs text-white">¿Cómo añado un miembro al workspace?</p>
                   </div>
                 </div>
