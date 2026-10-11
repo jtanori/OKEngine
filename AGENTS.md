@@ -101,6 +101,8 @@ Need new behavior
 - **Servers**: `start_process` with `0.0.0.0`, allowlist preview host `https://{port}-{sandbox}.e2b.app`, relative URLs, never `localhost` in browser code.
 - **Verification**: after any UI change, run `npx next build` (must `Compiled successfully` 26 routes) and `npm run lint` (0 errors). Keep `homepage-tour-readiness 52/52` + `embed-authorization 29/29` green.
 - **File hygiene**: `src/index.css` DS single source, `src/components/ui/index.ts` PR barrel, `src/components/landing/index.ts` + `src/components/docs/index.ts` + `src/components/auth/index.ts` CO barrels.
+- **Spec-update gate for user-facing assets**: If proposed work touches any user-facing asset (`src/index.css` tokens, `src/components/ui/*` PR, `src/components/*` CO, `src/app/*` PA/PAGE, `public/*` assets, copy/illustration), it **requires** spec-update planning **before** implementation: 1) identify affected normative docs (`01_ui_foundation`, `02_component_catalog`, `03_page_specifications`, `UI-01`); 2) draft `vX.Y` changelog entry (token diff, PR/CO/SU/PA diff, migration); 3) bring similar-color/token proposals to discussion when a proposed token (e.g. new `Brand navy #080B1A` vs existing `ink-strong #05081A` / `ink #171717`) already has a canonically defined neighbor — do not silently duplicate or override; await decision. Implement only after spec delta is agreed.
+- **Token similarity discussion**: When a new visual direction proposes a token (color, radius, shadow, typography) that has a nearby canonical neighbor (ΔE < ~10 or same role), surface the comparison (`existing --brand-navy #080B1A vs ink-strong #05081A`, `primary violet #8B5CF6 vs accent #6366F1/#1D4ED8`) in the plan and await explicit approval before adding/overriding.
 
 ---
 
