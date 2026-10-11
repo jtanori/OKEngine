@@ -1,5 +1,5 @@
-// CO-LANDING-INTEGRATION — 3 modes tabs + preview with bullets and browser mock — centered tabs removed per SBS (keep left/right only)
-import React from 'react';
+// CO-LANDING-INTEGRATION — 3 modes tabs + preview with bullets and browser mock — segmented control restored per request
+import React, { useState } from 'react';
 import { SectionPill } from '../ui/SectionPill';
 import { Shield, BarChart3, Sun } from 'lucide-react';
 
@@ -11,6 +11,14 @@ export function LandingIntegration() {
         <div className="max-w-2xl flex flex-col gap-4 text-center">
           <h2 className="text-[32px] lg:text-[36px] font-bold text-ink-strong tracking-tight leading-tight">Elige cómo se ve en tu producto</h2>
           <p className="text-[15px] leading-relaxed text-ink-secondary max-w-xl mx-auto">El mismo motor, la misma seguridad y las mismas citas. Solo cambia el contenedor.</p>
+        </div>
+        {/* Segmented control — restored, centered dark active like PricingToggle */}
+        <div className="flex justify-center w-full">
+          <div className="inline-flex items-center gap-1 rounded-full bg-elevated p-1 border border-line shadow-sm" role="tablist">
+            <button type="button" role="tab" aria-selected className="rounded-full px-5 py-2 text-sm font-medium bg-ink-strong text-white shadow-sm">Widget flotante</button>
+            <button type="button" role="tab" aria-selected="false" className="rounded-full px-5 py-2 text-sm font-medium text-ink-secondary hover:text-ink">Panel lateral</button>
+            <button type="button" role="tab" aria-selected="false" className="rounded-full px-5 py-2 text-sm font-medium text-ink-secondary hover:text-ink">Pantalla completa</button>
+          </div>
         </div>
         <div className="grid md:grid-cols-2 gap-12 items-start max-w-7xl w-full">
             <div className="flex flex-col gap-6">
