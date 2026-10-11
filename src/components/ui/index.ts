@@ -32,6 +32,8 @@ export * from './FeatureCard';
 export * from './HowItWorksStep';
 export * from './ChatMock';
 export * from './PricingCard';
+export * from './SectionPill';
+export * from './IconTile';
 // v3.0 new primitives — auth
 export * from './AuthCard';
 export * from './PasswordInput';

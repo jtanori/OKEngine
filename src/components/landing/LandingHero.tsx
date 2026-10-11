@@ -13,47 +13,43 @@ export function LandingHero({ onPrimaryCta, onSecondaryCta }: LandingHeroProps) 
     <section className="w-full max-w-7xl mx-auto px-6 py-16 md:py-24">
       <div className="grid md:grid-cols-2 gap-12 items-center">
         <div className="flex flex-col gap-6">
-          <div className="inline-flex items-center gap-2 rounded-full bg-accent-subtle border border-line px-3 py-1 text-2xs font-medium text-accent w-fit">
+          <div className="inline-flex items-center gap-2 rounded-full bg-surface border border-line px-3 py-1 text-2xs font-medium text-accent w-fit">
             <span className="h-1.5 w-1.5 rounded-full bg-accent"></span>
-            Nuevo: Widget que parece tuyo
+            Capa de conocimiento para tu producto
           </div>
           <h1 className="text-hero font-bold tracking-tight text-ink-strong leading-[1.05]">
-            Capa de conocimiento para tu producto
+            Convierte tu documentación en <span className="text-accent underline decoration-2 underline-offset-4">respuestas con citas,</span> dentro de tu app.
           </h1>
           <p className="text-lg text-ink-secondary leading-relaxed">
-            Convierte tu documentación en respuestas con citas, dentro de tu app. Sin alucinaciones, con permisos por rol.
+            OKEng indexa tu Markdown, PDF y web, respeta los permisos por colección y devuelve respuestas verificables. Tus usuarios preguntan y obtienen la fuente, sin salir de tu producto.
           </p>
-          <p className="text-sm text-ink-muted">
-            Empieza gratis con 1.000 consultas/mes. Sin tarjeta. Cancela cuando quieras.
-          </p>
+          <p className="text-xs text-ink-muted">Gratis hasta 1.000 consultas al mes · Sin tarjeta de crédito · Listo en 5 minutos</p>
           <div className="flex flex-wrap items-center gap-3">
             <a
               href="/signup"
               onClick={onPrimaryCta}
-              className="inline-flex items-center justify-center rounded-sm bg-ink text-surface px-6 py-2.5 text-sm font-medium hover:bg-ink-strong transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-accent text-surface px-6 py-3 text-sm font-semibold shadow-lg shadow-accent/20 hover:bg-accent-hover transition-colors"
             >
-              Empieza gratis
+              Empieza gratis <span>→</span>
             </a>
             <a
               href="#como-funciona"
               onClick={onSecondaryCta}
-              className="inline-flex items-center justify-center rounded-sm border border-line bg-surface text-ink px-6 py-2.5 text-sm font-medium hover:bg-elevated transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-surface text-ink px-6 py-3 text-sm font-medium hover:bg-elevated transition-colors"
             >
-              Ver cómo funciona
+              <span className="w-4 h-4 rounded-full border border-line flex items-center justify-center text-2xs">◉</span> Ver cómo funciona
             </a>
           </div>
           <div className="flex flex-wrap items-center gap-3 pt-2">
-            <span className="inline-flex items-center rounded-xs bg-success-subtle border border-line px-2 py-1 text-2xs font-medium text-success">≥98% con cita</span>
-            <span className="inline-flex items-center rounded-xs bg-elevated border border-line px-2 py-1 text-2xs font-medium text-ink-secondary">Permisos por rol</span>
-            <span className="inline-flex items-center rounded-xs bg-elevated border border-line px-2 py-1 text-2xs font-medium text-ink-secondary">Markdown, PDF y web</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-ink-muted">
-            <div className="flex -space-x-2">
-              <div className="h-6 w-6 rounded-full bg-elevated border border-surface"></div>
-              <div className="h-6 w-6 rounded-full bg-subtle border border-surface"></div>
-              <div className="h-6 w-6 rounded-full bg-line border border-surface"></div>
-            </div>
-            <span>Más de 1.200 equipos confían</span>
+            <span className="inline-flex items-center gap-1 rounded-xs bg-surface border border-line px-2 py-1 text-2xs font-medium text-ink-secondary">
+              <span className="text-success">✓</span> ≥98% de respuestas con cita
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-xs bg-surface border border-line px-2 py-1 text-2xs font-medium text-ink-secondary">
+              <span>🛡</span> Permisos por colección
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-xs bg-surface border border-line px-2 py-1 text-2xs font-medium text-ink-secondary">
+              <span>📄</span> Markdown, PDF y web
+            </span>
           </div>
         </div>
         <div className="relative">
