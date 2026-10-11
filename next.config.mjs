@@ -5,6 +5,8 @@ const nextConfig = {
   allowedDevOrigins: [
     '3000-iq017e1904yrh5hhtdmwp.e2b.app',
     '3000-ihyx4qj9089kh362xyf6t.e2b.app',
+    '3000-iu5oezj667zrhqytgdyet.e2b.app',
+    '*.e2b.app',
   ],
   typescript: {
     ignoreBuildErrors: true,
