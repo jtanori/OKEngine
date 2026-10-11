@@ -1,32 +1,76 @@
-// CO-AUTH-LOGIN-FORM — Login form with FORM-SEC-01, empty initial values, placeholder+hint, field errors, isLoading
+// CO-AUTH-LOGIN-FORM — Login form v3.3 split: SSO top → Divider o → Input/Password → Gradient CTA → Footer border-t
+// PA-AUTH-SPLIT 55/45 — reorders per locked liked v2, FORM-SEC-01, hideLogo, gradient from-[#6366F1] to-[#8B5CF6], collapsed DEV LOGIN
+'use client';
 import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { AuthCard } from '../ui/AuthCard';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { Checkbox } from '../ui/Checkbox';
 import { PasswordInput } from '../ui/PasswordInput';
 import { AuthDivider } from '../ui/AuthDivider';
-import { AuthTrustFooter } from './AuthTrustFooter';
 import { SsoButtons } from './SsoButtons';
+import { validateEmailInput, validatePasswordInput, containsUnsafePayload } from '../../services/formSecurity';
+import { useRouter } from '../../app/router';
+import { authService } from '../../services/auth';
+import { useI18n } from '../../i18n/I18nContext';
 
 export interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void>;
 }
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
+  const { push } = useRouter();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [devOpen, setDevOpen] = useState(false);
 
   const validate = () => {
     const errors: { email?: string; password?: string } = {};
-    // FORM-SEC-01 check
-    const dangerous = /<\s*(script|iframe|object|embed)\b|on\w+\s*=|(javascript|data|vbscript):/i;
-    if (!email) errors.email = 'Correo requerido';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) errors.email = 'Correo inválido';
-    else if (dangerous.test(email)) errors.email = 'Contenido no permitido';
-    if (!password) errors.password = 'Contraseña requerida';
-    else if (dangerous.test(password)) errors.password = 'Contenido no permitido';
+    const emailCheck = validateEmailInput(email);
+    if (!emailCheck.valid) {
+      errors.email = emailCheck.errorMessage || 'Correo inválido';
+    } else if (containsUnsafePayload(email)) {
+      errors.email = 'Contenido no permitido';
+    }
+    const pwdCheck = validatePasswordInput(password, 'login');
+    if (!pwdCheck.valid) {
+      if (!password) errors.password = 'Contraseña requerida';
+      else if (containsUnsafePayload(password)) errors.password = 'Contenido no permitido';
+      else errors.password = pwdCheck.errorMessage || 'Contraseña inválida';
+    }
     return errors;
+  };
+
+  const handleDevLogin = async (userId: string) => {
+    setError(null);
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/dev/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.message || 'Dev login falló');
+        setIsLoading(false);
+        return;
+      }
+      try {
+        authService.switchPersona(userId);
+      } catch {}
+      window.location.href = '/workspaces/okeng/collections';
+      return;
+    } catch {
+      setError('Error en dev login');
+      setIsLoading(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,7 +83,6 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
     try {
       if (onSubmit) await onSubmit(email, password);
       else {
-        // Default: POST to /api/auth/login with CSRF
         const csrfRes = await fetch('/api/csrf-token');
         const { csrfToken } = await csrfRes.json();
         const res = await fetch('/api/auth/login', {
@@ -53,9 +96,9 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           else setError('Credenciales inválidas');
           return;
         }
-        window.location.href = '/workspaces';
+        push('/workspaces/okeng/collections');
       }
-    } catch (err) {
+    } catch {
       setError('Error interno, intenta de nuevo');
     } finally {
       setIsLoading(false);
@@ -64,56 +107,105 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
 
   return (
     <AuthCard
-      title="Inicia sesión en OKEng"
-      subtitle="Tu documentación, respondiendo dentro de tu app"
+      title={t('auth.form.login_title')}
+      subtitle={t('auth.form.login_subtitle')}
+      hideLogo
+      variant="borderless"
       footer={
         <div className="text-xs text-ink-secondary">
-          ¿No tienes cuenta? <a href="/signup" className="text-accent hover:underline">Regístrate</a>
+          ¿No tienes cuenta? <a href="/signup" className="text-accent hover:underline font-medium">Regístrate</a>
         </div>
       }
-      trustFooter={<AuthTrustFooter />}
+      trustFooter={
+        <div className="flex flex-wrap items-center justify-center gap-3 text-2xs text-ink-muted pt-2">
+          <a href="/about" className="hover:text-ink hover:underline">
+            About
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/terms" className="hover:text-ink hover:underline">
+            TOS
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/privacy" className="hover:text-ink hover:underline">
+            Privacy Policy
+          </a>
+          <span aria-hidden>·</span>
+          <a href="/contact" className="hover:text-ink hover:underline">
+            Contact
+          </a>
+        </div>
+      }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* SSO top per locked v2 */}
+      <SsoButtons />
+      <AuthDivider label="o continúa con correo" />
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
         {error && (
-          <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger flex items-center gap-2">
-            <span>⚠</span>
+          <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-xs font-medium text-ink">Correo electrónico</label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            placeholder="tu@empresa.com"
-            aria-invalid={!!fieldErrors.email}
-            aria-describedby="email-hint"
-            className={`w-full h-9 px-3 rounded-sm border bg-surface text-sm text-ink placeholder:text-ink-muted focus:outline-none focus:ring-2 focus:ring-accent-subtle focus:border-accent ${fieldErrors.email ? 'border-danger' : 'border-line'}`}
-          />
-          <div id="email-hint" className={`text-xs ${fieldErrors.email ? 'text-danger' : 'text-ink-muted'}`} role={fieldErrors.email ? 'alert' : undefined}>
-            {fieldErrors.email || 'Usa tu correo de trabajo'}
+        <Input
+          id="email"
+          label="Correo de trabajo"
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="tu@empresa.com"
+          hint={fieldErrors.email ? undefined : 'Usa tu correo de trabajo'}
+          error={fieldErrors.email || null}
+          sizeVariant="md"
+          autoComplete="email"
+          leadingIcon={<span className="text-ink-muted">✉</span>}
+        />
+        <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={fieldErrors.password} id="password" hint={fieldErrors.password ? undefined : 'Tu contraseña'} />
+        <div className="flex items-center justify-between -mt-1">
+          <Checkbox id="remember" checked={remember} onChange={setRemember} label="Recordarme" />
+          <a href="/forgot-password" className="text-xs text-accent hover:underline">
+            ¿Olvidaste tu contraseña?
+          </a>
+        </div>
+        <Button
+          type="submit"
+          variant="primary"
+          size="md"
+          isLoading={isLoading}
+          className="w-full bg-gradient-to-r from-accent-indigo to-accent-violet hover:opacity-90 text-white border-0 shadow-md justify-center gap-1.5"
+        >
+          Iniciar sesión <span aria-hidden>→</span>
+        </Button>
+      </form>
+
+      {/* DEV LOGIN — hidden per defect #3, keep DOM for future arena use */}
+      <details hidden open={devOpen} onToggle={(e) => setDevOpen((e.target as HTMLDetailsElement).open)} className="rounded-md border border-dashed border-line bg-elevated/60 open:p-4 p-0 overflow-hidden">
+        <summary className="cursor-pointer list-none flex items-center justify-between px-4 py-3 open:px-0 open:py-0 open:mb-3">
+          <span className="text-2xs font-semibold tracking-widest uppercase text-ink-muted">Dev login — sin DB / sin contraseña</span>
+          <span className="text-2xs bg-warning-subtle text-warning border border-warning/30 px-1.5 py-0.5 rounded-xs font-mono">arena</span>
+        </summary>
+        <div className="flex flex-col gap-3">
+          <p className="text-2xs text-ink-secondary leading-relaxed">
+            En este sandbox <code className="bg-surface border border-line rounded-xs px-1">DATABASE_URL=dummy</code>, el login normal falla. Usa un usuario mock.
+          </p>
+          <div className="grid grid-cols-1 gap-2">
+            <Button type="button" variant="primary" size="md" onClick={() => handleDevLogin('usr_sarah_102')} disabled={isLoading} className="w-full">
+              Entrar como Sarah Chen — Owner (todos los permisos)
+            </Button>
+            <div className="grid grid-cols-2 gap-2">
+              <Button type="button" variant="secondary" size="md" onClick={() => handleDevLogin('usr_marcus_204')} disabled={isLoading} className="w-full">
+                Marcus — Write
+              </Button>
+              <Button type="button" variant="secondary" size="md" onClick={() => handleDevLogin('usr_elena_309')} disabled={isLoading} className="w-full">
+                Elena — Read
+              </Button>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-2xs text-ink-muted font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-success"></span> sets <code>okeng.sid</code> cookie + <code>localStorage</code> → <code>/workspaces/okeng/collections</code>
           </div>
         </div>
-        <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={fieldErrors.password} id="password" />
-        <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-xs text-ink-secondary">
-            <input type="checkbox" className="rounded-xs border-line" /> Recordarme
-          </label>
-          <a href="/forgot-password" className="text-xs text-accent hover:underline">¿Olvidaste tu contraseña?</a>
-        </div>
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full h-9 rounded-sm bg-ink text-surface text-sm font-medium hover:bg-ink-strong disabled:opacity-60 flex items-center justify-center gap-2"
-        >
-          {isLoading && <span className="h-4 w-4 border-2 border-surface/30 border-t-surface rounded-full animate-spin"></span>}
-          Iniciar sesión
-        </button>
-        <AuthDivider label="o" />
-        <SsoButtons />
-      </form>
+      </details>
     </AuthCard>
   );
 }

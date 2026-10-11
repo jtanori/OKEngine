@@ -1,44 +1,63 @@
-// PR-HOW-IT-WORKS-STEP — Step number + icon + title + desc + connector line
-// DS tokens: bg-surface, border-line, text-ink, accent
+// PR-HOW-IT-WORKS-STEP — Card with pastel illustration + colored number + title + desc
+// DS tokens: bg-surface, border-line, rounded-xl, shadow-sm, text-ink, accent
 import React from 'react';
 
 export interface HowItWorksStepProps {
   number: number;
   icon?: React.ReactNode;
+  illustration?: React.ReactNode;
+  color?: string;
   title: string;
   description: string;
   isLast?: boolean;
   className?: string;
 }
 
-export function HowItWorksStep({ number, icon, title, description, isLast = false, className = '' }: HowItWorksStepProps) {
+const stepColors: Record<number, string> = {
+  1: 'bg-[#6366F1]',
+  2: 'bg-[#0EA5E9]',
+  3: 'bg-[#10B981]',
+  4: 'bg-[#8B5CF6]',
+  5: 'bg-[#F43F5E]',
+};
+
+const pastelBg: Record<number, string> = {
+  1: 'bg-[#EFF6FF]',
+  2: 'bg-[#F0F9FF]',
+  3: 'bg-[#ECFDF5]',
+  4: 'bg-[#F5F3FF]',
+  5: 'bg-[#FFF1F2]',
+};
+
+export function HowItWorksStep({ number, icon, illustration, color, title, description, isLast = false, className = '' }: HowItWorksStepProps) {
+  const numberBg = color || stepColors[number] || 'bg-accent';
+  const illustrationBg = pastelBg[number] || 'bg-elevated';
   return (
-    <div className={`flex flex-col items-start gap-3 relative ${className}`}>
-      <div className="flex items-center gap-3">
-        <div className="h-8 w-8 rounded-full bg-ink text-surface flex items-center justify-center text-xs font-semibold">
+    <div className={`flex flex-col relative bg-surface border border-line rounded-xl shadow-sm overflow-hidden ${className}`}>
+      {illustration && <div className={`h-28 ${illustrationBg} border-b border-line flex items-center justify-center p-3`}>{illustration}</div>}
+      <div className="flex flex-col gap-3 p-5 relative">
+        <div className={`absolute -top-3.5 left-4 w-8 h-8 rounded-md ${numberBg} text-surface flex items-center justify-center text-xs font-bold shadow-md`}>
           {number}
         </div>
+        <div className={`text-card-title font-semibold text-ink ${illustration ? 'pt-3' : ''}`}>{title}</div>
+        <div className="text-sm text-ink-secondary leading-relaxed">{description}</div>
         {icon && <div className="text-ink-muted text-sm">{icon}</div>}
       </div>
-      <div className="text-sm font-semibold text-ink">{title}</div>
-      <div className="text-xs text-ink-secondary leading-relaxed">{description}</div>
-      {!isLast && (
-        <div className="hidden md:block absolute top-4 left-8 w-[calc(100%-2rem)] h-px bg-line -z-10"></div>
-      )}
+      {!isLast && <div className="hidden md:block absolute top-1/2 -right-2 w-4 h-px bg-line/60"></div>}
     </div>
   );
 }
 
 export interface HowItWorksProps {
-  steps: Array<{ icon?: React.ReactNode; title: string; description: string }>;
+  steps: Array<{ icon?: React.ReactNode; illustration?: React.ReactNode; color?: string; title: string; description: string }>;
   className?: string;
 }
 
 export function HowItWorks({ steps, className = '' }: HowItWorksProps) {
   return (
-    <div className={`grid grid-cols-1 md:grid-cols-5 gap-8 ${className}`}>
+    <div className={`grid grid-cols-1 md:grid-cols-5 gap-6 ${className}`}>
       {steps.map((step, idx) => (
-        <HowItWorksStep key={idx} number={idx + 1} icon={step.icon} title={step.title} description={step.description} isLast={idx === steps.length - 1} />
+        <HowItWorksStep key={idx} number={idx + 1} icon={step.icon} illustration={step.illustration} color={step.color} title={step.title} description={step.description} isLast={idx === steps.length - 1} />
       ))}
     </div>
   );

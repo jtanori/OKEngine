@@ -16,28 +16,29 @@ export function FaqAccordion({ items, className = '' }: FaqAccordionProps) {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
 
   return (
-    <div className={`divide-y divide-line border border-line rounded-md bg-surface ${className}`}>
+    <div className={`flex flex-col ${className}`}>
       {items.map((item, idx) => {
         const isOpen = openIndex === idx;
         return (
-          <div key={idx} className="group">
+          <div key={idx} className="border-t border-line group">
             <button
               type="button"
               onClick={() => setOpenIndex(isOpen ? null : idx)}
-              className="w-full flex items-center justify-between gap-4 px-6 py-4 text-left hover:bg-elevated transition-colors"
+              className="w-full flex items-center justify-between gap-4 py-4 text-left"
               aria-expanded={isOpen}
             >
-              <span className="text-sm font-medium text-ink">{item.question}</span>
-              <span className={`text-ink-muted transition-transform ${isOpen ? 'rotate-180' : ''}`}>⌄</span>
+              <span className="text-sm font-semibold text-ink">{item.question}</span>
+              <span className={`w-7 h-7 rounded-full border flex items-center justify-center text-ink-muted transition-colors shrink-0 ${isOpen ? 'bg-accent text-surface border-accent rotate-45' : 'bg-white border-line'}`}>+</span>
             </button>
             {isOpen && (
-              <div className="px-6 pb-4 text-sm text-ink-secondary leading-relaxed">
+              <div className="pb-4 text-sm text-ink-secondary leading-relaxed">
                 {item.answer}
               </div>
             )}
           </div>
         );
       })}
+      <div className="border-t border-line"></div>
     </div>
   );
 }

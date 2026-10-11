@@ -47,10 +47,10 @@ export function DocsSidebar({ groups, selectedSlug, onSelect, searchQuery = '', 
         </div>
       )}
       <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-4">
-        {filteredGroups.map(group => {
+        {filteredGroups
+          .filter(group => !(group.id === 'COL-INTERNAL' && !isAuthenticated))
+          .map(group => {
           const isExpanded = expandedGroup === group.id;
-          const isInternal = group.id === 'COL-INTERNAL';
-          if (isInternal && !isAuthenticated) return null;
 
           return (
             <div key={group.id} className="flex flex-col gap-1">
@@ -73,9 +73,9 @@ export function DocsSidebar({ groups, selectedSlug, onSelect, searchQuery = '', 
               </button>
               {isExpanded && (
                 <div className="flex flex-col gap-0.5 ml-2 pl-2 border-l border-line">
-                  {group.items.map(item => (
+                  {group.items.map((item, idx) => (
                     <button
-                      key={item.slug}
+                      key={`${item.collectionId}-${item.slug}-${idx}`}
                       type="button"
                       onClick={() => onSelect(item.slug)}
                       className={`text-left px-2 py-1.5 rounded-sm text-xs transition-colors ${

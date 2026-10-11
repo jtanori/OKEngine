@@ -7,7 +7,28 @@
 | **Owner** | Component Catalog |
 | **Authority** | Blocking |
 | **Dependencies** | `01_ui_foundation`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
-| **Revision** | `3.0 (2026-10-11)` — Added 16 new PR primitives + 18 new CO components for landing + auth from proposal |
+| **Revision** | `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer About·TOS·Privacy·Contact |
+
+## v3.4 Changelog — Auth Defects 1-4 (7a15944)
+
+- **Defect 1 header**: `CO-AUTH-SPLIT-LAYOUT` header now single `LanguageSelector showIcon` — removed duplicate custom SVG globe (was `custom SVG + LanguageSelector Globe`).
+- **Defect 2 corporate footer**: `trustFooter` on `Login/Signup/Forgot/Reset` replaced `AuthTrustFooter Citas... + Al continuar... + ©` 3-line duplicated block with single horizontal `About · TOS · Privacy Policy · Contact` `flex gap-3 text-2xs text-ink-muted hover:text-ink` per user request.
+- **Defect 3 dev**: `Login` `DEV LOGIN` `details hidden` keeps DOM (`hidden` attribute `display:none`) not removed, future arena use.
+- **Defect 4 footer**: `Login` `footer` removed second line `¿Necesitas ayuda? Contáctanos`, keep only `¿No tienes cuenta? Regístrate` inside `border-t`.
+
+## v3.3 Changelog — Auth Split (liked v2 locked, per_surface plan)
+
+- **Auth split layout (new CO/SU)**: `CO-AUTH-SPLIT-LAYOUT` (`src/components/auth/AuthSplitLayout.tsx`) — shared header `h-14 max-w-7xl mx-auto px-6 border-b bg-canvas` + `grid lg:grid-cols-[1.08fr_0.92fr] max-w-7xl mx-auto gap-8 p-6` — left `bg-ink-strong rounded-[24px] p-10 dot-grid` rehearses `AppShell` mini (`Files → CollectionCard + FileTable scopedCollectionName + Badge public/members + ChatMock En línea Verificada + quote + 2 logos`); right `bg-canvas flex items-center justify-center` holds `AuthCard max-w-md rounded-xl 16px shadow-md p-8` (was `rounded-lg 12px`). Left is intentional product band exception (like landing Developers), right is `PA-AUTH` card.
+- **Login CO reordered vs v3.2**: `CO-AUTH-LOGIN-FORM` now `SsoButtons (Google/GitHub secondary rounded-full) → AuthDivider "o continúa con correo" → Input correo tu@empresa.com hint Usa tu correo + PasswordInput + Row Checkbox Recordarme / Link ¿Olvidaste? text-accent → Button primary gradient from-[#6366F1] to-[#8B5CF6] → Footer ¿No tienes cuenta? Regístrate (inside AuthCard border-t) + TrustFooter outside (Citas·Permisos·Sin tarjeta) + collapsed details DEV LOGIN arena (border-dashed bg-elevated/60)`. Same reorder for `Signup` (+ showStrength, Checkbox términos).
+- **Error/loading inferred per FORM-SEC-01 (no new generation drift)**: `error` =_banner `bg-danger-subtle #FEF2F2 border-line rounded-sm p-3 AlertCircle Credenciales inválidas / Demasiados intentos` + `Input aria-invalid border-danger + inline text-danger Contenido no permitido + Contraseña requerida`; `loading` = `Button isLoading Loader2 spinner + disabled + muted Google/GitHub + inputs disabled` — both derived from spec, documented not generated (locked v2 is source of truth).
+- **DS/PR notes**: No new PR; `AuthCard` radius `xl 16px` now canonical for split (doc above), `Input` `leadingIcon Mail/Lock size md h-9 rounded-sm`, `Button` primary gradient is now documented marketing exception also allowed for auth (matches pricing popular), `AuthDivider` single `o` (v2 had `o continúa` — unify to spec `o`).
+
+## v3.2 Changelog — Landing Pixel Alignment (arena.site target, 6e55f84)
+
+- **+2 PR**: `PR-SECTION-PILL` (`SectionPill.tsx` — `rounded-full bg-accent-subtle border-accent/10 text-accent text-2xs` with dot/icon) and `PR-ICON-TILE` (`IconTile.tsx` — `w-9 h-9 rounded-lg bg-accent-subtle border-accent/10 text-accent`, sm `w-7`) — both DS-only, no hardcoded hex.
+- **5 PR refinements vs v3.0**: `PR-FEATURE-CARD` now `rounded-xl 16px shadow-sm p-6 + IconTile + illustration slot h-16 bg-subtle`; `PR-HOW-IT-WORKS-STEP` now `rounded-xl pastel illustration h-28 + colored number pill w-7 h-7 rounded-full shadow-md` with marketing palette `#6366F1/#0EA5E9/#10B981/#8B5CF6/#F43F5E` + connector `bg-line/60` (documented exception — marketing only); `PR-TESTIMONIAL-CARD` now `rounded-xl quote accent/20 + top lavender pill rounded-full bg-accent-subtle + avatar w-9 h-9 rounded-full` (`#8B5CF6/#0EA5E9/#10B981`) + `border-t pt-4`; `PR-PRICING-CARD` now `rounded-xl dark Pro variant bg-ink-strong #05081A shadow-xl + gradient popular pill from-[#6366F1] to-[#8B5CF6] -top-3 rounded-full` + CTA `rounded-full bg-white`; `PR-FAQ-ACCORDION` now `border-t py-4 plus w-7 h-7 rounded-full border bg-white / open bg-accent text-white rotate-45` (no divide-y chevron).
+- **PR-BADGE**: added `pill-accent` tone `rounded-full bg-accent-subtle border-accent/10 text-accent` used by `SectionPill` and pricing `-20%` pill.
+- **Marketing palette exception**: 5 step colors + 3 avatar colors + pricing gradient use fixed hex but are scoped to `SU-LANDING` marketing and documented here; all other PR remain zero-hex DS tokens.
 
 ## v3.0 Changelog — New Primitives & Components from Proposal (PLAN-001, PLAN-002, PLAN-003)
 
@@ -18,15 +39,17 @@
 | `PR-ANNOUNCEMENT-BANNER` | `AnnouncementBanner.tsx` | Top full-width banner "Citas verificables y permisos por rol" | bg-subtle, border-line, text-ink-secondary, text-xs |
 | `PR-METRIC` | `Metric.tsx` | Metric display value + label "-73% tickets" | text-ink, text-ink-secondary, text-metric-value, font-sans |
 | `PR-PRICING-TOGGLE` | `PricingToggle.tsx` | Monthly/Annual toggle with -20% badge | bg-elevated, bg-surface, border-line, rounded-sm, accent |
-| `PR-TESTIMONIAL-CARD` | `TestimonialCard.tsx` | Testimonial quote + author + role + company + metric | bg-surface, border-line, rounded-lg, shadow-sm |
-| `PR-FAQ-ACCORDION` | `FaqAccordion.tsx` | FAQ accordion Q+A single expand | border-line, bg-surface, text-ink |
+| `PR-TESTIMONIAL-CARD` | `TestimonialCard.tsx` | Testimonial quote + avatar MI/DS/LF + pill lavender + author + metric + border-t | bg-surface, border-line, rounded-xl 16px, shadow-sm, accent/20 quote, avatar marketing palette |
+| `PR-FAQ-ACCORDION` | `FaqAccordion.tsx` | FAQ accordion Q+A single expand plus-circle | border-t, border-line, bg-surface, text-ink, w-7 h-7 rounded-full border, open bg-accent rotate-45 |
 | `PR-CODE-SNIPPET` | `CodeSnippet.tsx` | Code block with language, copy button | bg-elevated, border-line, rounded-md, font-mono |
-| `PR-LOGO-STRIP` | `LogoStrip.tsx` | Logo strip 6 logos monochrome | text-ink-muted, border-line |
+| `PR-LOGO-STRIP` | `LogoStrip.tsx` | Logo strip 6 logos monochrome EQUIPOS… | text-ink-muted, border-line |
 | `PR-INTEGRATION-TABS` | `IntegrationTabs.tsx` | Tabs widget/panel/fullscreen with mock preview | bg-elevated, bg-surface, border-line, rounded-sm |
-| `PR-FEATURE-CARD` | `FeatureCard.tsx` | Feature card icon + title + desc for 6 features | bg-surface, border-line, rounded-lg, shadow-sm/md |
-| `PR-HOW-IT-WORKS-STEP` | `HowItWorksStep.tsx` | Step number + icon + title + desc + connector | bg-surface, border-line, text-ink, accent |
+| `PR-FEATURE-CARD` | `FeatureCard.tsx` | Feature card icon + title + desc + illustration slot | bg-surface, border-line, rounded-xl 16px, shadow-sm, IconTile w-9 h-9 bg-accent-subtle |
+| `PR-HOW-IT-WORKS-STEP` | `HowItWorksStep.tsx` | Step number + illustration pastel h-28 + title + desc + connector | bg-surface, border-line, rounded-xl, shadow-sm, marketing palette 5 colors, bg-line/60 |
 | `PR-CHAT-MOCK` | `ChatMock.tsx` | Chat mock UI header + messages + citations + input | bg-surface, border-line, rounded-lg, shadow-lg |
-| `PR-PRICING-CARD` | `PricingCard.tsx` | Pricing tier card features + CTA + popular badge | bg-surface, border-line/ink, rounded-lg, shadow-sm/md |
+| `PR-PRICING-CARD` | `PricingCard.tsx` | Pricing tier card features + CTA + popular gradient pill -top-3 rounded-full | bg-surface / bg-ink-strong #05081A, border-line/ink, rounded-xl, shadow-sm/xl, gradient #6366F1→#8B5CF6 |
+| `PR-SECTION-PILL` | `SectionPill.tsx` | Section header pill with dot/icon | rounded-full, bg-accent-subtle, border-accent/10, text-accent, text-2xs |
+| `PR-ICON-TILE` | `IconTile.tsx` | Small icon tile for FeatureCard/bullets | w-9 h-9 / w-7 h-7, rounded-lg/md, bg-accent-subtle, border-accent/10, text-accent |
 | `PR-AUTH-CARD` | `AuthCard.tsx` | Centered card logo + title + subtitle + form + footer + trust | bg-surface, border-line, rounded-lg, shadow-md, bg-canvas |
 | `PR-PASSWORD-INPUT` | `PasswordInput.tsx` | Input show/hide toggle + strength meter | border-line, rounded-sm, bg-surface, text-ink |
 | `PR-AUTH-DIVIDER` | `AuthDivider.tsx` | Divider with "o"/"or" for SSO vs password | bg-line, text-ink-muted |

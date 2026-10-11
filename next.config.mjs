@@ -2,15 +2,22 @@
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  allowedDevOrigins: [
+    '3000-iq017e1904yrh5hhtdmwp.e2b.app',
+    '3000-ihyx4qj9089kh362xyf6t.e2b.app',
+    '3000-iu5oezj667zrhqytgdyet.e2b.app',
+    '*.e2b.app',
+  ],
   typescript: {
     ignoreBuildErrors: true,
   },
   async headers() {
+    // Framing policy (X-Frame-Options/CSP frame-ancestors) is handled canonically in proxy.ts (single source of truth) to avoid duplicate/conflicting headers.
+    // next.config only sets non-framing security headers; preview allowlist must stay in sync with proxy.ts isEmbedPreview (only /embeds/preview and /embeds/:embedId/preview).
     return [
       {
         source: '/(.*)',
         headers: [
-          { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },

@@ -5,3 +5,4 @@ export * from './ResetPasswordForm';
 export * from './SsoButtons';
 export * from './AuthTrustFooter';
 export * from './AuthView';
+export * from './AuthShell';

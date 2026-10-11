@@ -35,22 +35,51 @@ export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   // Phase 6: Sanitize forwarding headers in prod if not behind trusted proxy
-  // If TRUST_PROXY=false in production, client could spoof x-forwarded-for to bypass IP rate limiting
-  // We don't strip here (we ignore in rateLimit), but we log and document
   const trustProxy = isTrustProxy();
   const xForwardedFor = request.headers.get('x-forwarded-for');
   const xRealIp = request.headers.get('x-real-ip');
 
   if (!trustProxy && xForwardedFor) {
-    // In untrusted proxy mode, x-forwarded-for is not trusted — log for visibility
-    // Rate limiting will ignore it and use x-real-ip or trustworthy sessionId
     if (process.env.NODE_ENV === 'production' || process.env.OKENG_ENV === 'production') {
       console.warn(`[proxy] TRUST_PROXY=false but x-forwarded-for present: ${xForwardedFor} — not trusted, using x-real-ip or sessionId`);
     }
   }
 
-  // Security headers (SEC-HEADERS-01)
-  response.headers.set('X-Frame-Options', 'DENY');
+  // Security headers (SEC-HEADERS-01) — P1 framing: single canonical policy (keep in sync with next.config comment).
+  // Canonical allowlist: only /workspaces/:workspaceSlug/embeds/preview and /workspaces/:workspaceSlug/embeds/:embedId/preview are frame-allowed (EMBED-02). Installation and /api/* remain DENY.
+  // Intentional infrastructure exception: preview platform generates short-lived unpredictable subdomains (e.g., *.arena.site, *.okeng.io, *.e2b.app); wildcard SCOPED to these preview domains only, not arbitrary origins. Subdomain isolation prevents cross-customer access.
+  // Preserve complete required CSP while varying only frame-ancestors — do not replace entire policy with frame-ancestors alone (P1 CSP review).
+  const pathname = request.nextUrl.pathname;
+  const isEmbedPreview =
+    /^\/workspaces\/[^/]+\/embeds\/preview(\/|\?|$)/.test(pathname) ||
+    /^\/workspaces\/[^/]+\/embeds\/[^/]+\/preview(\/|\?|$)/.test(pathname);
+  const BASE_CSP = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://api.stripe.com https://*.supabase.co",
+    "frame-src https://js.stripe.com",
+  ];
+  function buildCsp(frameAncestors: string) {
+    return [...BASE_CSP, `frame-ancestors ${frameAncestors}`].join('; ');
+  }
+  if (isEmbedPreview) {
+    // Embeddable route — allow framing from verified origins only (EMBED-02 contract)
+    // X-Frame-Options omitted: SAMEORIGIN would block cross-origin allowlist; CSP frame-ancestors is authoritative.
+    response.headers.delete('X-Frame-Options');
+    response.headers.set(
+      'Content-Security-Policy',
+      buildCsp("'self' https://*.okeng.io https://*.arena.site https://*.e2b.app")
+    );
+  } else {
+    // Sensitive routes (/, /login, /workspaces/* except preview) — deny framing
+    response.headers.set('X-Frame-Options', 'DENY');
+    response.headers.set('Content-Security-Policy', buildCsp("'none'"));
+  }
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
@@ -71,7 +100,6 @@ export async function proxy(request: NextRequest) {
       response.headers.set('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS');
       response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-csrf-token, x-okeng-csrf');
     } else {
-      // Disallowed origin — return 403 for API routes
       if (request.nextUrl.pathname.startsWith('/api/')) {
         return new NextResponse(JSON.stringify({ error: 'forbidden', message: 'Origin not allowed' }), {
           status: 403,
@@ -87,18 +115,15 @@ export async function proxy(request: NextRequest) {
       const cookieToken = request.cookies.get('okeng.csrf')?.value || request.cookies.get('__Host-okeng.csrf')?.value;
       const headerToken = request.headers.get('x-csrf-token') || request.headers.get('x-okeng-csrf');
       if (!cookieToken || !headerToken) {
-        // Let API route handle 403 with proper JSON, but we can early return
-        // For now, don't block in middleware to allow API routes to return JSON, just continue
+        // Let API route handle 403
       }
     }
   }
-
-  // Rate limiting is handled in API routes via src/lib/rateLimit.ts for more accurate composite keys
-  // Middleware could also do global rate limiting, but we delegate to API routes
 
   return response;
 }
 
 export const config = {
-  matcher: ['/api/:path*', '/workspaces/:path*', '/login', '/signup', '/forgot-password', '/password/reset', '/reset-password'],
+  // Apply framing + security headers to all routes (canonical policy). Keep narrow in dev if needed, but must include public, auth, docs, workspaces.
+  matcher: ['/:path*'],
 };

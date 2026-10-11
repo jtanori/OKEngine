@@ -1185,7 +1185,7 @@ export function HelpCenter() {
                   </div>
 
                   <div className="lg:col-span-7">
-                    <div className="bg-[#0F0F0F] border border-surface/10 rounded-md overflow-hidden">
+                    <div className="bg-ink border border-surface/10 rounded-md overflow-hidden">
                       <div className="flex items-center justify-between px-4 py-2.5 border-b border-surface/10 bg-surface/5">
                         <div className="flex items-center gap-2">
                           <div className="flex gap-1.5">

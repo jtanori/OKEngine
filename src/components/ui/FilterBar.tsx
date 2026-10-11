@@ -44,10 +44,10 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       aria-label="Filter controls"
       className={`flex flex-wrap items-center justify-between gap-3 ${variantClasses[variant]} ${className}`.trim()}
     >
-      <div className="flex flex-wrap items-center gap-3 flex-1 min-w-[240px]">
+      <div className="flex flex-wrap items-center gap-3 flex-1 min-w-60">
         {children}
         {searchSlot && (
-          <div className="flex-1 min-w-[200px] max-w-sm">{searchSlot}</div>
+          <div className="flex-1 min-w-50 max-w-sm">{searchSlot}</div>
         )}
         {filtersSlot && (
           <div className="flex flex-wrap items-center gap-2">{filtersSlot}</div>

@@ -33,14 +33,27 @@ export const I18nProvider: React.FC<{
   children: React.ReactNode;
   initialLanguage?: SupportedLanguage;
 }> = ({ children, initialLanguage }) => {
+  // Hydration-safe: initial render must match server (always 'en' unless explicit initialLanguage).
+  // Browser locale detection runs in useEffect after mount to avoid server/client mismatch
+  // (react-hydration-error at Tabs.tsx:114 when navigator.language is 'es' on client but 'en' on server).
   const [language, setLanguageState] = useState<SupportedLanguage>(() => {
     if (initialLanguage) return initialLanguage;
     if (memoryLanguagePreference) return memoryLanguagePreference;
-    if (typeof navigator !== 'undefined' && navigator.language) {
-      return normalizeLocaleAndLanguage(navigator.language, 'en').language;
-    }
     return 'en';
   });
+
+  // After mount, adopt browser locale if no explicit preference yet
+  useEffect(() => {
+    if (initialLanguage || memoryLanguagePreference) return;
+    if (typeof navigator !== 'undefined' && navigator.language) {
+      const detected = normalizeLocaleAndLanguage(navigator.language, 'en').language;
+      if (detected !== language) {
+        memoryLanguagePreference = detected;
+        setLanguageState(detected);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const locale = language === 'es' ? 'es-ES' : 'en-US';
 

@@ -32,8 +32,8 @@ export function AboutView() {
       <main className="max-w-7xl mx-auto px-6 py-16 md:py-24 flex flex-col gap-16">
         <div className="max-w-3xl flex flex-col gap-6">
           <div className="text-2xs font-medium uppercase tracking-wider text-ink-muted">Sobre OKEng</div>
-          <h1 className="text-display font-semibold tracking-tight text-ink-strong">OKEng — Tu documentación, respondiendo dentro de tu app</h1>
-          <p className="text-body text-ink-secondary">OKEng convierte tu documentación en respuestas con citas verificables, dentro de tu app. Sin alucinaciones. Con permisos por rol. Dogfooding real: este sitio es ws_okeng_01 con 5 colecciones, 25 docs, 3 embeds. Determinístico para artículos, dinámico para respuestas.</p>
+          <h1 className="text-section font-semibold tracking-tight text-ink-strong">OKEng — Tu documentación, respondiendo dentro de tu app</h1>
+          <p className="text-sm text-ink-secondary leading-relaxed">OKEng convierte tu documentación en respuestas con citas verificables, dentro de tu app. Sin alucinaciones. Con permisos por rol. Dogfooding real: este sitio es ws_okeng_01 con 5 colecciones, 25 docs, 3 embeds. Determinístico para artículos, dinámico para respuestas.</p>
           <div className="flex flex-wrap gap-2">
             <span className="inline-flex items-center rounded-full border border-line bg-surface px-2.5 py-1 text-2xs text-ink-secondary">Citas verificables</span>
             <span className="inline-flex items-center rounded-full border border-line bg-surface px-2.5 py-1 text-2xs text-ink-secondary">Permisos por rol</span>

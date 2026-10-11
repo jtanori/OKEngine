@@ -33,8 +33,8 @@ export function ContactView() {
       <main className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid md:grid-cols-2 gap-12">
         <div className="flex flex-col gap-6">
           <div className="text-2xs font-medium uppercase tracking-wider text-ink-muted">Contacto</div>
-          <h1 className="text-display font-semibold tracking-tight text-ink-strong">Hablemos de tu docs</h1>
-          <p className="text-body text-ink-secondary">¿Tienes preguntas sobre OKEng, integración, precios, o cómo migrar tu docs actual? Te respondemos en menos de 24h. También puedes preguntar directo en docs con citas verificables.</p>
+          <h1 className="text-section font-semibold tracking-tight text-ink-strong">Hablemos de tu docs</h1>
+          <p className="text-sm text-ink-secondary leading-relaxed">¿Tienes preguntas sobre OKEng, integración, precios, o cómo migrar tu docs actual? Te respondemos en menos de 24h. También puedes preguntar directo en docs con citas verificables.</p>
           <div className="flex flex-col gap-4 text-sm text-ink-secondary">
             <div className="flex flex-col gap-1">
               <div className="text-xs font-semibold text-ink">Email</div>

@@ -1,9 +1,30 @@
 # UI-01 — Primitives, Components, Surfaces, Archetypes & Workflows
 
-**Status:** Canonical UI & Interaction Architecture Specification (v3.0)  
+**Status:** Canonical UI & Interaction Architecture Specification (v3.1)  
 **Type:** Design System / Primitive & Component Catalog / Page Archetypes / Workflows  
-**Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `SEC-01`, `API-01`  
-**Revision:** `3.0 (2026-10-11)` — Added v3.0 editorial marketing layer, 16 new PR, 18 new CO, 18 new SU, 2 new PA, 6 new WF from proposal + staging hardening
+**Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006`, `SEC-01`, `API-01`  
+**Revision:** `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer (aligns with `01 v3.4` + `02 v3.4`)
+
+## v3.4 Changelog (from v3.3)
+
+- **Defects 1-4**: single Globe header (custom SVG removed), corporate footer `About·TOS·Privacy·Contact` replaces `Citas...` duplication, `DEV LOGIN hidden` not removed, `Login footer` single line. See `01 v3.4` + `02 v3.4` + `7a15944`.
+
+## v3.3 Changelog (from v3.2)
+
+- **Auth split PA-AUTH-SPLIT**: shared header `h-14 max-w-7xl` + `grid [1.08fr_0.92fr]` left `bg-ink-strong rounded-[24px] dot-grid` rehearses `AppShell` mini + floating `ChatMock Verificada`, right `AuthCard rounded-xl`. See `01 v3.3` + `02 v3.3` + locked liked v2 image.
+- **CO reorder**: `Login/Signup` `SsoButtons → AuthDivider o → Input/Password → Button gradient → Footer` + `TrustFooter` outside + collapsed `DEV LOGIN` — error/loading inferred per `FORM-SEC-01` (banner AlertCircle + field aria-invalid border-danger / Button isLoading Loader2).
+
+## v3.2 Changelog (from v3.1)
+
+- **+2 PR**: `PR-SECTION-PILL` (`SectionPill.tsx` rounded-full bg-accent-subtle) + `PR-ICON-TILE` (`IconTile.tsx` w-9/w-7) — DS-only.
+- **5 PR refinements**: `FeatureCard` rounded-xl + illustration, `HowItWorksStep` rounded-xl + pastel h-28 + 5-color pills, `TestimonialCard` rounded-xl + quote + lavender pill + avatar, `PricingCard` rounded-xl + dark Pro + gradient, `FaqAccordion` plus-circle — see `02_component_catalog v3.2` + commit `6e55f84`.
+- **Token reaffirm**: `rounded-xl 16px` landing cards canonical; marketing palette exception documented in `02` §v3.2; `bg-canvas` band rule + intentional `bg-ink-strong` dark bands unchanged.
+
+## v3.1 Changelog (from v3.0)
+
+- **DS Convergence**: `DS-COLOR-SUBTLE` `#F1F0EC → #F4F4F0`, `DS-COLOR-LINE-STRONG` `#C5C4BE → #C7C6C0`, add `DS-COLOR-INK-STRONG` `#0F172A` (`--color-ink-strong`/`bg-ink-strong`), `font-sans` `Instrument Sans → Inter` (active impl), aliases `--text-display` (=`text-section`) / `--text-body` (=`text-sm`); spec now matches `src/index.css` `2fb747c` + `arena.site` lightness.
+- **Marketing Band Rule** (§1.1): `PA-LANDING` generic sections use `bg-canvas` only; `bg-surface` for cards, `bg-elevated` for wells/inputs, `bg-subtle` for hover/badge — prevents pervasive gray (`LogoStrip/Metrics/HowItWorks/Integration/Testimonials/FAQ` no `border-y`/`bg-elevated` bands, only `Developers/FinalCTA/Footer` intentional `bg-ink-strong`).
+- **PR Clarification**: `PR-HOW-IT-WORKS-STEP` number now `bg-surface border-line shadow-sm` (was `bg-ink`); `PR-INTEGRATION-TABS`/`PR-PRICING-TOGGLE` tracks remain `bg-elevated` `p-0.5` but not full-width section bands.
 
 ## v3.0 Changelog
 
@@ -28,15 +49,16 @@ OKEng rejects decorative AI SaaS tropes (neon gradients, floating orbs, fake das
 
 | Token                | Value     | Tailwind Utility      | Usage                                                      |
 | -------------------- | --------- | --------------------- | ---------------------------------------------------------- |
-| `--color-canvas`     | `#F8F7F4` | `bg-canvas`           | Warm Alabaster primary viewport background                 |
-| `--color-elevated`   | `#FAF9F6` | `bg-elevated`         | Secondary wells, code headers, table headers, inputs       |
-| `--color-surface`    | `#FFFFFF` | `bg-surface`          | Document cards, tables, modals, active panels              |
-| `--color-subtle`     | `#F1F0EC` | `bg-subtle`           | Subtle badges, hover states                                |
-| `--color-line`       | `#DEDDD8` | `border-line`         | `1px solid` structural grid and card boundaries            |
-| `--color-ink`        | `#171717` | `text-ink`            | Primary headings and body copy                             |
+| `--color-canvas`     | `#F8F7F4` | `bg-canvas`           | Warm Alabaster viewport — **PA-LANDING generic sections**  |
+| `--color-elevated`   | `#FAF9F6` | `bg-elevated`         | Wells, code headers, table headers, inputs (`p-0.5` tracks) — never full-width marketing bands |
+| `--color-surface`    | `#FFFFFF` | `bg-surface`          | Cards, tables, modals, active panels                       |
+| `--color-subtle`     | `#F4F4F0` | `bg-subtle`           | Hover/badge wells (v3.1 lightened from `#F1F0EC`)          |
+| `--color-line`       | `#DEDDD8` | `border-line`         | `1px` hairline — card/table boundaries, not section dividers |
+| `--color-ink`        | `#171717` | `text-ink`            | Primary headings/body                                      |
+| `--color-ink-strong` | `#0F172A` | `text-ink-strong`/`bg-ink-strong` | Navy H1 + intentional dark bands (Developers/FinalCTA/Footer) — v3.1 |
 | `--color-ink-secondary`| `#6B6B67`| `text-ink-secondary` | Subtitles, descriptions, secondary labels                  |
-| `--color-ink-muted`  | `#8C8B85` | `text-ink-muted`      | Monospace metadata, timestamps, chunk counts               |
-| `--color-accent`     | `#1D4ED8` | `text-accent`         | Source citations, active embed badges, diagnostic links    |
+| `--color-ink-muted`  | `#8C8B85` | `text-ink-muted`      | Metadata, timestamps, chunk counts                         |
+| `--color-accent`     | `#1D4ED8` | `text-accent`         | Citations, active badges, diagnostic links (`-hover #1E40AF`, `-subtle #EFF6FF`) |
 | `--radius-xs`        | `3px`     | `rounded-xs`          | Compact badges, inline code tags                           |
 | `--radius-sm`        | `4px`     | `rounded-sm`          | Cards, buttons, inputs, selects, tables                    |
 | `--radius-md`        | `6px`     | `rounded-md`          | Modals, drawers, floating widget containers                |

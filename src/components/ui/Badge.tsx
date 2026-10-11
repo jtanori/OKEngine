@@ -16,7 +16,8 @@ export type BadgeTone =
   | 'solid-success'
   | 'solid-warning'
   | 'solid-accent'
-  | 'solid-danger';
+  | 'solid-danger'
+  | 'pill-accent';
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   tone?: BadgeTone;
@@ -36,6 +37,7 @@ const badgeToneClasses: Record<BadgeTone, string> = {
   'solid-warning': 'bg-warning text-surface border-warning font-medium shadow-2xs',
   'solid-accent': 'bg-accent text-surface border-accent font-medium shadow-2xs',
   'solid-danger': 'bg-danger text-surface border-danger font-medium shadow-2xs',
+  'pill-accent': 'bg-accent-subtle text-accent border-accent/10 rounded-full px-3 py-1 text-2xs font-medium tracking-wide',
 };
 
 export const Badge: React.FC<BadgeProps> = ({

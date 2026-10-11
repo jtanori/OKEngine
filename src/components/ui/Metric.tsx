@@ -13,9 +13,9 @@ export interface MetricProps {
 export function Metric({ value, label, sublabel, size = 'md', className = '' }: MetricProps) {
   const valueSize = size === 'lg' ? 'text-metric-value font-bold tracking-tight' : size === 'sm' ? 'text-lg font-semibold' : 'text-2xl font-bold';
   return (
-    <div className={`flex flex-col gap-1 ${className}`}>
+    <div className={`flex flex-col gap-2 py-6 md:py-7 px-4 ${className}`}>
       <div className={`${valueSize} text-ink font-sans`}>{value}</div>
-      <div className="text-xs font-medium uppercase tracking-wider text-ink-secondary">{label}</div>
+      <div className="text-sm font-medium normal-case tracking-normal text-ink-secondary leading-none">{label}</div>
       {sublabel && <div className="text-2xs text-ink-muted">{sublabel}</div>}
     </div>
   );

@@ -1,5 +1,5 @@
-// PR-PRICING-TOGGLE — Monthly/Annual toggle with -20% badge
-// DS tokens: bg-elevated, bg-surface, border-line, text-ink, accent, rounded-sm
+// PR-PRICING-TOGGLE — Monthly/Annual toggle with -20% badge — segmented dark active like IntegrationTabs
+// DS tokens: bg-elevated, border-line, rounded-full, text-ink, accent
 import React from 'react';
 
 export interface PricingToggleProps {
@@ -10,12 +10,12 @@ export interface PricingToggleProps {
 
 export function PricingToggle({ interval, onChange, className = '' }: PricingToggleProps) {
   return (
-    <div className={`inline-flex items-center gap-1 rounded-sm bg-elevated p-0.5 border border-line ${className}`} role="group" aria-label="Billing interval">
+    <div className={`inline-flex items-center gap-1 rounded-full bg-elevated p-1 border border-line shadow-sm ${className}`} role="group" aria-label="Billing interval">
       <button
         type="button"
         onClick={() => onChange('monthly')}
-        className={`rounded-xs px-4 py-1.5 text-sm font-medium transition-colors ${
-          interval === 'monthly' ? 'bg-surface text-ink shadow-sm border border-line' : 'text-ink-secondary hover:text-ink'
+        className={`rounded-full px-5 py-2 text-sm font-medium transition-colors ${
+          interval === 'monthly' ? 'bg-ink-strong text-white shadow-sm' : 'text-ink-secondary hover:text-ink'
         }`}
         aria-pressed={interval === 'monthly'}
       >
@@ -24,13 +24,13 @@ export function PricingToggle({ interval, onChange, className = '' }: PricingTog
       <button
         type="button"
         onClick={() => onChange('annual')}
-        className={`rounded-xs px-4 py-1.5 text-sm font-medium transition-colors flex items-center gap-2 ${
-          interval === 'annual' ? 'bg-surface text-ink shadow-sm border border-line' : 'text-ink-secondary hover:text-ink'
+        className={`rounded-full px-5 py-2 text-sm font-medium transition-colors flex items-center gap-2 ${
+          interval === 'annual' ? 'bg-ink-strong text-white shadow-sm' : 'text-ink-secondary hover:text-ink'
         }`}
         aria-pressed={interval === 'annual'}
       >
         Anual
-        <span className="inline-flex items-center rounded-xs bg-success-subtle px-1.5 py-0.5 text-2xs font-semibold text-success">-20%</span>
+        <span className="inline-flex items-center rounded-full bg-emerald-500 text-white px-2 py-0.5 text-2xs font-semibold">-20%</span>
       </button>
     </div>
   );
