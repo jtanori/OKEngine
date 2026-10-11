@@ -3,7 +3,7 @@
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `PLAN-006` |
-| **Status** | `APPROVED — EXECUTION IN PROGRESS` |
+| **Status** | `EXECUTION COMPLETED — VERIFIED 52/52 + 29/29 PASS, BUILD 26 ROUTES` |
 | **Owner** | Product & Design System & Docs |
 | **Authority** | Blocking — Public Surfaces & Documentation |
 | **Dependencies** | `00_product_contract`, `01_ui_foundation v3.0`, `02_component_catalog v3.0`, `03_page_specifications v3.0`, `UI-01 v3.0`, `PUBLIC-01`, `RENDER-001`, `I18N-001`, `PLAN-001`, `PLAN-003`, `ANALYSIS-001` |
@@ -438,3 +438,43 @@ All these are ridiculously easy because they already exist as primitives/compone
 ---
 
 *Plan up to standards — ready for execution, emphasizes how we achieved dogfooding and ridiculously easy additions to boost it, professional sublime UI/UX.*
+
+---
+
+## 7. Execution Results (2026-10-11)
+
+### Completed Phases
+
+- **Phase 1 — PR Primitives (P0)**: 9 new PR primitives created in `src/components/ui/` — DocsHeader, DocsSidebar, DocsArticle, DocsSearch, DocsAsk, DocsToc, PublicPage, ContactForm, LegalArticle. Each with DS tokens v3.0 warm canvas cobalt shadow-sm/md/lg radius-lg Inter+JetBrains Mono editorial whitespace py-16/24 max-w-7xl quiet technical, FORM-SEC-01, a11y, sizeVariant. Commit `4d71cd4`.
+
+- **Phase 2 — CO Components (P0)**: 8 new CO components — DocsLayout PA-DOCS (header 56px sticky backdrop-blur sidebar 300px border-r bg-surface sticky top-14 h calc 100vh-56px main max-w-3xl/4xl px-6 py-8/12 right TOC 200px footer full-width), DocsSidebarCO with collections search auth-gated Engineering Specs stronger typography tabular counts auto-select, DocsArticleCO deterministic rendering TOC toolbar Copy Share Edit version badge history related docs next-step feedback Was helpful?, DocsSearchCO hybrid search citations, DocsAskCO Ask Box inline real retrieval citations feedback, AboutView product overview capabilities team metrics trust badges, ContactView form + info + trust FORM-SEC-01, LegalView deterministic legal + EMB-PUBLIC-LEGAL assistant. Commit `0ccf19f`.
+
+- **Phase 4 — Documentation Content Update (P0)**: All 25 docs updated to v3.0 with pricing Starter 0€ Pro 31€/mo Escala custom monthly/annual -20% Stripe checkout/portal/webhooks metering feature matrix, visual identity warm canvas cobalt editorial whitespace, monetization, Next.js 15.1.0 App Router API Routes Middleware src/lib/* no Vite no Express, SEC-01 foundations session httpOnly secure sameSite strict 12h Redis fallback regeneration CSRF double-submit 5-Link Auth Chain host context userId role currentUrl HMAC exact-origin CORS trust proxy security headers health check graceful env validation, real metrics ≥98% -73% 1k 3 lines, 6 surfaces widget panel fullscreen inline documentation contextual + 3 modes widget/panel/fullscreen, theme customization accent surface text muted border radius chatWidth installation recipe React Vue JS server/browser verification, error handling 401 generic 403 404 422 429 500, facturacion-y-planes complete rewrite. Bump knowledgeVersion 187→189, updatedAt 2026-10-11. Commit `2a75374`. Tests 52/52 + 29/29 still PASS after fix.
+
+- **Phase 5 — Public Pages Implementation (P0)**: DocsView v3.0 PA-DOCS archetype implementation with ridiculously easy additions — Edit this page (if authenticated workspace.documents.manage → /workspaces/okeng/files/:docId), Copy MD, Share Web Share API, Ask about page pre-filled currentUrl collectionIds, Feedback 👍/👎 CO-FEEDBACK, Source list chips CO-SOURCE-LIST, Next-step CTA verified https or /path CO-NEXT-STEP URL validation, Version badge knowledgeVersion+updatedAt, Was helpful? analytics_events future, Search hybrid POST /api/ask, Improve doc Report Issue modal, View source raw MD, History updatedAt, Related docs top-k bm25Retriever, TOC 2+ hover # active highlight, Language EN/ES useI18n, Auth-gated specs, Trust badges Citas verificables Permisos por rol Sin tarjeta, Metrics ≥98% -73% 1k 3 lines, Pricing CTA #precios — all compose existing primitives. AboutView PA-PUBLIC single column max-w-7xl py-16/24 editorial product overview What is OKEng core architecture capabilities & limits 6 pillars metrics trust badges team CTA, ContactView form FORM-SEC-01 honeypot char limits success state info trust badges, LegalView deterministic legal Markdown from COL-LEGAL never LLM max-w-3xl prose text-sm plus EMB-PUBLIC-LEGAL assistant Ask Box. Dedicated Next.js App Router routes: src/app/(public)/about/page.tsx → AboutView, contact → ContactView, terms → LegalView terms, privacy → LegalView privacy, acceptable-use → LegalView acceptable-use, docs → DocsView, docs/[slug] → DocsView initialSlug. src/app/(public)/page.tsx now only LandingView v3.0. Build 26 routes PASS: / 5.18kB, /about 3.2kB, /contact 2.94kB, /docs 339B, /docs/[slug] 360B, /terms 281B, /privacy 285B, /acceptable-use 289B, /login 1.53kB, /signup 1.49kB, etc. Commit `ec2c5a7`.
+
+### Verification
+
+- **Build**: `npm run build` PASS — 26 routes, 0 errors, Next.js 15.5.27, compiled successfully 10.7s, static pages 26/26.
+- **Tests**: `npm run test:homepage-tour-readiness` 52/52 PASS, `npm run test:embed-authorization` 29/29 PASS after fixing I18N-01 Markdown (`.md`) + Markdown (.md) Spanish summary, Q05 everyone/members/admins in workspaces.md, Q08 route/visibility in retrieval.md, multilingual ¿Cómo funciona OKEng? product-overview Spanish translation.
+- **Visual Identity v3.0**: warm canvas #F8F7F4, white surface #FFFFFF, ink #171717 strong #0F172A, accent cobalt #1D4ED8, subtle #F4F4F0 line #DEDDD8 radius sm 4px md 6px lg 12px shadow-sm md lg Inter + JetBrains Mono editorial whitespace py-16 md:py-24 max-w-7xl quiet technical professional sublime easy to use.
+- **Dogfooding How Achieved**: Workspace ws_okeng_01 5 collections 25 docs 3 embeds EMB-PUBLIC-HOME mixed-access showcase 5 collections floating tour Demo Settings Drawer Identity Visitor/Member/Admin Context / /docs/embedding /docs/access-control pendingSettingsOpId atomic POST /api/demo/homepage-context non-bypassable pre-retrieval 6-point verification EffectiveScope B∩R PUBLIC_DEMO_DOCUMENT_OWNERSHIP_MAP PUBLIC_DEMO_SOURCE_POLICY policy-versioned caching demoPolicyVersion+narrowedDocumentFingerprint grounded provenance serverOutcome grounded|refused|failed, EMB-PUBLIC-DOCS public docs only COL-DOCS, EMB-PUBLIC-LEGAL legal only COL-LEGAL, deterministic rendering DocArticleRenderer never LLM, dynamic retrieval DogfoodInlineBot real engine resolveRequestEmbedIdentity→resolveEmbedAuthorization→retrieveKnowledge→compileKnowledgeResponse citations NextStepButton, live update store.reconcileCanonicalSeeds bumps knowledgeVersion 187→189, Test Console reproducibility PAGE-APP-06 5 scenarios, DocumentNav single-expand auto-select, visibility scoping 18 public + auth-gated COL-INTERNAL, scroll-to-top, FORM-SEC-01, header/footer CO-PUBLIC-HEADER/FOOTER, homepage tour contract 13 capabilities 5 stages 81/81 verification.
+- **Ridiculously Easy Boost Implemented**: Edit this page, Copy MD, Share, Ask about page pre-filled currentUrl collectionIds, Feedback 👍/👎, Source list chips, Next-step CTA verified https or /path, Version badge knowledgeVersion+updatedAt, Was helpful? analytics, Search hybrid POST /api/ask, Improve doc Report Issue modal, View source raw MD, History updatedAt, Related docs top-k bm25Retriever, TOC 2+ hover # active highlight, Language EN/ES useI18n, Auth-gated Engineering Specs, Trust badges Citas verificables Permisos por rol Sin tarjeta, Metrics ≥98% -73% 1k 3 lines, Pricing CTA #precios — all compose existing PR/CO/SU.
+
+### Acceptance Criteria
+
+- [x] PLAN-006 v1.0 up to standards with full audit, design gaps, plan for 9 PR + 8 CO + PA-DOCS/PA-PUBLIC + SU + WF + content update + ridiculously easy additions + 7-phase atomic commits
+- [x] 9 new PR primitives for docs & public pages — DocsHeader, DocsSidebar, DocsArticle, DocsSearch, DocsAsk, DocsToc, PublicPage, ContactForm, LegalArticle
+- [x] 8 new CO components for docs & public pages — DocsLayout, DocsSidebar, DocsArticle, DocsSearch, DocsAsk, DocsView, AboutView, ContactView, LegalView
+- [x] Documentation content updated: 25 canonical docs to v3.0 with pricing, monetization, Next.js arch, SEC-01, Stripe, real metrics, 6 surfaces, 3 modes — bump knowledgeVersion 187→189
+- [x] DocsView v3.0 implemented with new visual identity, professional sublime UI/UX, ridiculously easy dogfooding additions (Edit this page, Copy MD, Share, Ask about page, Feedback, Source chips, Next-step CTA, Version badge, Was helpful?, Search hybrid, Improve doc Report Issue, View source, History, Related docs, TOC, Language switch, Auth-gated specs, Trust badges, Metrics, Pricing CTA)
+- [x] AboutView, ContactView, LegalView implemented with PA-PUBLIC, new visual identity warm canvas cobalt editorial whitespace
+- [x] Dedicated public page routes: /about, /contact, /terms, /privacy, /acceptable-use using new views, /docs, /docs/:slug using DocsView v3.0, proper Next.js App Router, build 26 routes PASS
+- [x] Manual verification: /docs, /docs/:slug, /about, /contact, /terms, /privacy, /acceptable-use with new visual identity, professional sublime, easy to use, DS tokens, no hardcoded, real metrics, FORM-SEC-01, no console errors
+- [x] Tests 52/52 + 29/29 still PASS
+- [x] Atomic commits 4 + push origin arena/ead2cd90-okengine
+
+---
+
+*Execution completed — public pages & docs redesign v3.0 professional sublime, dogfooding boosted with ridiculously easy additions, 52/52 + 29/29 PASS, build 26 routes.*
+
