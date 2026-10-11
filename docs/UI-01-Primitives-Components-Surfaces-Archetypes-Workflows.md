@@ -3,7 +3,12 @@
 **Status:** Canonical UI & Interaction Architecture Specification (v3.1)  
 **Type:** Design System / Primitive & Component Catalog / Page Archetypes / Workflows  
 **Depends on:** `AUTH-01`–`05`, `EMBED-01`, `EMBED-02`, `PUBLIC-01`, `I18N-001`, `RENDER-001`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006`, `SEC-01`, `API-01`  
-**Revision:** `3.2 (2026-10-11)` — Landing pixel alignment: +2 PR, 5 card refinements, marketing palette exception (aligns with `01_ui_foundation v3.2`)
+**Revision:** `3.3 (2026-10-11)` — Auth split: PA-AUTH-SPLIT product-rehearsal + form (aligns with `01 v3.3` + `02 v3.3`)
+
+## v3.3 Changelog (from v3.2)
+
+- **Auth split PA-AUTH-SPLIT**: shared header `h-14 max-w-7xl` + `grid [1.08fr_0.92fr]` left `bg-ink-strong rounded-[24px] dot-grid` rehearses `AppShell` mini + floating `ChatMock Verificada`, right `AuthCard rounded-xl`. See `01 v3.3` + `02 v3.3` + locked liked v2 image.
+- **CO reorder**: `Login/Signup` `SsoButtons → AuthDivider o → Input/Password → Button gradient → Footer` + `TrustFooter` outside + collapsed `DEV LOGIN` — error/loading inferred per `FORM-SEC-01` (banner AlertCircle + field aria-invalid border-danger / Button isLoading Loader2).
 
 ## v3.2 Changelog (from v3.1)
 

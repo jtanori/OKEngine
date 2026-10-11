@@ -7,7 +7,14 @@
 | **Owner** | Component Catalog |
 | **Authority** | Blocking |
 | **Dependencies** | `01_ui_foundation`, `UI-01`, `PLAN-001`, `PLAN-002`, `PLAN-003` |
-| **Revision** | `3.2 (2026-10-11)` — Landing pixel alignment: +2 PR (SectionPill/IconTile), 5 PR card refinements, Badge pill-accent |
+| **Revision** | `3.3 (2026-10-11)` — Auth split: PA-AUTH-SPLIT 55/45 + Login reordered SSO top + error/loading inferred |
+
+## v3.3 Changelog — Auth Split (liked v2 locked, per_surface plan)
+
+- **Auth split layout (new CO/SU)**: `CO-AUTH-SPLIT-LAYOUT` (`src/components/auth/AuthSplitLayout.tsx`) — shared header `h-14 max-w-7xl mx-auto px-6 border-b bg-canvas` + `grid lg:grid-cols-[1.08fr_0.92fr] max-w-7xl mx-auto gap-8 p-6` — left `bg-ink-strong rounded-[24px] p-10 dot-grid` rehearses `AppShell` mini (`Files → CollectionCard + FileTable scopedCollectionName + Badge public/members + ChatMock En línea Verificada + quote + 2 logos`); right `bg-canvas flex items-center justify-center` holds `AuthCard max-w-md rounded-xl 16px shadow-md p-8` (was `rounded-lg 12px`). Left is intentional product band exception (like landing Developers), right is `PA-AUTH` card.
+- **Login CO reordered vs v3.2**: `CO-AUTH-LOGIN-FORM` now `SsoButtons (Google/GitHub secondary rounded-full) → AuthDivider "o continúa con correo" → Input correo tu@empresa.com hint Usa tu correo + PasswordInput + Row Checkbox Recordarme / Link ¿Olvidaste? text-accent → Button primary gradient from-[#6366F1] to-[#8B5CF6] → Footer ¿No tienes cuenta? Regístrate (inside AuthCard border-t) + TrustFooter outside (Citas·Permisos·Sin tarjeta) + collapsed details DEV LOGIN arena (border-dashed bg-elevated/60)`. Same reorder for `Signup` (+ showStrength, Checkbox términos).
+- **Error/loading inferred per FORM-SEC-01 (no new generation drift)**: `error` =_banner `bg-danger-subtle #FEF2F2 border-line rounded-sm p-3 AlertCircle Credenciales inválidas / Demasiados intentos` + `Input aria-invalid border-danger + inline text-danger Contenido no permitido + Contraseña requerida`; `loading` = `Button isLoading Loader2 spinner + disabled + muted Google/GitHub + inputs disabled` — both derived from spec, documented not generated (locked v2 is source of truth).
+- **DS/PR notes**: No new PR; `AuthCard` radius `xl 16px` now canonical for split (doc above), `Input` `leadingIcon Mail/Lock size md h-9 rounded-sm`, `Button` primary gradient is now documented marketing exception also allowed for auth (matches pricing popular), `AuthDivider` single `o` (v2 had `o continúa` — unify to spec `o`).
 
 ## v3.2 Changelog — Landing Pixel Alignment (arena.site target, 6e55f84)
 

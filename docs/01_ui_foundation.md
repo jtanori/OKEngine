@@ -7,7 +7,13 @@
 | **Owner** | Design System |
 | **Authority** | Blocking |
 | **Dependencies** | `00_product_contract`, `SEC-01`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006` |
-| **Revision** | `3.2 (2026-10-11)` — Landing pixel alignment: SectionPill/IconTile + card refinements + marketing palette exception |
+| **Revision** | `3.3 (2026-10-11)` — Auth split: PA-AUTH-SPLIT 55/45 product-rehearsal + form |
+
+## v3.3 Changelog (from v3.2)
+
+- **Auth archetype PA-AUTH-SPLIT (new variant)**: `PA-AUTH` evolves to split `grid lg:grid-cols-[1.08fr_0.92fr] max-w-7xl mx-auto gap-8 p-6` — left `flex-1 bg-ink-strong #05081A rounded-[24px] p-10 dot-grid` rehearses real `AppShell` (`Sidebar 56 rail + PageHeader 32px + FileTable scopedCollectionName + Badge`) + floating `ChatMock Verificada` + `quote Ana Torres + 2 logos`; right `flex items-center bg-canvas` holds centered `AuthCard max-w-md rounded-xl 16px border-line shadow-md p-8`. Shared single header `h-14 max-w-7xl mx-auto px-6 border-b bg-canvas flex justify-between` — left `OK OKEng bg-ink-strong rounded-sm` + right `← Volver a la web text-xs + LanguageSelector compact SegmentedTabs size sm h-8`. No duplicate inner logos. Variant documented alongside `PA-AUTH centered` (legacy `max-w-md` stays for `forgot/reset` fallback).
+- **DS reaffirm — no new tokens**: Split re-uses `bg-canvas #F8F7F4`, `bg-surface #FFFFFF`, `bg-ink-strong #05081A`, `border-line #DEDDD8`, `text-ink #171717 / ink-secondary #6B6B67 / ink-muted #8C8B85`, `accent #1D4ED8` + gradient `from-[#6366F1] to-[#8B5CF6]` (marketing exception, now also for auth primary CTA `Iniciar sesión →` — matches landing popular pill), `rounded-xl 16px` canonical for auth card (was `rounded-lg 12px`), `shadow-md 0 4px 12px 0.08` + `shadow-lg`, `size md h-9 36px` controls. Error/loading inferred per `FORM-SEC-01` — see `02 v3.3`.
+- **Band/whitespace**: `py-16 md:py-24` vertical rhythm matches `PA-LANDING`; left dark is intentional product band (like `Developers/FinalCTA`), not generic `bg-elevated` band violation.
 
 ## v3.2 Changelog (from v3.1)
 
