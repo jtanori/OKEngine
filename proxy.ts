@@ -1,11 +1,53 @@
-// middleware.ts — Next.js middleware preserving security from server.ts (SEC-01, API-01)
+// proxy.ts — Next.js proxy (middleware replacement) preserving security from server.ts (SEC-01, API-01, PLAN-008 Phase 6)
 // Order: env (build time) → trust proxy → headers → CORS → session → CSRF → rate limiting
+// Phase 6: Sanitize forwarding headers in prod, document trust boundary for TRUST_PROXY
 
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+/**
+ * Trust Proxy Boundary Documentation (PLAN-008 Phase 6)
+ *
+ * TRUST_PROXY env var controls whether we trust x-forwarded-for:
+ * - In production behind Vercel/Cloudflare/Nginx that sanitizes x-forwarded-for, set TRUST_PROXY=true
+ * - Vercel: sanitizes x-forwarded-for, sets x-real-ip, x-forwarded-for is trustworthy when behind Vercel edge
+ * - Cloudflare: sanitizes x-forwarded-for, adds CF-Connecting-IP
+ * - Nginx: should be configured to set x-real-ip and overwrite x-forwarded-for with $remote_addr
+ * - If TRUST_PROXY=false (default in dev), we do NOT trust x-forwarded-for (spoofable via client headers)
+ *   Instead we use x-real-ip or direct IP if available, and use trustworthy sessionId from httpOnly signed cookie
+ *   as fallback identifier for rate limiting
+ *
+ * Rate Limiting Fallback:
+ * - Trustworthy sessionId from httpOnly signed cookie (okeng.sid / __Host-okeng.sid) — not client-controllable
+ * - If both IP unknown and no session, use shared bucket with higher limit (DoS mitigation)
+ * - Fail-closed AUTH on Redis outage (429), fail-open READ/WRITE/GLOBAL
+ *
+ * Security Headers:
+ * - X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy, HSTS
+ * - CORS exact-origin, no wildcard
+ */
+
+function isTrustProxy(): boolean {
+  return process.env.TRUST_PROXY === 'true';
+}
+
 export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
+
+  // Phase 6: Sanitize forwarding headers in prod if not behind trusted proxy
+  // If TRUST_PROXY=false in production, client could spoof x-forwarded-for to bypass IP rate limiting
+  // We don't strip here (we ignore in rateLimit), but we log and document
+  const trustProxy = isTrustProxy();
+  const xForwardedFor = request.headers.get('x-forwarded-for');
+  const xRealIp = request.headers.get('x-real-ip');
+
+  if (!trustProxy && xForwardedFor) {
+    // In untrusted proxy mode, x-forwarded-for is not trusted — log for visibility
+    // Rate limiting will ignore it and use x-real-ip or trustworthy sessionId
+    if (process.env.NODE_ENV === 'production' || process.env.OKENG_ENV === 'production') {
+      console.warn(`[proxy] TRUST_PROXY=false but x-forwarded-for present: ${xForwardedFor} — not trusted, using x-real-ip or sessionId`);
+    }
+  }
 
   // Security headers (SEC-HEADERS-01)
   response.headers.set('X-Frame-Options', 'DENY');
@@ -15,6 +57,9 @@ export async function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === 'production') {
     response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
+
+  // Add trust proxy header for downstream visibility
+  response.headers.set('X-Trust-Proxy', trustProxy ? 'true' : 'false');
 
   // CORS exact-origin (SEC-CORS-01)
   const origin = request.headers.get('origin');
@@ -37,8 +82,6 @@ export async function proxy(request: NextRequest) {
   }
 
   // CSRF check for mutating API routes (SEC-CSRF-01)
-  // Note: Full validation needs cookie + header constant-time compare — implemented in src/lib/auth.ts validateCsrf()
-  // Here we do lightweight check, full check in API routes
   if (request.nextUrl.pathname.startsWith('/api/') && !['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
     if (request.nextUrl.pathname !== '/api/csrf-token' && request.nextUrl.pathname !== '/api/health' && request.nextUrl.pathname !== '/api/billing/webhooks') {
       const cookieToken = request.cookies.get('okeng.csrf')?.value || request.cookies.get('__Host-okeng.csrf')?.value;

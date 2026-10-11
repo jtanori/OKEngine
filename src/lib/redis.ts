@@ -7,6 +7,7 @@ type RedisClient = {
   del: (key: string) => Promise<void>;
   incr: (key: string) => Promise<number>;
   expire: (key: string, seconds: number) => Promise<void>;
+  ttl: (key: string) => Promise<number>;
   quit: () => Promise<void>;
   ping: () => Promise<string>;
 };
@@ -52,6 +53,17 @@ function createMemoryClient(): RedisClient {
         entry.expiresAt = Date.now() + seconds * 1000;
       }
     },
+    async ttl(key: string) {
+      const entry = memoryStore.get(key);
+      if (!entry) return -2; // key does not exist
+      if (!entry.expiresAt) return -1; // no expire
+      const remainingMs = entry.expiresAt - Date.now();
+      if (remainingMs <= 0) {
+        memoryStore.delete(key);
+        return -2;
+      }
+      return Math.ceil(remainingMs / 1000);
+    },
     async quit() {
       memoryStore.clear();
     },
@@ -96,6 +108,14 @@ export async function getRedis(): Promise<RedisClient> {
       },
       async expire(key: string, seconds: number) {
         await client.expire(key, seconds);
+      },
+      async ttl(key: string) {
+        try {
+          // node-redis ttl returns seconds
+          return await client.ttl(key);
+        } catch {
+          return -1;
+        }
       },
       async quit() {
         await client.quit();
