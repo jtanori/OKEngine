@@ -1,10 +1,14 @@
+'use client';
+
 // PA-DOCS — Documentation page archetype v3.0 implementation
+// Uses AppRouter (push + scrollViewportToTop) instead of raw window.history, DS tokens only, no hardcoded
 import React, { useState } from 'react';
 import { DocsLayout } from './DocsLayout';
 import { DocsSidebarCO } from './DocsSidebar';
 import { DocsArticleCO } from './DocsArticle';
 import { DocsSearchCO } from './DocsSearch';
 import { store } from '../../services/store';
+import { useRouter, scrollViewportToTop } from '../../app/router';
 
 export interface DocsViewProps {
   initialSlug?: string;
@@ -15,12 +19,13 @@ export function DocsView({ initialSlug = 'getting-started', onNavigatePath }: Do
   const [selectedSlug, setSelectedSlug] = useState(initialSlug);
   const [searchQuery, setSearchQuery] = useState('');
   const workspace = store.getWorkspace();
+  const router = useRouter();
 
   const handleSelect = (slug: string) => {
     setSelectedSlug(slug);
     if (onNavigatePath) onNavigatePath(`/docs/${slug}`);
-    else window.history.pushState({}, '', `/docs/${slug}`);
-    window.scrollTo(0, 0);
+    else router.push(`/docs/${slug}`);
+    scrollViewportToTop();
   };
 
   return (

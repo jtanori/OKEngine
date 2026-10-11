@@ -59,7 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* Design-system root tokens (DS-*). `body` already carries the canvas
           background, ink colour, sans font stack and antialiasing from
           index.css; these utilities preserve the previous wrapper <div>. */}
-      <body className="min-h-screen bg-canvas text-ink font-sans antialiased selection:bg-[#1D4ED8] selection:text-white">
+      <body className="min-h-screen bg-canvas text-ink font-sans antialiased selection:bg-accent selection:text-white">
         <I18nProvider>
           <AppRouterProvider>{children}</AppRouterProvider>
         </I18nProvider>

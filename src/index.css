@@ -8,6 +8,7 @@
   --color-subtle: var(--bg-subtle);
 
   --color-ink: var(--text-primary);
+  --color-ink-strong: var(--text-strong);
   --color-ink-secondary: var(--text-secondary);
   --color-ink-muted: var(--text-muted);
 
@@ -44,6 +45,12 @@
   --text-card-title--line-height: 1.5rem;
   --text-metric-value: 2.25rem;
   --text-metric-value--line-height: 2.5rem;
+  /* Aliases for legacy public-page typography — canonical is hero/section/card-title */
+  --text-display: 1.875rem;
+  --text-display--line-height: 2.25rem;
+  --text-display--letter-spacing: -0.01em;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
 
   --radius-xs: 3px;
   --radius-sm: 4px;

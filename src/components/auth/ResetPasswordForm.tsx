@@ -1,9 +1,17 @@
 // CO-AUTH-RESET-FORM — Reset password form
+// PA-AUTH — canvas #F8F7F4 centered card max-w-md white surface rounded-lg shadow-md
+// Uses PR-AUTH-CARD + PR-PASSWORD-INPUT x2 + PR-BUTTON, FORM-SEC-01, strength meter, 5-Link Auth Chain
+'use client';
 import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { AuthCard } from '../ui/AuthCard';
+import { Button } from '../ui/Button';
 import { PasswordInput } from '../ui/PasswordInput';
+import { validatePasswordInput } from '../../services/formSecurity';
+import { useRouter } from '../../app/router';
 
 export function ResetPasswordForm() {
+  const { push } = useRouter();
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [errors, setErrors] = useState<{ newPassword?: string; confirm?: string }>({});
@@ -14,9 +22,16 @@ export function ResetPasswordForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errs: typeof errors = {};
-    if (!newPassword) errs.newPassword = 'Nueva contraseña requerida';
-    else if (newPassword.length < 8) errs.newPassword = 'Mínimo 8 caracteres';
+
+    const pwdCheck = validatePasswordInput(newPassword, 'signup');
+    if (!pwdCheck.valid) {
+      if (!newPassword) errs.newPassword = 'Nueva contraseña requerida';
+      else if (newPassword.length < 8) errs.newPassword = 'Mínimo 8 caracteres';
+      else errs.newPassword = pwdCheck.errorMessage || 'Contraseña inválida';
+    }
     if (newPassword !== confirm) errs.confirm = 'Las contraseñas no coinciden';
+    if (!confirm) errs.confirm = errs.confirm || 'Confirma tu contraseña';
+
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     setIsLoading(true);
@@ -24,6 +39,10 @@ export function ResetPasswordForm() {
     try {
       const params = new URLSearchParams(window.location.search);
       const token = params.get('token');
+      if (!token) {
+        setError('Token faltante o inválido');
+        return;
+      }
       const csrfRes = await fetch('/api/csrf-token');
       const { csrfToken } = await csrfRes.json();
       const res = await fetch('/api/auth/reset-password', {
@@ -37,7 +56,7 @@ export function ResetPasswordForm() {
         return;
       }
       setSuccess(true);
-      setTimeout(() => (window.location.href = '/login'), 2000);
+      setTimeout(() => push('/login'), 2000);
     } catch {
       setError('Error interno');
     } finally {
@@ -54,14 +73,13 @@ export function ResetPasswordForm() {
       {success ? (
         <div className="bg-success-subtle border border-line rounded-sm p-4 text-sm text-success">Contraseña restablecida, redirigiendo a login...</div>
       ) : (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {error && <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger">{error}</div>}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+          {error && <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
           <PasswordInput label="Nueva contraseña" value={newPassword} onChange={setNewPassword} error={errors.newPassword} id="newPassword" showStrength />
           <PasswordInput label="Confirma contraseña" value={confirm} onChange={setConfirm} error={errors.confirm} id="confirm" />
-          <button type="submit" disabled={isLoading} className="w-full h-9 rounded-sm bg-ink text-surface text-sm font-medium hover:bg-ink-strong disabled:opacity-60 flex items-center justify-center gap-2">
-            {isLoading && <span className="h-4 w-4 border-2 border-surface/30 border-t-surface rounded-full animate-spin"></span>}
+          <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full">
             Restablecer contraseña
-          </button>
+          </Button>
         </form>
       )}
     </AuthCard>

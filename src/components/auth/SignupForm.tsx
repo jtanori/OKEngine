@@ -1,12 +1,22 @@
 // CO-AUTH-SIGNUP-FORM — Signup form with name, email, password, terms, FORM-SEC-01
+// PA-AUTH — canvas #F8F7F4 centered card max-w-md white surface rounded-lg shadow-md cobalt accent
+// Uses PR-AUTH-CARD + PR-INPUT + PR-PASSWORD-INPUT + PR-BUTTON + PR-CHECKBOX + PR-AUTH-DIVIDER + CO-AUTH-SSO-BUTTONS + CO-AUTH-TRUST-FOOTER
+'use client';
 import React, { useState } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { AuthCard } from '../ui/AuthCard';
+import { Input } from '../ui/Input';
+import { Button } from '../ui/Button';
+import { Checkbox } from '../ui/Checkbox';
 import { PasswordInput } from '../ui/PasswordInput';
 import { AuthDivider } from '../ui/AuthDivider';
 import { AuthTrustFooter } from './AuthTrustFooter';
 import { SsoButtons } from './SsoButtons';
+import { validateEmailInput, validatePasswordInput, validatePlainText, containsUnsafePayload } from '../../services/formSecurity';
+import { useRouter } from '../../app/router';
 
 export function SignupForm() {
+  const { push } = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,15 +27,30 @@ export function SignupForm() {
 
   const validate = () => {
     const e: typeof errors = {};
-    const dangerous = /<\s*(script|iframe|object|embed)\b|on\w+\s*=|(javascript|data|vbscript):/i;
-    if (!name) e.name = 'Nombre requerido';
-    else if (dangerous.test(name)) e.name = 'Contenido no permitido';
-    if (!email) e.email = 'Correo requerido';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = 'Correo inválido';
-    else if (dangerous.test(email)) e.email = 'Contenido no permitido';
-    if (!password) e.password = 'Contraseña requerida';
-    else if (password.length < 8) e.password = 'Mínimo 8 caracteres';
-    else if (dangerous.test(password)) e.password = 'Contenido no permitido';
+
+    // Name — FORM-SEC-01 via validatePlainText
+    const nameCheck = validatePlainText(name, { required: true, minLength: 1, maxLength: 80, fieldLabel: 'Nombre' });
+    if (!nameCheck.valid) {
+      if (!name.trim()) e.name = 'Nombre requerido';
+      else if (containsUnsafePayload(name)) e.name = 'Contenido no permitido';
+      else e.name = nameCheck.errorMessage || 'Nombre inválido';
+    }
+
+    const emailCheck = validateEmailInput(email);
+    if (!emailCheck.valid) {
+      if (!email.trim()) e.email = 'Correo requerido';
+      else if (containsUnsafePayload(email)) e.email = 'Contenido no permitido';
+      else e.email = emailCheck.errorMessage || 'Correo inválido';
+    }
+
+    const pwdCheck = validatePasswordInput(password, 'signup');
+    if (!pwdCheck.valid) {
+      if (!password) e.password = 'Contraseña requerida';
+      else if (password.length < 8) e.password = 'Mínimo 8 caracteres';
+      else if (containsUnsafePayload(password)) e.password = 'Contenido no permitido';
+      else e.password = pwdCheck.errorMessage || 'Contraseña inválida';
+    }
+
     if (!terms) e.terms = 'Debes aceptar términos';
     return e;
   };
@@ -49,10 +74,10 @@ export function SignupForm() {
         const data = await res.json().catch(() => ({}));
         if (res.status === 429) setError(`Demasiados intentos, intenta en ${data.retryAfter || 60}s`);
         else if (res.status === 409) setError('El correo ya existe');
-        else setError('Error al crear cuenta');
+        else setError(data.message || 'Error al crear cuenta');
         return;
       }
-      window.location.href = '/workspaces';
+      push('/workspaces/okeng/collections');
     } catch {
       setError('Error interno');
     } finally {
@@ -67,28 +92,47 @@ export function SignupForm() {
       footer={<div className="text-xs text-ink-secondary">¿Ya tienes cuenta? <a href="/login" className="text-accent hover:underline">Inicia sesión</a></div>}
       trustFooter={<AuthTrustFooter />}
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        {error && <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger">{error}</div>}
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="name" className="text-xs font-medium text-ink">Nombre</label>
-          <input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Ada Lovelace" aria-invalid={!!errors.name} className={`w-full h-9 px-3 rounded-sm border bg-surface text-sm ${errors.name ? 'border-danger' : 'border-line'}`} />
-          {errors.name ? <div className="text-xs text-danger" role="alert">{errors.name}</div> : <div className="text-xs text-ink-muted">Tu nombre</div>}
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-xs font-medium text-ink">Correo electrónico</label>
-          <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="tu@empresa.com" aria-invalid={!!errors.email} className={`w-full h-9 px-3 rounded-sm border bg-surface text-sm ${errors.email ? 'border-danger' : 'border-line'}`} />
-          {errors.email ? <div className="text-xs text-danger" role="alert">{errors.email}</div> : <div className="text-xs text-ink-muted">Usa tu correo de trabajo</div>}
-        </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        {error && <div role="alert" className="bg-danger-subtle border border-line rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
+        <Input
+          id="name"
+          label="Nombre"
+          value={name}
+          onChange={e => setName(e.target.value)}
+          placeholder="Ada Lovelace"
+          hint={errors.name ? undefined : 'Tu nombre'}
+          error={errors.name || null}
+          sizeVariant="md"
+          autoComplete="name"
+        />
+        <Input
+          id="email"
+          label="Correo electrónico"
+          type="email"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          placeholder="tu@empresa.com"
+          hint={errors.email ? undefined : 'Usa tu correo de trabajo'}
+          error={errors.email || null}
+          sizeVariant="md"
+          autoComplete="email"
+        />
         <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={errors.password} id="password" showStrength hint="Mínimo 8 caracteres" />
-        <label className="flex items-start gap-2 text-xs text-ink-secondary">
-          <input type="checkbox" checked={terms} onChange={e => setTerms(e.target.checked)} className="mt-0.5 rounded-xs border-line" />
-          <span>Acepto los <a href="/terms" className="underline hover:text-ink">Términos</a> y <a href="/privacy" className="underline hover:text-ink">Privacidad</a></span>
-        </label>
-        {errors.terms && <div className="text-xs text-danger" role="alert">{errors.terms}</div>}
-        <button type="submit" disabled={isLoading} className="w-full h-9 rounded-sm bg-ink text-surface text-sm font-medium hover:bg-ink-strong disabled:opacity-60 flex items-center justify-center gap-2">
-          {isLoading && <span className="h-4 w-4 border-2 border-surface/30 border-t-surface rounded-full animate-spin"></span>}
+        <Checkbox
+          id="terms"
+          checked={terms}
+          onChange={setTerms}
+          error={errors.terms || null}
+          required
+          label={
+            <span>
+              Acepto los <a href="/terms" className="underline hover:text-ink">Términos</a> y <a href="/privacy" className="underline hover:text-ink">Privacidad</a>
+            </span>
+          }
+        />
+        <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full">
           Crear cuenta
-        </button>
+        </Button>
         <AuthDivider label="o" />
         <SsoButtons />
       </form>

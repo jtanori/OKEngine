@@ -1,10 +1,14 @@
+'use client';
+
 // PA-AUTH — Authentication page archetype implementation
 // Canvas #F8F7F4, centered card max-w-md, minimal header, trust footer
+// Uses CO-LANGUAGE-SELECTOR per 01_ui_foundation.md + UI-01, no hardcoded ES/EN
 import React from 'react';
 import { LoginForm } from './LoginForm';
 import { SignupForm } from './SignupForm';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { ResetPasswordForm } from './ResetPasswordForm';
+import { LanguageSelector } from '../LanguageSelector';
 
 export type AuthPageType = 'login' | 'signup' | 'forgot-password' | 'reset-password';
 
@@ -20,7 +24,7 @@ export function AuthView({ initialPage }: AuthViewProps) {
           <div className="h-6 w-6 rounded-sm bg-ink text-surface flex items-center justify-center text-2xs font-bold">O</div>
           <span className="text-sm font-semibold text-ink">OKEng</span>
         </a>
-        <div className="text-xs text-ink-muted">ES / EN</div>
+        <LanguageSelector variant="compact" />
       </header>
       <main className="flex-1 flex items-center justify-center px-6 py-12">
         {initialPage === 'login' && <LoginForm />}

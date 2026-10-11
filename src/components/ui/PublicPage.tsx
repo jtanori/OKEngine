@@ -23,8 +23,8 @@ export function PublicPage({ title, subtitle, children, maxWidth = '3xl', classN
       <div className={`${maxWidthMap[maxWidth]} mx-auto px-6 py-16 md:py-24 flex flex-col gap-8`}>
         {(title || subtitle) && (
           <div className="flex flex-col gap-3">
-            {title && <h1 className="text-display font-semibold tracking-tight text-ink-strong">{title}</h1>}
-            {subtitle && <p className="text-body text-ink-secondary max-w-2xl">{subtitle}</p>}
+            {title && <h1 className="text-section font-semibold tracking-tight text-ink-strong">{title}</h1>}
+            {subtitle && <p className="text-sm text-ink-secondary max-w-2xl leading-relaxed">{subtitle}</p>}
           </div>
         )}
         <div className="flex flex-col gap-6">{children}</div>
