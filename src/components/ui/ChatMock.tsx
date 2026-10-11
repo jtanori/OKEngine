@@ -17,7 +17,7 @@ export function ChatMock({ className = '' }: ChatMockProps) {
         <span className="text-2xs text-ink-muted">En línea</span>
       </div>
       <div className="flex-1 p-4 flex flex-col gap-3 bg-canvas">
-        <div className="self-end bg-ink text-surface rounded-lg rounded-br-sm px-3 py-2 text-xs max-w-[80%]">¿Cómo configuro SSO?</div>
+        <div className="self-end bg-ink text-surface rounded-lg rounded-br-sm px-3 py-2 text-xs max-w-4/5">¿Cómo configuro SSO?</div>
         <div className="self-start bg-surface border border-line rounded-lg rounded-bl-sm px-3 py-2 text-xs text-ink max-w-[85%] flex flex-col gap-2">
           <span>Para configurar SSO, ve a Configuración → Miembros y RBAC → SSO. Necesitas tu IdP con SAML 2.0.</span>
           <div className="flex gap-1">

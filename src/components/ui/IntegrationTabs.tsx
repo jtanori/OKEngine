@@ -33,7 +33,7 @@ export function IntegrationTabs({ modes, className = '' }: IntegrationTabsProps)
       </div>
       {activeMode && (
         <div className="grid md:grid-cols-2 gap-6">
-          <div className="bg-surface border border-line rounded-lg p-6 shadow-sm min-h-[280px] flex flex-col">
+          <div className="bg-surface border border-line rounded-lg p-6 shadow-sm min-h-70 flex flex-col">
             <div className="text-sm font-medium text-ink mb-2">{activeMode.label}</div>
             <div className="text-sm text-ink-secondary mb-4">{activeMode.description}</div>
             <div className="mt-auto bg-elevated border border-line rounded-sm p-3 font-mono text-xs text-ink">
@@ -50,7 +50,7 @@ export function IntegrationTabs({ modes, className = '' }: IntegrationTabsProps)
                     <div className="h-2 w-3/4 bg-line rounded-xs mb-2"></div>
                     <div className="h-2 w-1/2 bg-line rounded-xs"></div>
                   </div>
-                  <div className="w-[140px] bg-surface border border-line rounded-sm p-2 shadow-sm">
+                  <div className="w-35 bg-surface border border-line rounded-sm p-2 shadow-sm">
                     <div className="h-2 w-full bg-line rounded-xs mb-2"></div>
                     <div className="h-2 w-3/4 bg-line rounded-xs"></div>
                   </div>
