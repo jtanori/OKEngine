@@ -8,8 +8,10 @@ import { POST as forgotPassword } from '../../src/app/api/auth/forgot-password/r
 import { POST as resetPassword } from '../../src/app/api/auth/reset-password/route';
 import { GET as authCallback } from '../../src/app/auth/callback/route';
 import {
+  confirmLocalSignup,
   createLocalCleanup,
   createLocalIdentity,
+  generateLocalSignupToken,
   getResponseCookies,
   makeApiRequest,
   makeSupabaseClient,
@@ -21,7 +23,11 @@ import {
 
 const local = requireLocalSupabase();
 
-async function signupViaApp(cleanup: ReturnType<typeof createLocalCleanup>, label: string) {
+async function signupViaApp(
+  cleanup: ReturnType<typeof createLocalCleanup>,
+  label: string,
+  { confirm = false }: { confirm?: boolean } = {},
+) {
   const email = `okeng-${label}-${randomUUID()}@example.com`;
   const password = `Local-Test-${randomUUID()}-9!`;
   const response = await signup(makeApiRequest('/api/auth/signup', {
@@ -30,14 +36,34 @@ async function signupViaApp(cleanup: ReturnType<typeof createLocalCleanup>, labe
     body: { name: `Local ${label}`, email, password, terms: true },
   }));
   const body = await response.json();
-  if (body?.user?.id) cleanup.trackUser(body.user.id);
-  else {
+  let userId = body?.user?.id as string | undefined;
+  if (!userId) {
     const users = await cleanup.admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    const created = (users.data.users as Array<{ id: string; email?: string | null }>).find((user) => user.email === email);
-    if (created) cleanup.trackUser(created.id);
+    assert.equal(users.error, null, users.error?.message);
+    userId = users.data.users.find((user) => user.email === email)?.id;
   }
-  if (body?.workspace?.id) cleanup.trackWorkspace(body.workspace.id);
-  return { response, body, email, password };
+  assert.ok(userId, 'Local app signup must create a Supabase Auth user even while confirmation is pending.');
+  cleanup.trackUser(userId);
+
+  let workspace = body?.workspace as { id: string; slug: string } | undefined;
+  let confirmationResponse: Awaited<ReturnType<typeof authCallback>> | null = null;
+  if (confirm) {
+    const tokenHash = await generateLocalSignupToken(local, email, password);
+    confirmationResponse = await authCallback(makeApiRequest(
+      `/auth/callback?token_hash=${encodeURIComponent(tokenHash)}&type=signup&next=%2Flogin%3Fconfirmed%3D1`,
+    ));
+    assert.equal(confirmationResponse.status, 307);
+    const membership = await queryLocalDatabase<{ workspace_id: string; workspace_slug: string }>(local, `
+      SELECT w.id AS workspace_id, w.slug AS workspace_slug
+      FROM public.workspace_memberships AS m
+      JOIN public.workspaces AS w ON w.id = m.workspace_id
+      WHERE m.user_id = $1 AND m.status = 'ACTIVE'
+    `, [userId]);
+    assert.equal(membership.length, 1, 'The real confirmation callback must provision exactly one active workspace.');
+    workspace = { id: membership[0]!.workspace_id, slug: membership[0]!.workspace_slug };
+    cleanup.trackWorkspace(workspace.id);
+  }
+  return { response, body, email, password, userId, workspace, confirmationResponse };
 }
 
 async function makeMagicLink(cleanup: ReturnType<typeof createLocalCleanup>, email: string, type: 'magiclink' | 'recovery' = 'magiclink') {
@@ -51,68 +77,90 @@ function authCookies(cookies: CookieValue[]) {
   return cookies.filter(({ name }) => name === 'okeng-auth' || name.startsWith('okeng-auth.'));
 }
 
-test('real local signup maps Auth UUID, provisions one private workspace, and returns only an HttpOnly session', async () => {
+test('real confirmation-required signup leaves no session, then confirms and provisions one Auth-UUID workspace', async () => {
   const cleanup = createLocalCleanup(local);
   try {
-    const { response, body } = await signupViaApp(cleanup, 'signup');
+    const { response, body, email, password: signupPassword, userId } = await signupViaApp(cleanup, 'signup');
     assert.equal(response.status, 200, JSON.stringify(body));
     assert.equal(body.success, true);
-    assert.equal(body.confirmationRequired, false, 'Local config intentionally disables SMTP confirmation for baseline signup.');
-    assert.match(body.user.id, /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
-    assert.equal(body.user.email, body.user.email.toLowerCase());
-    assert.ok(body.workspace.id.startsWith('ws_'));
-    cleanup.trackWorkspace(body.workspace.id);
-    assert.equal(body.redirectTo, `/workspaces/${encodeURIComponent(body.workspace.slug)}/collections`);
+    assert.equal(body.confirmationRequired, true);
+    assert.equal(body.redirectTo, '/login?confirmed=1');
     assert.equal(response.headers.get('cache-control'), 'no-store');
     assert.doesNotMatch(JSON.stringify(body), /access_token|refresh_token|service_role/i);
-
-    const sessionCookies = authCookies(getResponseCookies(response));
-    assert.ok(sessionCookies.length > 0, 'Signup must set the SSR Auth cookie in its response.');
-    for (const cookie of response.cookies.getAll().filter(({ name }) => name.startsWith('okeng-auth'))) {
-      assert.equal(cookie.httpOnly, true, 'Supabase session cookies must be HttpOnly.');
-      assert.equal(cookie.sameSite, 'lax');
-      assert.equal(cookie.path, '/');
-      assert.equal(cookie.secure, false, 'The local HTTP stack must not set Secure cookies in NODE_ENV=test.');
-    }
-    const cookieSession = readAuthSessionCookie(sessionCookies);
-    assert.equal(cookieSession.user.id, body.user.id);
+    assert.equal(authCookies(getResponseCookies(response)).length, 0, 'Pending signup must not issue an authenticated app session.');
 
     const profiles = await queryLocalDatabase<{
       id: string;
       auth_user_id: string;
       email: string;
       account_status: string;
-    }>(local, 'SELECT id, auth_user_id, email, account_status FROM public.users WHERE auth_user_id = $1', [body.user.id]);
-    assert.equal(profiles.length, 1, 'The Auth trigger must map exactly one app profile for an Auth UUID.');
-    assert.equal(profiles[0]?.id, body.user.id, 'The application profile key must map to the immutable Auth UUID.');
-    assert.equal(profiles[0]?.auth_user_id, body.user.id);
+    }>(local, 'SELECT id, auth_user_id, email, account_status FROM public.users WHERE auth_user_id = $1', [userId]);
+    assert.equal(profiles.length, 1, 'The Auth trigger must map exactly one app profile for a pending Auth UUID.');
+    assert.equal(profiles[0]?.id, userId, 'The application profile key must map to the immutable Auth UUID.');
+    assert.equal(profiles[0]?.auth_user_id, userId);
+    assert.equal(profiles[0]?.email, email);
     assert.equal(profiles[0]?.account_status, 'ACTIVE');
 
-    const tenant = await queryLocalDatabase<{
-      membership_count: string;
-      collection_count: string;
+    const beforeConfirmation = await queryLocalDatabase<{ workspace_count: string; membership_count: string }>(local, `
+      SELECT
+        (SELECT COUNT(*)::text FROM public.workspaces w JOIN public.workspace_memberships m ON m.workspace_id = w.id WHERE m.user_id = $1 AND m.status = 'ACTIVE') AS workspace_count,
+        (SELECT COUNT(*)::text FROM public.workspace_memberships WHERE user_id = $1 AND status = 'ACTIVE') AS membership_count
+    `, [userId]);
+    assert.deepEqual(beforeConfirmation[0], { workspace_count: '0', membership_count: '0' });
+
+    const confirmationToken = await generateLocalSignupToken(local, email, signupPassword);
+    const confirmed = await authCallback(makeApiRequest(
+      `/auth/callback?token_hash=${encodeURIComponent(confirmationToken)}&type=signup&next=%2Flogin%3Fconfirmed%3D1`,
+    ));
+    assert.equal(confirmed.status, 307);
+    const destination = new URL(confirmed.headers.get('location') || '');
+    assert.equal(destination.origin, 'http://localhost:3000');
+    assert.match(destination.pathname, /^\/workspaces\/[a-z0-9-]+\/collections$/);
+
+    const workspaceRows = await queryLocalDatabase<{
+      workspace_id: string;
+      workspace_slug: string;
       workspace_role: string;
+      collection_count: string;
       collection_name: string;
       collection_visibility: string;
     }>(local, `
       SELECT
-        (SELECT COUNT(*)::text FROM public.workspace_memberships WHERE workspace_id = $1 AND user_id = $2 AND status = 'ACTIVE') AS membership_count,
-        (SELECT COUNT(*)::text FROM public.collections WHERE workspace_id = $1) AS collection_count,
-        (SELECT role FROM public.workspace_memberships WHERE workspace_id = $1 AND user_id = $2 AND status = 'ACTIVE') AS workspace_role,
-        (SELECT name FROM public.collections WHERE workspace_id = $1 ORDER BY created_at LIMIT 1) AS collection_name,
-        (SELECT visibility FROM public.collections WHERE workspace_id = $1 ORDER BY created_at LIMIT 1) AS collection_visibility
-    `, [body.workspace.id, body.user.id]);
-    assert.equal(tenant[0]?.membership_count, '1');
-    assert.equal(tenant[0]?.workspace_role, 'WORKSPACE_OWNER');
-    assert.equal(tenant[0]?.collection_count, '1');
-    assert.equal(tenant[0]?.collection_name, 'Knowledge Base');
-    assert.equal(tenant[0]?.collection_visibility, 'members');
+        w.id AS workspace_id,
+        w.slug AS workspace_slug,
+        m.role AS workspace_role,
+        (SELECT COUNT(*)::text FROM public.collections WHERE workspace_id = w.id) AS collection_count,
+        (SELECT name FROM public.collections WHERE workspace_id = w.id ORDER BY created_at LIMIT 1) AS collection_name,
+        (SELECT visibility FROM public.collections WHERE workspace_id = w.id ORDER BY created_at LIMIT 1) AS collection_visibility
+      FROM public.workspace_memberships AS m
+      JOIN public.workspaces AS w ON w.id = m.workspace_id
+      WHERE m.user_id = $1 AND m.status = 'ACTIVE'
+    `, [userId]);
+    assert.equal(workspaceRows.length, 1, 'Verified callback must provision exactly one active workspace.');
+    const workspace = workspaceRows[0]!;
+    cleanup.trackWorkspace(workspace.workspace_id);
+    assert.equal(destination.pathname, `/workspaces/${encodeURIComponent(workspace.workspace_slug)}/collections`);
+    assert.equal(workspace.workspace_role, 'WORKSPACE_OWNER');
+    assert.equal(workspace.collection_count, '1');
+    assert.equal(workspace.collection_name, 'Knowledge Base');
+    assert.equal(workspace.collection_visibility, 'members');
+
+    const sessionCookies = authCookies(getResponseCookies(confirmed));
+    assert.ok(sessionCookies.length > 0, 'Successful confirmation callback must issue the SSR Auth session cookie.');
+    for (const cookie of confirmed.cookies.getAll().filter(({ name }) => name.startsWith('okeng-auth'))) {
+      assert.equal(cookie.httpOnly, true, 'Supabase session cookies must be HttpOnly.');
+      assert.equal(cookie.sameSite, 'lax');
+      assert.equal(cookie.path, '/');
+      assert.equal(cookie.secure, false, 'The local HTTP stack must not set Secure cookies in NODE_ENV=test.');
+    }
+    const cookieSession = readAuthSessionCookie(sessionCookies);
+    assert.equal(cookieSession.user.id, userId);
   } finally {
     await cleanup.cleanup();
   }
 });
 
-test('real magic-link callback retries provision exactly one workspace for the verified Auth identity', async () => {
+test('real signup-confirmation callback retries provision exactly one workspace for the verified Auth identity', async () => {
   const cleanup = createLocalCleanup(local);
   try {
     const identity = await createLocalIdentity(local, cleanup, 'callback');
@@ -122,9 +170,9 @@ test('real magic-link callback retries provision exactly one workspace for the v
     `, [identity.user.id]);
     assert.equal(profileBeforeCallback[0]?.workspace_count, '0', 'A bare Auth signup must not provision before the verified callback.');
 
-    const firstToken = await makeMagicLink(cleanup, identity.email);
+    const firstToken = await generateLocalSignupToken(local, identity.email, identity.password);
     const firstResponse = await authCallback(makeApiRequest(
-      `/auth/callback?token_hash=${encodeURIComponent(firstToken)}&type=magiclink&next=%2Flogin%3Fconfirmed%3D1`,
+      `/auth/callback?token_hash=${encodeURIComponent(firstToken)}&type=signup&next=%2Flogin%3Fconfirmed%3D1`,
     ));
     assert.equal(firstResponse.status, 307);
     const firstDestination = new URL(firstResponse.headers.get('location') || '');
@@ -158,6 +206,7 @@ test('concurrent real provisioning RPC retries serialize to one workspace and st
   const cleanup = createLocalCleanup(local);
   try {
     const identity = await createLocalIdentity(local, cleanup, 'concurrent');
+    await confirmLocalSignup(local, identity.email, identity.password, identity.client);
     const results = await Promise.all(Array.from({ length: 8 }, () => identity.client.rpc('provision_initial_workspace')));
     for (const result of results) assert.equal(result.error, null, result.error?.message);
     const workspaceIds = results.map((result) => Array.isArray(result.data) ? result.data[0]?.workspace_id : result.data?.workspace_id);
@@ -180,9 +229,10 @@ test('concurrent real provisioning RPC retries serialize to one workspace and st
 test('login, remember-cookie attributes, generic credential errors, logout, and session revocation use real Auth', async () => {
   const cleanup = createLocalCleanup(local);
   try {
-    const signupResult = await signupViaApp(cleanup, 'login');
+    const signupResult = await signupViaApp(cleanup, 'login', { confirm: true });
     assert.equal(signupResult.response.status, 200, JSON.stringify(signupResult.body));
-    cleanup.trackWorkspace(signupResult.body.workspace.id);
+    assert.ok(signupResult.workspace);
+    cleanup.trackWorkspace(signupResult.workspace.id);
 
     const success = await login(makeApiRequest('/api/auth/login', {
       method: 'POST',
@@ -191,8 +241,8 @@ test('login, remember-cookie attributes, generic credential errors, logout, and 
     }));
     const successBody = await success.json();
     assert.equal(success.status, 200, JSON.stringify(successBody));
-    assert.equal(successBody.user.id, signupResult.body.user.id);
-    assert.equal(successBody.workspace.id, signupResult.body.workspace.id, 'Login provisioning must return the same workspace.');
+    assert.equal(successBody.user.id, signupResult.userId);
+    assert.equal(successBody.workspace.id, signupResult.workspace.id, 'Login provisioning must return the same workspace.');
     assert.doesNotMatch(JSON.stringify(successBody), /access_token|refresh_token/i);
 
     const loginCookies = getResponseCookies(success);
@@ -255,9 +305,10 @@ test('login, remember-cookie attributes, generic credential errors, logout, and 
 test('password recovery is enumeration-safe and a real recovery callback changes the Auth password', async () => {
   const cleanup = createLocalCleanup(local);
   try {
-    const signupResult = await signupViaApp(cleanup, 'recovery');
+    const signupResult = await signupViaApp(cleanup, 'recovery', { confirm: true });
     assert.equal(signupResult.response.status, 200, JSON.stringify(signupResult.body));
-    cleanup.trackWorkspace(signupResult.body.workspace.id);
+    assert.ok(signupResult.workspace);
+    cleanup.trackWorkspace(signupResult.workspace.id);
 
     const known = await forgotPassword(makeApiRequest('/api/auth/forgot-password', {
       method: 'POST',
@@ -305,7 +356,7 @@ test('password recovery is enumeration-safe and a real recovery callback changes
     const publicAuth = makeSupabaseClient(local.url, local.anonKey);
     const newLogin = await publicAuth.auth.signInWithPassword({ email: signupResult.email, password: newPassword });
     assert.equal(newLogin.error, null, newLogin.error?.message || 'The newly set local Auth password should work.');
-    assert.equal(newLogin.data.user?.id, signupResult.body.user.id);
+    assert.equal(newLogin.data.user?.id, signupResult.userId);
     const oldLogin = await publicAuth.auth.signInWithPassword({ email: signupResult.email, password: signupResult.password });
     assert.ok(oldLogin.error, 'The previous password must no longer authenticate after a successful reset.');
   } finally {
@@ -317,6 +368,7 @@ test('suspended or missing profiles cannot obtain an app session when Auth itsel
   const cleanup = createLocalCleanup(local);
   try {
     const suspended = await createLocalIdentity(local, cleanup, 'suspended');
+    await confirmLocalSignup(local, suspended.email, suspended.password, suspended.client);
     await queryLocalDatabase(local, 'UPDATE public.users SET account_status = $2 WHERE id = $1', [suspended.user.id, 'SUSPENDED']);
     const suspendedLogin = await login(makeApiRequest('/api/auth/login', {
       method: 'POST',
@@ -332,6 +384,7 @@ test('suspended or missing profiles cannot obtain an app session when Auth itsel
     ), 'Failed provisioning must clear any newly created Auth session cookie.');
 
     const missingProfile = await createLocalIdentity(local, cleanup, 'missing-profile');
+    await confirmLocalSignup(local, missingProfile.email, missingProfile.password, missingProfile.client);
     await queryLocalDatabase(local, 'DELETE FROM public.users WHERE id = $1', [missingProfile.user.id]);
     const missingLogin = await login(makeApiRequest('/api/auth/login', {
       method: 'POST',

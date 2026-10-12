@@ -6,6 +6,7 @@ import { POST as login } from '../../src/app/api/auth/login/route';
 import { GET as sessionRoute } from '../../src/app/api/auth/session/route';
 import { GET as overviewRoute } from '../../src/app/api/workspaces/[workspaceSlug]/overview/route';
 import {
+  confirmLocalSignup,
   createLocalCleanup,
   getResponseCookies,
   makeApiRequest,
@@ -56,9 +57,15 @@ test('a real expired local session refreshes through /api/auth/session and retur
       body: { name: 'Refresh Test', email, password, terms: true },
     }));
     const signupBody = await signupResponse.json();
-    if (signupBody?.user?.id) cleanup.trackUser(signupBody.user.id);
-    if (signupBody?.workspace?.id) cleanup.trackWorkspace(signupBody.workspace.id);
     assert.equal(signupResponse.status, 200, JSON.stringify(signupBody));
+    assert.equal(signupBody.confirmationRequired, true);
+    const pendingUsers = await cleanup.admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    assert.equal(pendingUsers.error, null, pendingUsers.error?.message);
+    const pendingUser = pendingUsers.data.users.find(({ email: candidate }) => candidate === email);
+    assert.ok(pendingUser, 'The pending Auth signup must be available for its one-time confirmation flow.');
+    cleanup.trackUser(pendingUser.id);
+    const confirmedUser = await confirmLocalSignup(local, email, password);
+    assert.equal(confirmedUser.id, pendingUser.id);
 
     const loginResponse = await login(makeApiRequest('/api/auth/login', {
       method: 'POST', csrf: true,
@@ -102,9 +109,15 @@ test('protected success and post-auth 404 responses preserve real refresh-token 
       body: { name: 'Protected Refresh', email, password, terms: true },
     }));
     const signupBody = await signupResponse.json();
-    if (signupBody?.user?.id) cleanup.trackUser(signupBody.user.id);
-    if (signupBody?.workspace?.id) cleanup.trackWorkspace(signupBody.workspace.id);
     assert.equal(signupResponse.status, 200, JSON.stringify(signupBody));
+    assert.equal(signupBody.confirmationRequired, true);
+    const pendingUsers = await cleanup.admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    assert.equal(pendingUsers.error, null, pendingUsers.error?.message);
+    const pendingUser = pendingUsers.data.users.find(({ email: candidate }) => candidate === email);
+    assert.ok(pendingUser, 'The pending Auth signup must be available for its one-time confirmation flow.');
+    cleanup.trackUser(pendingUser.id);
+    const confirmedUser = await confirmLocalSignup(local, email, password);
+    assert.equal(confirmedUser.id, pendingUser.id);
 
     const loginResponse = await login(makeApiRequest('/api/auth/login', {
       method: 'POST', csrf: true,
@@ -155,9 +168,15 @@ test('expired access-session metadata with invalid refresh credentials fails clo
       body: { name: 'Invalid Refresh', email, password, terms: true },
     }));
     const signupBody = await signupResponse.json();
-    if (signupBody?.user?.id) cleanup.trackUser(signupBody.user.id);
-    if (signupBody?.workspace?.id) cleanup.trackWorkspace(signupBody.workspace.id);
     assert.equal(signupResponse.status, 200, JSON.stringify(signupBody));
+    assert.equal(signupBody.confirmationRequired, true);
+    const pendingUsers = await cleanup.admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    assert.equal(pendingUsers.error, null, pendingUsers.error?.message);
+    const pendingUser = pendingUsers.data.users.find(({ email: candidate }) => candidate === email);
+    assert.ok(pendingUser, 'The pending Auth signup must be available for its one-time confirmation flow.');
+    cleanup.trackUser(pendingUser.id);
+    const confirmedUser = await confirmLocalSignup(local, email, password);
+    assert.equal(confirmedUser.id, pendingUser.id);
 
     const loginResponse = await login(makeApiRequest('/api/auth/login', {
       method: 'POST', csrf: true,

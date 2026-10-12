@@ -7,6 +7,7 @@ import { POST as login } from '../../src/app/api/auth/login/route';
 import { POST as uploadRoute } from '../../src/app/api/workspaces/[workspaceSlug]/files/route';
 import { GET as downloadRoute, DELETE as deleteRoute } from '../../src/app/api/workspaces/[workspaceSlug]/files/[fileId]/route';
 import {
+  confirmLocalSignup,
   createLocalCleanup,
   getResponseCookies,
   makeApiRequest,
@@ -29,9 +30,15 @@ async function createAppSession(cleanup: ReturnType<typeof createLocalCleanup>, 
     body: { name: `Storage ${label}`, email, password, terms: true },
   }));
   const signupBody = await signupResponse.json();
-  if (signupBody?.user?.id) cleanup.trackUser(signupBody.user.id);
-  if (signupBody?.workspace?.id) cleanup.trackWorkspace(signupBody.workspace.id);
   assert.equal(signupResponse.status, 200, `Local signup failed with ${signupBody?.error || signupResponse.status}.`);
+  assert.equal(signupBody.confirmationRequired, true);
+  const pendingUsers = await cleanup.admin.auth.admin.listUsers({ page: 1, perPage: 1000 });
+  assert.equal(pendingUsers.error, null, pendingUsers.error?.message);
+  const pendingUser = pendingUsers.data.users.find(({ email: candidate }) => candidate === email);
+  assert.ok(pendingUser, 'The pending Auth signup must be available for its one-time confirmation flow.');
+  cleanup.trackUser(pendingUser.id);
+  const confirmedUser = await confirmLocalSignup(local, email, password);
+  assert.equal(confirmedUser.id, pendingUser.id);
 
   const loginResponse = await login(makeApiRequest('/api/auth/login', {
     method: 'POST', csrf: true,

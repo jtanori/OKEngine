@@ -182,10 +182,12 @@ describe('Supabase Auth, RLS, and private Storage integration', () => {
     const helper = read('tests/integration/helpers/localSupabase.ts');
     const runner = read('scripts/test-supabase-local.mjs');
     const localSetup = read('scripts/supabase-local.ps1');
-    const configGuard = read('scripts/lib/local-supabase-guard.mjs');
     assert.match(guard, /LOOPBACK_HOSTS\.has/);
-    assert.match(configGuard, /export function assertExpectedLocalSupabaseConfig/);
+    assert.match(guard, /export function assertExpectedLocalSupabaseConfig/);
+    assert.match(guard, /export function enableLocalEmailConfirmationsForTest/);
     assert.match(runner, /assertExpectedLocalSupabaseConfig/);
+    assert.match(runner, /enableLocalEmailConfirmationsForTest/);
+    assert.match(runner, /restoreLocalStackDefaults/);
     assert.match(guard, /api\.port === String\(apiPort\)/);
     assert.match(guard, /database\.port === String\(databasePort\)/);
     assert.match(guard, /!database\.search/);

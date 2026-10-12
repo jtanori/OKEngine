@@ -1,11 +1,12 @@
 import { spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import {
   assertExpectedLocalSupabaseConfig,
   assertLocalSupabaseTarget,
+  enableLocalEmailConfirmationsForTest,
 } from './lib/local-supabase-guard.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -60,6 +61,37 @@ function run(command, args, { env = process.env, capture = false } = {}) {
 function assertExpectedLocalConfig() {
   if (!existsSync(configPath)) throw new Error('supabase/config.toml is missing; run this command from the OKEngine repository.');
   assertExpectedLocalSupabaseConfig(readFileSync(configPath, 'utf8'));
+}
+
+function stopExistingLocalStackIfRunning() {
+  const status = spawnSync('supabase', ['status', '-o', 'env'], {
+    cwd: root,
+    encoding: 'utf8',
+    windowsHide: true,
+    shell: isWindows,
+    maxBuffer: 8 * 1024 * 1024,
+  });
+  if (status.error) throw new Error(`supabase status could not start: ${status.error.message}`);
+  if (status.status === 0) {
+    printCaptured(run('supabase', ['stop'], { capture: true }));
+  }
+}
+
+function startLocalStackWithEmailConfirmation() {
+  const checkedInConfig = readFileSync(configPath, 'utf8');
+  const testConfig = enableLocalEmailConfirmationsForTest(checkedInConfig);
+  try {
+    writeFileSync(configPath, testConfig, 'utf8');
+    return run('supabase', ['start'], { capture: true });
+  } finally {
+    // Restore the checked-in development defaults even if the CLI fails.
+    writeFileSync(configPath, checkedInConfig, 'utf8');
+  }
+}
+
+function restoreLocalStackDefaults() {
+  stopExistingLocalStackIfRunning();
+  printCaptured(run('supabase', ['start'], { capture: true }));
 }
 
 function requireExecutable(name, installHint) {
@@ -139,6 +171,8 @@ function printCaptured(output) {
   if (output.trim()) console.log(redact(output).trim());
 }
 
+let integrationTestsLaunched = false;
+
 async function main() {
   console.log('Local Supabase test harness: checking prerequisites and local-only target.');
   assertExpectedLocalConfig();
@@ -146,39 +180,56 @@ async function main() {
   requireExecutable('docker', 'Install Docker Desktop for Windows, enable the WSL 2/Linux engine, start it, then retry.');
   requireExecutable('supabase', 'Install the Supabase CLI (`supabase --version` must work in PowerShell), then retry.');
   run('docker', ['info', '--format', '{{.ServerVersion}}']);
+  stopExistingLocalStackIfRunning();
 
-  console.log('Starting the configured local stack (Auth, PostgreSQL, Storage, Edge Runtime and required API gateway).');
-  const startOutput = run('supabase', ['start'], { capture: true });
-  printCaptured(startOutput);
+  let suiteStatus = 0;
+  let stackMayBeRunning = false;
+  try {
+    stackMayBeRunning = true;
+    console.log('Starting the configured local stack (Auth, PostgreSQL, Storage, Edge Runtime and required API gateway).');
+    console.log('The runner temporarily enables Auth email confirmation; no SMTP container or provider credentials are used.');
+    const startOutput = startLocalStackWithEmailConfirmation();
+    printCaptured(startOutput);
 
-  const status = parseEnvironment(run('supabase', ['status', '-o', 'env'], { capture: true }));
-  const env = makeTestEnvironment(status);
+    const status = parseEnvironment(run('supabase', ['status', '-o', 'env'], { capture: true }));
+    const env = makeTestEnvironment(status);
 
-  console.log('Destructively resetting only the validated loopback project with --local; all local database rows will be erased.');
-  const resetOutput = run('supabase', ['db', 'reset', '--local', '--yes', '--no-seed'], { capture: true });
-  printCaptured(resetOutput);
+    console.log('Destructively resetting only the validated loopback project with --local; all local database rows will be erased.');
+    const resetOutput = run('supabase', ['db', 'reset', '--local', '--yes', '--no-seed'], { capture: true });
+    printCaptured(resetOutput);
 
-  console.log('Running clean-schema, Auth/session, tenant-RLS, and private-Storage runtime tests.');
-  const child = spawnSync(process.execPath, [tsxCli, '--test', ...testFiles], {
-    cwd: root,
-    env,
-    encoding: 'utf8',
-    windowsHide: true,
-    maxBuffer: 16 * 1024 * 1024,
-  });
-  printCaptured(child.stdout || '');
-  if (child.stderr) console.error(redact(child.stderr).trim());
-  if (child.error) throw new Error(`Live integration test runner failed to start: ${child.error.message}`);
-  if (child.status !== 0) {
-    console.error('\n[FAILED] Local Supabase runtime tests failed. The stack is left running for diagnosis; use the documented reset command before the next clean run.');
-    process.exitCode = child.status || 1;
-    return;
+    console.log('Running clean-schema, confirmed Auth/session, tenant-RLS, and private-Storage runtime tests.');
+    integrationTestsLaunched = true;
+    const child = spawnSync(process.execPath, [tsxCli, '--test', ...testFiles], {
+      cwd: root,
+      env,
+      encoding: 'utf8',
+      windowsHide: true,
+      maxBuffer: 16 * 1024 * 1024,
+    });
+    printCaptured(child.stdout || '');
+    if (child.stderr) console.error(redact(child.stderr).trim());
+    if (child.error) throw new Error(`Live integration test runner failed to start: ${child.error.message}`);
+    suiteStatus = child.status ?? 1;
+  } finally {
+    if (stackMayBeRunning) {
+      console.log('Restoring the stack to the checked-in local Auth defaults; the local database volume is preserved.');
+      restoreLocalStackDefaults();
+    }
   }
-  console.log('\n[PASSED] All clean-local Supabase runtime tests completed. The local stack remains running.');
+
+  if (suiteStatus === 0) {
+    console.log('\n[PASSED] All clean-local Supabase runtime tests completed. The stack remains running with the checked-in local Auth defaults.');
+  } else {
+    console.error('\n[FAILED] Local Supabase runtime tests failed. The database remains available for diagnosis; rerun the documented command for a clean reset.');
+    process.exitCode = suiteStatus;
+  }
 }
 
 main().catch((error) => {
   const message = redact(error instanceof Error ? error.message : String(error));
-  console.error(`\n[NOT RUN] Local Supabase runtime suite did not execute.\nReason: ${message}\nNext: follow the relevant Windows prerequisite in docs/LOCAL-SUPABASE-WINDOWS.md, resolve this error, then rerun "npm run test:auth-local". The runner only targets the checked-in loopback local ports and never uses a linked/hosted database.`);
-  process.exitCode = 2;
+  const label = integrationTestsLaunched ? 'FAILED' : 'NOT RUN';
+  const status = integrationTestsLaunched ? 1 : 2;
+  console.error(`\n[${label}] Local Supabase runtime suite ${integrationTestsLaunched ? 'failed' : 'did not execute'}.\nReason: ${message}\nNext: follow the relevant Windows prerequisite in docs/LOCAL-SUPABASE-WINDOWS.md, resolve this error, then rerun "npm run test:auth-local". The runner only targets the checked-in loopback local ports and never uses a linked/hosted database.`);
+  process.exitCode = status;
 });

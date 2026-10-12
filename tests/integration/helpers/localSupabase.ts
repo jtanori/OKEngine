@@ -124,6 +124,28 @@ export interface LocalIdentity {
   password: string;
 }
 
+export async function generateLocalSignupToken(config: LocalSupabaseConfig, email: string, password: string): Promise<string> {
+  const admin = makeSupabaseClient(config.url, config.serviceRoleKey);
+  const { data, error } = await admin.auth.admin.generateLink({ type: 'signup', email, password });
+  assert.equal(error, null, error?.message || 'Local Auth Admin could not generate an email confirmation link.');
+  assert.ok(data.properties.hashed_token, 'Local Auth Admin did not return the one-time signup token hash.');
+  return data.properties.hashed_token;
+}
+
+export async function confirmLocalSignup(
+  config: LocalSupabaseConfig,
+  email: string,
+  password: string,
+  client = makeSupabaseClient(config.url, config.anonKey),
+): Promise<User> {
+  const tokenHash = await generateLocalSignupToken(config, email, password);
+  const { data, error } = await client.auth.verifyOtp({ token_hash: tokenHash, type: 'signup' });
+  assert.equal(error, null, error?.message || 'Local Auth email confirmation failed.');
+  assert.ok(data.user, 'A successful local email confirmation must return the Auth UUID.');
+  assert.ok(data.session, 'A successful local email confirmation must issue a real Auth session.');
+  return data.user;
+}
+
 export async function createLocalIdentity(
   config: LocalSupabaseConfig,
   cleanup: LocalCleanup,
@@ -140,7 +162,7 @@ export async function createLocalIdentity(
   if (data.user) cleanup.trackUser(data.user.id);
   assert.equal(error, null, error?.message || 'Local Auth signup failed; check `supabase status` and migrations.');
   assert.ok(data.user, 'Local Auth signup must return an Auth UUID.');
-  assert.ok(data.session, 'Local config should disable email confirmations for the baseline local suite; use the Auth Admin link helper for callback tests.');
+  assert.equal(data.session, null, 'The local integration runner must require real email confirmation before issuing a session.');
   return { client, user: data.user, email, password };
 }
 

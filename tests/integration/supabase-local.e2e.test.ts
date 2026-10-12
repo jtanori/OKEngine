@@ -3,7 +3,7 @@ import { Client } from 'pg';
 import { createClient } from '@supabase/supabase-js';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { queryLocalDatabase, requireLocalSupabase } from './helpers/localSupabase';
+import { confirmLocalSignup, queryLocalDatabase, requireLocalSupabase } from './helpers/localSupabase';
 
 const local = requireLocalSupabase();
 const BUCKET = 'workspace-files';
@@ -18,17 +18,21 @@ function makeClient(url: string, key: string) {
   });
 }
 
-async function createUser(url: string, anonKey: string, suffix: string) {
-  const client = makeClient(url, anonKey);
+async function createUser(config: typeof local, suffix: string) {
+  const client = makeClient(config.url, config.anonKey);
+  const email = `okeng-${suffix}@example.com`;
+  const password = `Local-Test-${randomUUID()}-9!`;
   const { data, error } = await client.auth.signUp({
-    email: `okeng-${suffix}@example.com`,
-    password: `Local-Test-${randomUUID()}-9!`,
+    email,
+    password,
     options: { data: { name: `Local Test ${suffix}` } },
   });
   assert.equal(error, null, error?.message);
-  assert.ok(data.user, 'Auth signup should return a user');
-  assert.ok(data.session, 'Local Auth confirmations must be disabled for this test');
-  return { client, user: data.user };
+  assert.ok(data.user, 'Auth signup should return a pending user before email confirmation.');
+  assert.equal(data.session, null, 'Auth must not issue a session before local email confirmation.');
+  const user = await confirmLocalSignup(config, email, password, client);
+  assert.equal(user.id, data.user.id);
+  return { client, user };
 }
 
 test('runtime tenant RLS, collection visibility, and private Storage policies on local Supabase', async () => {
@@ -39,7 +43,7 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
   const storagePaths: string[] = [];
 
   try {
-    const first = await createUser(url, anonKey, randomUUID());
+    const first = await createUser(local, randomUUID());
     userIds.push(first.user.id);
     const { data: firstProfile, error: profileError } = await first.client
       .from('users')
@@ -162,6 +166,16 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
     assert.deepEqual(anonymousPublicSnapshot?.map((row) => row.id), [flippedPublicSnapshotId]);
     const anonymousProvisioning = await anonymous.rpc('provision_initial_workspace');
     assert.ok(anonymousProvisioning.error, 'Anonymous callers must not execute workspace provisioning.');
+    const anonymousCompletion = await anonymous.rpc('complete_file_upload', {
+      p_file_id: `file_anonymous_${suffix}`,
+      p_storage_path: `${firstWorkspace.workspace_id}/${membersCollectionId}/anonymous.txt`,
+    });
+    assert.ok(anonymousCompletion.error || anonymousCompletion.data !== true, 'Anonymous callers must not complete a private upload.');
+    const anonymousAbort = await anonymous.rpc('abort_file_upload', {
+      p_file_id: `file_anonymous_${suffix}`,
+      p_storage_path: `${firstWorkspace.workspace_id}/${membersCollectionId}/anonymous.txt`,
+    });
+    assert.ok(anonymousAbort.error || !['removed', 'orphaned'].includes(anonymousAbort.data), 'Anonymous callers must not abort a private upload.');
     const anonymousWorkspaces = await anonymous.from('workspaces').select('id').eq('id', firstWorkspace.workspace_id);
     assert.ok(
       anonymousWorkspaces.error || anonymousWorkspaces.data?.length === 0,
@@ -180,7 +194,7 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
       .eq('workspace_id', firstWorkspace.workspace_id);
     assert.ok(invalidIdentityError || invalidIdentityRows?.length === 0, 'Invalid JWT must not disclose document rows');
 
-    const second = await createUser(url, anonKey, randomUUID());
+    const second = await createUser(local, randomUUID());
     userIds.push(second.user.id);
     const { data: secondProvision, error: secondProvisionError } = await second.client.rpc('provision_initial_workspace');
     assert.equal(secondProvisionError, null, secondProvisionError?.message);
@@ -195,6 +209,19 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
     const secondOtherProfile = await second.client.from('users').select('id').eq('id', first.user.id);
     assert.equal(secondOtherProfile.error, null, secondOtherProfile.error?.message);
     assert.deepEqual(secondOtherProfile.data, [], 'Profile RLS must hide unrelated users.');
+    const secondOtherMemberships = await second.client.from('workspace_memberships')
+      .select('id').eq('workspace_id', firstWorkspace.workspace_id);
+    assert.ok(secondOtherMemberships.error || secondOtherMemberships.data?.length === 0, 'Membership RLS must hide another tenant\'s users.');
+    const foreignProfileUpdate = await second.client.from('users')
+      .update({ platform_role: 'PLATFORM_OWNER' })
+      .eq('id', first.user.id)
+      .select('id');
+    assert.ok(foreignProfileUpdate.error || foreignProfileUpdate.data?.length === 0, 'A tenant cannot mutate another user\'s profile or privileges.');
+    const foreignCollectionUpdate = await second.client.from('collections')
+      .update({ name: 'Cross-tenant mutation' })
+      .eq('id', publicCollectionId)
+      .select('id');
+    assert.ok(foreignCollectionUpdate.error || foreignCollectionUpdate.data?.length === 0, 'A tenant cannot mutate another workspace\'s collection.');
     const forgedCollection = await second.client.from('collections').insert({
       id: `col_forged_${randomUUID().replace(/-/g, '')}`,
       workspace_id: firstWorkspace.workspace_id,
@@ -203,7 +230,7 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
     }).select('id');
     assert.ok(forgedCollection.error || forgedCollection.data?.length === 0, 'A tenant cannot insert a collection into another workspace.');
 
-    const member = await createUser(url, anonKey, randomUUID());
+    const member = await createUser(local, randomUUID());
     userIds.push(member.user.id);
     const { data: memberProvision, error: memberProvisionError } = await member.client.rpc('provision_initial_workspace');
     assert.equal(memberProvisionError, null, memberProvisionError?.message);
@@ -221,7 +248,7 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
     });
     assert.equal(membershipInsertError, null, membershipInsertError?.message);
 
-    const editor = await createUser(url, anonKey, randomUUID());
+    const editor = await createUser(local, randomUUID());
     userIds.push(editor.user.id);
     const { data: editorProvision, error: editorProvisionError } = await editor.client.rpc('provision_initial_workspace');
     assert.equal(editorProvisionError, null, editorProvisionError?.message);
@@ -363,6 +390,17 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
       { contentType: 'text/plain', upsert: false },
     );
     assert.ok(wrongPathUpload.error, 'Storage INSERT must require an exact path bound to pending file metadata.');
+    const crossTenantUploader = await second.client.storage.from(BUCKET).upload(
+      adminStoragePath,
+      new Blob(['Wrong tenant.'], { type: 'text/plain' }),
+      { contentType: 'text/plain', upsert: false },
+    );
+    assert.ok(crossTenantUploader.error, 'A different workspace cannot upload into another tenant\'s pending metadata reservation.');
+    const crossTenantCompletion = await second.client.rpc('complete_file_upload', {
+      p_file_id: adminFileId,
+      p_storage_path: adminStoragePath,
+    });
+    assert.ok(crossTenantCompletion.error || crossTenantCompletion.data !== true, 'A different workspace cannot complete another tenant\'s file upload.');
     const otherUploader = await editor.client.storage.from(BUCKET).upload(
       adminStoragePath,
       new Blob(['Wrong uploader.'], { type: 'text/plain' }),
@@ -382,6 +420,10 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
       { contentType: 'text/plain', upsert: false },
     );
     assert.equal(adminUploadError, null, adminUploadError?.message);
+    const pendingObjectSignedUrl = await first.client.storage.from(BUCKET).createSignedUrl(adminStoragePath, 60);
+    assert.ok(pendingObjectSignedUrl.error || !pendingObjectSignedUrl.data?.signedUrl, 'A pending object must remain unsigned after it reaches Storage.');
+    const pendingObjectDownload = await first.client.storage.from(BUCKET).download(adminStoragePath);
+    assert.ok(pendingObjectDownload.error || !pendingObjectDownload.data, 'A pending object must remain unreadable after upload and before completion.');
     const { data: adminUploadCompleted, error: adminUploadCompleteError } = await first.client.rpc('complete_file_upload', {
       p_file_id: adminFileId,
       p_storage_path: adminStoragePath,
@@ -468,6 +510,11 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
       .eq('id', fileId);
     assert.equal(crossTenantFileError, null, crossTenantFileError?.message);
     assert.deepEqual(crossTenantFile, []);
+    const crossTenantFileUpdate = await second.client.from('files')
+      .update({ filename: 'tenant-tampered.txt' }).eq('id', fileId).select('id');
+    assert.ok(crossTenantFileUpdate.error || crossTenantFileUpdate.data?.length === 0, 'Another tenant cannot mutate private file metadata by ID.');
+    const crossTenantFileDelete = await second.client.from('files').delete().eq('id', fileId).select('id');
+    assert.ok(crossTenantFileDelete.error || crossTenantFileDelete.data?.length === 0, 'Another tenant cannot delete private file metadata by ID.');
     const { data: unauthorizedSignedUrl, error: unauthorizedSignedUrlError } = await second.client
       .storage.from(BUCKET).createSignedUrl(storagePath, 60);
     assert.ok(unauthorizedSignedUrlError || !unauthorizedSignedUrl?.signedUrl);

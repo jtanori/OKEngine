@@ -74,6 +74,53 @@ export function assertExpectedLocalSupabaseConfig(config) {
   return true;
 }
 
+/**
+ * Enable real Auth email-confirmation behavior for the disposable integration
+ * stack without enabling the local SMTP container. Supabase Auth uses its
+ * no-op mailer when no SMTP host is configured; the tests obtain one-time links
+ * through the local Auth Admin API instead of sending email.
+ */
+export function enableLocalEmailConfirmationsForTest(config) {
+  if (typeof config !== 'string') {
+    throw new Error('Refusing local Supabase tests: config.toml content is missing for the test-only Auth override.');
+  }
+
+  const lineEnding = config.includes('\r\n') ? '\r\n' : '\n';
+  const lines = config.split(/\r?\n/);
+  const sectionIndexes = lines
+    .map((line, index) => line.trim() === '[auth.email]' ? index : -1)
+    .filter((index) => index >= 0);
+  if (sectionIndexes.length !== 1) {
+    throw new Error('Refusing local Supabase tests: config.toml must contain exactly one [auth.email] section for the test-only confirmation override.');
+  }
+
+  const start = sectionIndexes[0] + 1;
+  let end = lines.length;
+  for (let index = start; index < lines.length; index += 1) {
+    if (/^\s*\[[^\]]+\]\s*(?:#.*)?$/.test(lines[index])) {
+      end = index;
+      break;
+    }
+  }
+
+  const settingIndexes = [];
+  for (let index = start; index < end; index += 1) {
+    if (/^\s*enable_confirmations\s*=/.test(lines[index])) settingIndexes.push(index);
+  }
+  if (settingIndexes.length !== 1) {
+    throw new Error('Refusing local Supabase tests: [auth.email] must set enable_confirmations exactly once for the test-only override.');
+  }
+
+  const settingIndex = settingIndexes[0];
+  const match = lines[settingIndex].match(/^(\s*enable_confirmations\s*=\s*)false(\s*(?:#.*)?)$/);
+  if (!match) {
+    throw new Error('Refusing local Supabase tests: the checked-in [auth.email] enable_confirmations value must be false before applying the test-only override.');
+  }
+
+  lines[settingIndex] = `${match[1]}true${match[2]}`;
+  return lines.join(lineEnding);
+}
+
 function parseUrl(value, label) {
   if (typeof value !== 'string' || value.trim() === '') {
     throw new Error(`Refusing local Supabase tests: ${label} is missing. No database operation was performed.`);
