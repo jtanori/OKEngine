@@ -3,7 +3,7 @@
 // never fallback to caller-provided ID when session missing, lookup customer, idempotency, generic success URL, safe price map
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, validateCsrf } from '@/lib/auth';
+import { composeAuthResponseAppliers, getSessionContext, validateCsrf } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { validatePlanAndInterval, PLAN_PRICE_MAP, buildPriceMap } from '@/lib/billing';
 import { requireWorkspaceAdmin } from '@/lib/workspaceAuth';
@@ -16,8 +16,10 @@ export async function POST(request: NextRequest) {
 
   if (!validateCsrf(request)) return NextResponse.json({ error: 'csrf_invalid' }, { status: 403 });
 
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: 'unauthorized', message: 'No autorizado' }, { status: 401 });
+  const { session, applyToResponse: applySessionToResponse } = await getSessionContext(request);
+  let applyToResponse = applySessionToResponse;
+  const respond = (body: unknown, init?: ResponseInit) => applyToResponse(NextResponse.json(body, init));
+  if (!session) return respond({ error: 'unauthorized', message: 'No autorizado' }, { status: 401 });
 
   let body: any;
   try {
@@ -34,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   const validation = validatePlanAndInterval(planToValidate, intervalToValidate);
   if (!validation.valid) {
-    return NextResponse.json({ error: 'bad_request', message: validation.error }, { status: 400 });
+    return respond({ error: 'bad_request', message: validation.error }, { status: 400 });
   }
 
   const plan = validation.plan!;
@@ -46,12 +48,12 @@ export async function POST(request: NextRequest) {
     priceMap = buildPriceMap();
   } catch (err: any) {
     console.error('[billing/checkout] Duplicate price IDs detected at startup', err);
-    return NextResponse.json({ error: 'internal_error', message: `Price configuration error: ${err.message}` }, { status: 500 });
+    return respond({ error: 'internal_error', message: `Price configuration error: ${err.message}` }, { status: 500 });
   }
 
   const priceId = PLAN_PRICE_MAP[plan][interval];
   if (!priceId || priceId.trim() === '' || priceId === 'undefined') {
-    return NextResponse.json({ error: 'bad_request', message: `Price ID not configured for ${plan} ${interval}` }, { status: 400 });
+    return respond({ error: 'bad_request', message: `Price ID not configured for ${plan} ${interval}` }, { status: 400 });
   }
 
   if (!priceMap[priceId]) {
@@ -61,8 +63,9 @@ export async function POST(request: NextRequest) {
   // Phase 5: Consistent workspace auth — requireWorkspaceAdmin validates user, workspace, active membership, required role every time
   // Never fallback to caller-provided ID when session missing
   const workspaceAuth = await requireWorkspaceAdmin(request, session, body.workspaceId);
+  applyToResponse = composeAuthResponseAppliers(applyToResponse, workspaceAuth.applyToResponse);
   if (!workspaceAuth.authorized) {
-    return NextResponse.json({ error: workspaceAuth.error, message: workspaceAuth.message }, { status: workspaceAuth.status });
+    return respond({ error: workspaceAuth.error, message: workspaceAuth.message }, { status: workspaceAuth.status });
   }
 
   const workspaceId = workspaceAuth.workspaceId;
@@ -71,7 +74,7 @@ export async function POST(request: NextRequest) {
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
   if (!stripeSecret) {
     console.warn('[billing/checkout] Stripe not configured, returning placeholder');
-    return NextResponse.json({
+    return respond({
       url: `/#precios?plan=${plan}&interval=${interval}&workspace=${workspaceId}`,
       message: 'Stripe not configured — placeholder, set STRIPE_SECRET_KEY and price IDs',
       placeholder: true,
@@ -112,9 +115,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`[billing/checkout] Created checkout session for workspace ${workspaceId} plan ${plan} interval ${interval} price ${priceId}`);
 
-    return NextResponse.json({ url: checkoutSession.url });
+    return respond({ url: checkoutSession.url });
   } catch (err: any) {
     console.error('[billing/checkout] Stripe error', err);
-    return NextResponse.json({ error: 'internal_error', message: 'Error creando sesión de pago', details: err.message }, { status: 500 });
+    return respond({ error: 'internal_error', message: 'Error creando sesión de pago', details: err.message }, { status: 500 });
   }
 }

@@ -1,6 +1,6 @@
 // POST /api/billing/portal — Secure Stripe Customer Portal Session with consistent workspace auth (P1 Phase 5)
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, validateCsrf } from '@/lib/auth';
+import { composeAuthResponseAppliers, getSessionContext, validateCsrf } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { requireWorkspaceAdmin } from '@/lib/workspaceAuth';
 
@@ -9,8 +9,10 @@ export async function POST(request: NextRequest) {
   if (!rl.success) return NextResponse.json({ error: 'rate_limit_exceeded' }, { status: 429 });
   if (!validateCsrf(request)) return NextResponse.json({ error: 'csrf_invalid' }, { status: 403 });
 
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  const { session, applyToResponse: applySessionToResponse } = await getSessionContext(request);
+  let applyToResponse = applySessionToResponse;
+  const respond = (body: unknown, init?: ResponseInit) => applyToResponse(NextResponse.json(body, init));
+  if (!session) return respond({ error: 'unauthorized' }, { status: 401 });
 
   let body: any;
   try {
@@ -21,14 +23,15 @@ export async function POST(request: NextRequest) {
 
   // Phase 5: Consistent workspace auth
   const workspaceAuth = await requireWorkspaceAdmin(request, session, body.workspaceId);
+  applyToResponse = composeAuthResponseAppliers(applyToResponse, workspaceAuth.applyToResponse);
   if (!workspaceAuth.authorized) {
-    return NextResponse.json({ error: workspaceAuth.error, message: workspaceAuth.message }, { status: workspaceAuth.status });
+    return respond({ error: workspaceAuth.error, message: workspaceAuth.message }, { status: workspaceAuth.status });
   }
 
   const stripeSecret = process.env.STRIPE_SECRET_KEY;
 
   if (!stripeSecret) {
-    return NextResponse.json({
+    return respond({
       url: '/settings/billing',
       message: 'Stripe not configured — placeholder',
       placeholder: true,
@@ -40,7 +43,7 @@ export async function POST(request: NextRequest) {
     const workspaceSlug = workspaceAuth.workspace.slug;
 
     if (!customerId) {
-      return NextResponse.json({ error: 'bad_request', message: 'No Stripe customer found for workspace, create checkout first' }, { status: 400 });
+      return respond({ error: 'bad_request', message: 'No Stripe customer found for workspace, create checkout first' }, { status: 400 });
     }
 
     const Stripe = (await import('stripe')).default;
@@ -55,9 +58,9 @@ export async function POST(request: NextRequest) {
       return_url: returnUrl,
     });
 
-    return NextResponse.json({ url: portalSession.url });
+    return respond({ url: portalSession.url });
   } catch (err: any) {
     console.error('[billing/portal] Error', err);
-    return NextResponse.json({ error: 'internal_error', message: err.message }, { status: 500 });
+    return respond({ error: 'internal_error', message: err.message }, { status: 500 });
   }
 }

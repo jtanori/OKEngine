@@ -14,7 +14,7 @@
     "test:homepage-tour-readiness": "tsx tests/readiness/homepage-tour-readiness.test.ts",
     "test:embed-authorization": "tsx tests/rendering/embed-authorization.test.ts",
     "test:baseline": "tsx tests/security/phase0-baseline-reproduction.test.ts",
-    "test:supabase-integration": "tsx --test tests/security/supabase-auth-storage-integration.test.ts tests/security/private-upload-size.test.ts tests/security/auth-api-client.test.ts tests/security/auth-oauth.test.ts tests/security/auth-ui-conditional.test.ts tests/security/session-workspace.test.ts",
+    "test:supabase-integration": "tsx --test tests/security/supabase-auth-storage-integration.test.ts tests/security/private-upload-size.test.ts tests/security/auth-api-client.test.ts tests/security/auth-oauth.test.ts tests/security/auth-ui-conditional.test.ts tests/security/session-workspace.test.ts tests/security/auth-session-refresh.test.ts",
     "test:supabase-live": "tsx tests/integration/supabase-local.e2e.test.ts"
   },
   "dependencies": {

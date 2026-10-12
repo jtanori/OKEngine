@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, validateCsrf } from '@/lib/auth';
+import { composeAuthResponseAppliers, getSessionContext, validateCsrf } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
 import {
@@ -67,17 +67,20 @@ export async function POST(
   }
 
   if (!validateCsrf(request)) return json({ error: 'csrf_invalid' }, 403);
-  const session = await getSession(request);
-  if (!session) return json({ error: 'unauthorized' }, 401);
+  const sessionContext = await getSessionContext(request);
+  const { session } = sessionContext;
+  let applyToResponse = sessionContext.applyToResponse;
+  const respond = (body: unknown, status: number) => json(body, status, applyToResponse);
+  if (!session) return respond({ error: 'unauthorized' }, 401);
 
   const { workspaceSlug } = await context.params;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workspaceSlug) || workspaceSlug.length > 96) {
-    return json({ error: 'invalid_workspace' }, 400);
+    return respond({ error: 'invalid_workspace' }, 400);
   }
 
   const contentLength = Number(request.headers.get('content-length'));
   if (Number.isFinite(contentLength) && contentLength > MAX_PRIVATE_MULTIPART_BYTES) {
-    return json({ error: 'file_too_large', maxBytes: MAX_FILE_SIZE }, 413);
+    return respond({ error: 'file_too_large', maxBytes: MAX_FILE_SIZE }, 413);
   }
 
   let formData: FormData;
@@ -85,27 +88,26 @@ export async function POST(
     formData = await parseMultipartWithinLimit(request);
   } catch (error) {
     if (error instanceof PayloadTooLargeError) {
-      return json({ error: 'file_too_large', maxBytes: MAX_FILE_SIZE }, 413);
+      return respond({ error: 'file_too_large', maxBytes: MAX_FILE_SIZE }, 413);
     }
-    return json({ error: 'invalid_multipart' }, 400);
+    return respond({ error: 'invalid_multipart' }, 400);
   }
 
   const collectionIdValue = formData.get('collectionId');
   const fileValue = formData.get('file');
   if (typeof collectionIdValue !== 'string' || !SEGMENT_PATTERN.test(collectionIdValue)) {
-    return json({ error: 'invalid_collection' }, 400);
+    return respond({ error: 'invalid_collection' }, 400);
   }
-  if (!(fileValue instanceof File)) return json({ error: 'file_required' }, 400);
-  if (fileValue.size <= 0) return json({ error: 'empty_file' }, 400);
-  if (fileValue.size > MAX_FILE_SIZE) return json({ error: 'file_too_large', maxBytes: MAX_FILE_SIZE }, 413);
-  if (!ALLOWED_MIME_TYPES.has(fileValue.type)) return json({ error: 'unsupported_file_type' }, 415);
+  if (!(fileValue instanceof File)) return respond({ error: 'file_required' }, 400);
+  if (fileValue.size <= 0) return respond({ error: 'empty_file' }, 400);
+  if (fileValue.size > MAX_FILE_SIZE) return respond({ error: 'file_too_large', maxBytes: MAX_FILE_SIZE }, 413);
+  if (!ALLOWED_MIME_TYPES.has(fileValue.type)) return respond({ error: 'unsupported_file_type' }, 415);
 
-  let applyToResponse = (response: NextResponse) => response;
   let fileId: string | undefined;
   let storagePath: string | undefined;
   try {
     const scopedClient = createRouteSupabaseClient(request);
-    applyToResponse = scopedClient.applyToResponse;
+    applyToResponse = composeAuthResponseAppliers(sessionContext.applyToResponse, scopedClient.applyToResponse);
     const { client } = scopedClient;
 
     const { data: authData, error: authError } = await client.auth.getUser();
@@ -190,8 +192,9 @@ export async function POST(
   } catch (error) {
     if (fileId && storagePath) {
       try {
-        const client = createRouteSupabaseClient(request).client;
-        await cleanupPendingUpload(client, fileId, storagePath);
+        const cleanupClient = createRouteSupabaseClient(request);
+        applyToResponse = composeAuthResponseAppliers(applyToResponse, cleanupClient.applyToResponse);
+        await cleanupPendingUpload(cleanupClient.client, fileId, storagePath);
       } catch {
         // A pending metadata row remains non-readable and is safe to reconcile.
       }

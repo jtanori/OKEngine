@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, validateCsrf } from '@/lib/auth';
+import { composeAuthResponseAppliers, getSessionContext, validateCsrf } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
 
@@ -50,17 +50,18 @@ export async function GET(
     });
   }
 
-  const session = await getSession(request);
-  if (!session) return json({ error: 'unauthorized' }, 401);
+  const sessionContext = await getSessionContext(request);
+  const { session } = sessionContext;
+  let applyToResponse = sessionContext.applyToResponse;
+  if (!session) return json({ error: 'unauthorized' }, 401, applyToResponse);
   const { workspaceSlug, fileId } = await context.params;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workspaceSlug) || workspaceSlug.length > 96 || !/^file_[a-f0-9]{32}$/.test(fileId)) {
-    return json({ error: 'not_found' }, 404);
+    return json({ error: 'not_found' }, 404, applyToResponse);
   }
 
-  let applyToResponse = (response: NextResponse) => response;
   try {
     const scopedClient = createRouteSupabaseClient(request);
-    applyToResponse = scopedClient.applyToResponse;
+    applyToResponse = composeAuthResponseAppliers(sessionContext.applyToResponse, scopedClient.applyToResponse);
     const { client } = scopedClient;
     const { data: authData, error: authError } = await client.auth.getUser();
     if (authError || !authData.user || authData.user.id !== session.userId) return json({ error: 'unauthorized' }, 401, applyToResponse);
@@ -107,17 +108,18 @@ export async function DELETE(
   }
 
   if (!validateCsrf(request)) return json({ error: 'csrf_invalid' }, 403);
-  const session = await getSession(request);
-  if (!session) return json({ error: 'unauthorized' }, 401);
+  const sessionContext = await getSessionContext(request);
+  const { session } = sessionContext;
+  let applyToResponse = sessionContext.applyToResponse;
+  if (!session) return json({ error: 'unauthorized' }, 401, applyToResponse);
   const { workspaceSlug, fileId } = await context.params;
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(workspaceSlug) || workspaceSlug.length > 96 || !/^file_[a-f0-9]{32}$/.test(fileId)) {
-    return json({ error: 'not_found' }, 404);
+    return json({ error: 'not_found' }, 404, applyToResponse);
   }
 
-  let applyToResponse = (response: NextResponse) => response;
   try {
     const scopedClient = createRouteSupabaseClient(request);
-    applyToResponse = scopedClient.applyToResponse;
+    applyToResponse = composeAuthResponseAppliers(sessionContext.applyToResponse, scopedClient.applyToResponse);
     const { client } = scopedClient;
     const { data: authData, error: authError } = await client.auth.getUser();
     if (authError || !authData.user || authData.user.id !== session.userId) return json({ error: 'unauthorized' }, 401, applyToResponse);

@@ -3,7 +3,7 @@
 // tenant authorization boundary.
 import type { NextRequest } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { SessionData } from './auth';
+import type { AuthResponseApplier, SessionData } from './auth';
 import { createRouteSupabaseClient } from './supabase/server';
 
 export interface WorkspaceMembership {
@@ -43,33 +43,42 @@ export async function getPrimaryWorkspaceForUser(
 
 /**
  * Require an active workspace billing administrator, with all DB queries made
- * through the request's Auth JWT so the existing RLS policies apply.
+ * through the request's Auth JWT so the existing RLS policies apply. Callers
+ * must also apply the returned response applier to preserve SSR refresh cookies.
  */
+export type WorkspaceAdminResult =
+  | ({ authorized: true; workspaceId: string; role: string; workspace: WorkspaceRecord } & { applyToResponse: AuthResponseApplier })
+  | ({ authorized: false; status: number; error: string; message: string } & { applyToResponse: AuthResponseApplier });
+
 export async function requireWorkspaceAdmin(
   request: NextRequest,
   session: SessionData | null,
   requestedWorkspaceId?: string
-): Promise<
-  | { authorized: true; workspaceId: string; role: string; workspace: WorkspaceRecord }
-  | { authorized: false; status: number; error: string; message: string }
-> {
-  if (!session) {
-    return { authorized: false, status: 401, error: 'unauthorized', message: 'No autorizado' };
-  }
+): Promise<WorkspaceAdminResult> {
+  let applyToResponse: AuthResponseApplier = (response) => response;
+  const denied = (status: number, error: string, message: string): WorkspaceAdminResult => ({
+    authorized: false,
+    status,
+    error,
+    message,
+    applyToResponse,
+  });
+
+  if (!session) return denied(401, 'unauthorized', 'No autorizado');
 
   const sessionWorkspaceId = session.workspaceId;
-  if (!sessionWorkspaceId) {
-    return { authorized: false, status: 400, error: 'bad_request', message: 'Workspace ID required from session' };
-  }
+  if (!sessionWorkspaceId) return denied(400, 'bad_request', 'Workspace ID required from session');
   if (requestedWorkspaceId && requestedWorkspaceId !== sessionWorkspaceId) {
-    return { authorized: false, status: 403, error: 'forbidden', message: 'Workspace mismatch' };
+    return denied(403, 'forbidden', 'Workspace mismatch');
   }
 
   try {
-    const { client } = createRouteSupabaseClient(request);
+    const routeClient = createRouteSupabaseClient(request);
+    applyToResponse = routeClient.applyToResponse;
+    const { client } = routeClient;
     const { data: authData, error: authError } = await client.auth.getUser();
     if (authError || !authData.user || authData.user.id !== session.userId) {
-      return { authorized: false, status: 401, error: 'unauthorized', message: 'No autorizado' };
+      return denied(401, 'unauthorized', 'No autorizado');
     }
 
     const { data: workspace, error: workspaceError } = await client
@@ -79,11 +88,9 @@ export async function requireWorkspaceAdmin(
       .maybeSingle();
     if (workspaceError) {
       console.error('[workspaceAuth] RLS workspace lookup failed', workspaceError.code || 'unknown');
-      return { authorized: false, status: 503, error: 'database_unavailable', message: 'Base de datos no disponible' };
+      return denied(503, 'database_unavailable', 'Base de datos no disponible');
     }
-    if (!workspace) {
-      return { authorized: false, status: 404, error: 'not_found', message: 'Workspace not found' };
-    }
+    if (!workspace) return denied(404, 'not_found', 'Workspace not found');
 
     const { data: membership, error: membershipError } = await client
       .from('workspace_memberships')
@@ -94,16 +101,16 @@ export async function requireWorkspaceAdmin(
       .maybeSingle();
     if (membershipError) {
       console.error('[workspaceAuth] RLS membership lookup failed', membershipError.code || 'unknown');
-      return { authorized: false, status: 503, error: 'database_unavailable', message: 'Base de datos no disponible' };
+      return denied(503, 'database_unavailable', 'Base de datos no disponible');
     }
     if (!membership || membership.status !== 'ACTIVE') {
-      return { authorized: false, status: 403, error: 'forbidden', message: 'No active membership in workspace' };
+      return denied(403, 'forbidden', 'No active membership in workspace');
     }
 
     // Platform roles are not workspace billing grants. Only the active
     // workspace owner may start checkout or create a billing portal session.
     if (membership.role !== 'WORKSPACE_OWNER') {
-      return { authorized: false, status: 403, error: 'forbidden', message: 'Requires workspace owner role' };
+      return denied(403, 'forbidden', 'Requires workspace owner role');
     }
 
     return {
@@ -111,10 +118,11 @@ export async function requireWorkspaceAdmin(
       workspaceId: workspace.id,
       role: membership.role,
       workspace: workspace as WorkspaceRecord,
+      applyToResponse,
     };
   } catch (error) {
     console.error('[workspaceAuth] Supabase request failed', error instanceof Error ? error.message : 'unknown error');
-    return { authorized: false, status: 503, error: 'database_unavailable', message: 'Base de datos no disponible' };
+    return denied(503, 'database_unavailable', 'Base de datos no disponible');
   }
 }
 

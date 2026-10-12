@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { composeAuthResponseAppliers, getSessionContext } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
 
@@ -34,13 +34,13 @@ export async function GET(
     return json({ error: 'not_found' }, 404);
   }
 
-  const session = await getSession(request);
-  if (!session) return json({ error: 'unauthorized' }, 401);
-
-  let applyToResponse = (response: NextResponse) => response;
+  const sessionContext = await getSessionContext(request);
+  const { session } = sessionContext;
+  let applyToResponse = sessionContext.applyToResponse;
+  if (!session) return json({ error: 'unauthorized' }, 401, applyToResponse);
   try {
     const scopedClient = createRouteSupabaseClient(request);
-    applyToResponse = scopedClient.applyToResponse;
+    applyToResponse = composeAuthResponseAppliers(sessionContext.applyToResponse, scopedClient.applyToResponse);
     const { client } = scopedClient;
     const { data: authData, error: authError } = await client.auth.getUser();
     if (authError || !authData.user || authData.user.id !== session.userId) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAuthDataMode, getSession } from '@/lib/auth';
+import { getAuthDataMode, getSessionContext } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
  */
 export async function GET(request: NextRequest) {
   const mode = getAuthDataMode();
-  const session = await getSession(request);
+  const { session, applyToResponse } = await getSessionContext(request);
   const response = NextResponse.json({
     mode,
     authenticated: Boolean(session),
@@ -29,5 +29,5 @@ export async function GET(request: NextRequest) {
   });
   response.headers.set('Cache-Control', 'private, no-store');
   response.headers.set('Vary', 'Cookie');
-  return response;
+  return applyToResponse(response);
 }

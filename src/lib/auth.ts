@@ -98,32 +98,58 @@ function systemRoleFromPlatformRole(platformRole: unknown): SystemRole {
   return 'member';
 }
 
+/** Applies the cookie/header mutations queued by a request-scoped Supabase SSR client. */
+export type AuthResponseApplier = (response: NextResponse) => NextResponse;
+
+export interface SessionContext {
+  session: SessionData | null;
+  /** Must be applied to the outgoing response, including post-auth error responses. */
+  applyToResponse: AuthResponseApplier;
+}
+
+export function composeAuthResponseAppliers(...appliers: AuthResponseApplier[]): AuthResponseApplier {
+  return (response) => appliers.reduce((current, apply) => apply(current), response);
+}
+
 /**
  * Resolve an app session from a verified Supabase Auth user and RLS-protected
  * profile/membership rows. A signed custom cookie is accepted only in memory
- * mode for the explicit local demo flow.
+ * mode for the explicit local demo flow. The caller must apply the returned
+ * response applier so Supabase SSR refresh/rotation cookies reach the browser.
+ *
+ * `createClient` is injectable to keep refresh-cookie propagation covered by a
+ * deterministic regression test without requiring live Supabase credentials.
  */
-export async function getSession(request: NextRequest): Promise<SessionData | null> {
+export async function getSessionContext(
+  request: NextRequest,
+  createClient: typeof createRouteSupabaseClient = createRouteSupabaseClient,
+): Promise<SessionContext> {
+  const applyWithoutCookies: AuthResponseApplier = (response) => response;
   if (getDataMode() === 'memory') {
     const cookie = request.cookies.get('okeng.sid')?.value || request.cookies.get('__Host-okeng.sid')?.value;
-    return cookie ? verifySessionToken(cookie) : null;
+    return { session: cookie ? verifySessionToken(cookie) : null, applyToResponse: applyWithoutCookies };
   }
-  if (getDataMode() !== 'supabase') return null;
+  if (getDataMode() !== 'supabase') return { session: null, applyToResponse: applyWithoutCookies };
 
   const hasAuthCookie = request.cookies.getAll().some(({ name }) => name.startsWith(SUPABASE_AUTH_COOKIE_NAME));
-  if (!hasAuthCookie) return null;
+  if (!hasAuthCookie) return { session: null, applyToResponse: applyWithoutCookies };
 
+  let applyToResponse = applyWithoutCookies;
   try {
-    const { client } = createRouteSupabaseClient(request);
+    const routeClient = createClient(request);
+    applyToResponse = routeClient.applyToResponse;
+    const { client } = routeClient;
     const { data: authData, error: authError } = await client.auth.getUser();
-    if (authError || !authData.user) return null;
+    if (authError || !authData.user) return { session: null, applyToResponse };
 
     const { data: profile, error: profileError } = await client
       .from('users')
       .select('id, email, name, platform_role, account_status')
       .eq('auth_user_id', authData.user.id)
       .maybeSingle();
-    if (profileError || !profile || profile.account_status !== 'ACTIVE') return null;
+    if (profileError || !profile || profile.account_status !== 'ACTIVE') {
+      return { session: null, applyToResponse };
+    }
 
     const { data: memberships, error: membershipError } = await client
       .from('workspace_memberships')
@@ -133,7 +159,7 @@ export async function getSession(request: NextRequest): Promise<SessionData | nu
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(1);
-    if (membershipError) return null;
+    if (membershipError) return { session: null, applyToResponse };
 
     const membership = memberships?.[0];
     let workspace: { id: string; slug: string; name: string } | null = null;
@@ -143,27 +169,31 @@ export async function getSession(request: NextRequest): Promise<SessionData | nu
         .select('id, slug, name')
         .eq('id', membership.workspace_id)
         .maybeSingle();
-      if (error) return null;
+      if (error) return { session: null, applyToResponse };
       workspace = data;
     }
 
     return {
-      userId: profile.id,
-      email: profile.email,
-      name: profile.name,
-      role: systemRoleFromPlatformRole(profile.platform_role),
-      workspaceId: membership?.workspace_id,
-      workspaceSlug: workspace?.slug,
-      workspaceName: workspace?.name,
-      workspaceRole: membership?.role,
-      permissions: Array.isArray(membership?.permissions) ? membership.permissions : [],
-      createdAt: Date.parse(authData.user.created_at) || Date.now(),
+      session: {
+        userId: profile.id,
+        email: profile.email,
+        name: profile.name,
+        role: systemRoleFromPlatformRole(profile.platform_role),
+        workspaceId: membership?.workspace_id,
+        workspaceSlug: workspace?.slug,
+        workspaceName: workspace?.name,
+        workspaceRole: membership?.role,
+        permissions: Array.isArray(membership?.permissions) ? membership.permissions : [],
+        createdAt: Date.parse(authData.user.created_at) || Date.now(),
+      },
+      applyToResponse,
     };
   } catch (error) {
     // Fail closed on missing configuration, network failures, or malformed data.
-    // Do not log Auth cookies or access/refresh tokens.
+    // Do not log Auth cookies or access/refresh tokens. Preserve any queued
+    // cookie cleanup/rotation mutations even though no app session was resolved.
     console.error('[auth/session] Supabase Auth/session resolution failed', error instanceof Error ? error.message : 'unknown error');
-    return null;
+    return { session: null, applyToResponse };
   }
 }
 

@@ -133,7 +133,8 @@ describe('Supabase Auth, RLS, and private Storage integration', () => {
     const logout = read('src/app/api/auth/logout/route.ts');
 
     assert.match(sessionRoute, /getAuthDataMode\(\)/);
-    assert.match(sessionRoute, /getSession\(request\)/);
+    assert.match(sessionRoute, /getSessionContext\(request\)/);
+    assert.match(sessionRoute, /return applyToResponse\(response\)/);
     assert.doesNotMatch(sessionRoute, /access_token|refresh_token|SUPABASE_SERVICE_ROLE_KEY/);
     assert.match(authClient, /fetch\('\/api\/auth\/session'/);
     assert.match(authClient, /this\.serverAuthMode === 'supabase'\) return this\.serverUser/);
@@ -149,7 +150,7 @@ describe('Supabase Auth, RLS, and private Storage integration', () => {
     assert.match(chat, /unsupported_external_identity', 401/);
     assert.match(chat, /let allowedTiers: AccessVisibility\[\] = \['everyone'\]/);
     assert.match(chat, /\.in\('visibility', allowedTiers\)/);
-    assert.match(chat, /if \(authCookiePresent && !session\) return errorResponse\('unauthorized', 401\)/);
+    assert.match(chat, /if \(authCookiePresent && !session\) return errorResponse\('unauthorized', 401, applyToResponse\)/);
     assert.match(chat, /useSupabase && legacySessionCookiePresent.*unsupported_external_identity/);
     assert.match(chat, /const canSeeAdmin = membership\.role === 'WORKSPACE_OWNER'/);
     assert.doesNotMatch(chat, /body\.(role|userId|corpus|collectionIds)/);

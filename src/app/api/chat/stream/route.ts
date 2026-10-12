@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { composeAuthResponseAppliers, getSessionContext } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { createRouteSupabaseClient } from '@/lib/supabase/server';
 import { createUserScopedRepositories, shouldEnforceFailClosedPersistence } from '@/repositories';
@@ -89,9 +89,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const legacySessionCookiePresent = cookies.some(({ name }) => name === 'okeng.sid' || name === '__Host-okeng.sid');
   if (useSupabase && legacySessionCookiePresent) return errorResponse('unsupported_external_identity', 401);
 
-  const session = await getSession(request);
-  if (authCookiePresent && !session) return errorResponse('unauthorized', 401);
-  let applyToResponse = (response: NextResponse) => response;
+  const sessionContext = await getSessionContext(request);
+  const { session } = sessionContext;
+  let applyToResponse = sessionContext.applyToResponse;
+  if (authCookiePresent && !session) return errorResponse('unauthorized', 401, applyToResponse);
   let authorizedCollections: Array<{ id: string; visibility: AccessVisibility }> = [];
   let authorizedDocs: Awaited<ReturnType<typeof memoryRepositories.documents.listAuthorized>>;
   let effectiveRole: AccessVisibility = 'everyone';
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     if (useSupabase) {
       const scopedClient = createRouteSupabaseClient(request);
-      applyToResponse = scopedClient.applyToResponse;
+      applyToResponse = composeAuthResponseAppliers(sessionContext.applyToResponse, scopedClient.applyToResponse);
       const { client } = scopedClient;
       let allowedTiers: AccessVisibility[] = ['everyone'];
 
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     } else {
       let allowedTiers: AccessVisibility[] = ['everyone'];
       if (session) {
-        if (session.workspaceId !== workspaceId) return errorResponse('forbidden', 403);
+        if (session.workspaceId !== workspaceId) return errorResponse('forbidden', 403, applyToResponse);
         const canSeeAdmin = session.workspaceRole === 'WORKSPACE_OWNER' || session.role === 'admin' || session.role === 'super_admin';
         effectiveRole = canSeeAdmin ? 'admins' : 'members';
         allowedTiers = canSeeAdmin ? ['everyone', 'members', 'admins'] : ['everyone', 'members'];

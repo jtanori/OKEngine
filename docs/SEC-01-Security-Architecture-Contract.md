@@ -8,7 +8,7 @@
 | **Authority** | Blocking Gate — Phase 01 & Phase 02 |
 | **Dependencies** | `AUTH-01`, `AUTH-02`, `AUTH-03`, `AUTH-04`, `AUTH-05`, `EMBED-01`, `DB-01` |
 | **Source of Truth** | `src/proxy.ts`, `src/lib/auth.ts`, `src/lib/supabase/*`, `src/app/api/auth/*`, `src/app/auth/callback/route.ts`, `src/services/embedAuthorization.ts` |
-| **Revision** | `2.2 (2026-10-11)` — Supabase Auth/OAuth implementation and actual CSRF/session contracts documented |
+| **Revision** | `2.3 (2026-10-11)` — Supabase SSR session refresh/rotation cookies are required on outgoing session responses |
 
 ---
 
@@ -49,6 +49,7 @@ OKEng separates authentication and session management into three non-overlapping
   - Request-scoped Supabase SSR clients store Auth session data in the `okeng-auth` cookie namespace (which may be chunked), with `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` when `NODE_ENV=production`.
   - The default is a browser-session cookie. When Remember me is selected, the Auth cookie and the HttpOnly `okeng.remember` preference use a 30-day `Max-Age`; the Next.js proxy refreshes Auth tokens server-side.
   - Raw Auth access/refresh tokens are never written to `localStorage`, `sessionStorage`, or JavaScript-readable cookies. No custom `__Host-okeng_session` cookie or `/api/auth/refresh` endpoint is used for the Supabase Auth path.
+  - `getSessionContext()` preserves the request-scoped SSR response applier alongside the safe app-session projection. Every API handler that resolves a session applies queued Auth cookie/header updates to its outgoing response—including post-resolution errors—so a refreshed session is not lost after a request.
 - **Optional Google/GitHub OAuth flow**:
   - `/api/auth/providers` returns only the allow-listed provider names whose server-side client-ID/secret pairs are complete; provider secrets are never returned to the browser.
   - `/api/auth/oauth/start` is POST-only, rate-limited, CSRF-validated, requires Terms/Privacy consent, uses a request-scoped PKCE Supabase SSR client, and returns only a validated Supabase `/auth/v1/authorize` URL. The app callback is fixed to the configured same-origin `/auth/callback`.
