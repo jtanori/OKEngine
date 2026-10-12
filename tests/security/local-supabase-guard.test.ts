@@ -71,24 +71,34 @@ describe('checked-in local Supabase config guard', () => {
   });
 
   it('rejects a port value borrowed from a different section instead of validating the API section', () => {
+    const lineEnding = localConfig.includes('\r\n') ? '\r\n' : '\n';
     const deceptiveConfig = localConfig
       .replace('port = 54321', 'port = 54399')
-      .replace('[realtime]\nenabled = false', '[realtime]\nenabled = false\nport = 54321');
+      .replace(/(\[realtime\]\r?\nenabled = false)/, `$1${lineEnding}port = 54321`);
+    assert.match(deceptiveConfig, new RegExp(`\\[realtime\\]${lineEnding === '\r\n' ? '\\r?\\n' : '\\n'}enabled = false${lineEnding === '\r\n' ? '\\r?\\n' : '\\n'}port = 54321`));
     assert.throws(() => assertExpectedLocalSupabaseConfig(deceptiveConfig), /api.*54321/i);
   });
 
   it('rejects enabled optional services in the baseline and scopes the test confirmation override to Auth email', () => {
-    const withStudioEnabled = localConfig.replace('[studio]\nenabled = false', '[studio]\nenabled = true');
-    const withEmailConfirmations = localConfig.replace('enable_confirmations = false', 'enable_confirmations = true');
+    // Exercise Windows checkouts explicitly: Git may materialize config.toml as CRLF.
+    const windowsConfig = localConfig.replace(/\r?\n/g, '\r\n');
+    const withStudioEnabled = windowsConfig.replace(
+      /^(\[studio\]\r?\nenabled = )false(\r?)$/m,
+      '$1true$2',
+    );
+    const withEmailConfirmations = windowsConfig.replace('enable_confirmations = false', 'enable_confirmations = true');
+    assert.notEqual(withStudioEnabled, windowsConfig, 'The CRLF fixture must actually enable Studio.');
     assert.throws(() => assertExpectedLocalSupabaseConfig(withStudioEnabled), /studio/i);
     assert.throws(() => assertExpectedLocalSupabaseConfig(withEmailConfirmations), /confirmations/i);
 
-    const testConfig = enableLocalEmailConfirmationsForTest(localConfig);
+    const testConfig = enableLocalEmailConfirmationsForTest(windowsConfig);
     assert.match(testConfig, /\[auth\.email\][\s\S]*?enable_confirmations = true/);
-    assert.match(testConfig, /\[local_smtp\]\nenabled = false/);
+    assert.match(testConfig, /\[local_smtp\]\r?\nenabled = false/);
+    assert.ok(testConfig.includes('\r\n'));
+    assert.equal(testConfig.replace(/\r\n/g, '').includes('\n'), false, 'The test-only override should preserve Windows line endings.');
     assert.throws(() => assertExpectedLocalSupabaseConfig(testConfig), /confirmations/i);
     assert.throws(
-      () => enableLocalEmailConfirmationsForTest(localConfig.replace('[auth.email]', '[auth.email]\nenable_confirmations = false')),
+      () => enableLocalEmailConfirmationsForTest(windowsConfig.replace('[auth.email]', '[auth.email]\r\nenable_confirmations = false')),
       /exactly (?:one|once)|unique/i,
     );
   });
