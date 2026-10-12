@@ -185,7 +185,7 @@ async function main() {
   let suiteStatus = 0;
   let testStackStarted = false;
   try {
-    console.log('Starting the configured local stack (Auth, PostgreSQL, Storage, Edge Runtime and required API gateway).');
+    console.log('Starting the configured local stack (Auth, PostgreSQL, Storage, and required API gateway/PostgREST).');
     console.log('The runner temporarily enables Auth email confirmation; no SMTP container or provider credentials are used.');
     const startOutput = startLocalStackWithEmailConfirmation();
     testStackStarted = true;

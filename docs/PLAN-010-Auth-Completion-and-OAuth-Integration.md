@@ -22,7 +22,7 @@ The browser must not instantiate a Supabase client or send Supabase Auth API cal
 5. OAuth callback handling exchanges the code, verifies the user with Supabase Auth, provisions/loads the user's workspace under the Auth UUID/RLS model, and fails closed without a usable profile/workspace. It never derives roles from OAuth metadata or joins application users by email.
 6. Remember me applies to password and OAuth login. OAuth initiation requires explicit Terms/Privacy consent because it may create a first-time account from either auth page; the existing sign-up terms checkbox is reused for sign-up, and login exposes a consent control only when an OAuth provider is configured.
 7. `/api/auth/session` remains a safe user/workspace projection with no access or refresh tokens. Existing workspace protection remains the authorization boundary for the future dashboard.
-8. The existing local stack footprint is preserved: Auth, PostgreSQL, Storage, Edge Runtime, and required API/PostgREST plumbing only. OAuth remains optional, and no provider secrets are requested in chat or committed.
+8. The local stack keeps Auth, PostgreSQL, Storage, and required API/PostgREST plumbing. Edge Runtime is disabled because no application-owned Edge Function exists; OAuth remains optional, and no provider secrets are requested in chat or committed.
 
 ## File catalog
 
@@ -93,7 +93,7 @@ Offline verification:
 - `npm run test:auth-fast` — PASS, 62/62 tests in the verification-harness follow-up (includes OAuth/client/UI/Auth UUID/session/workspace/Storage checks; supersedes the earlier 44/44 baseline).
 - `npm run build` — PASS, 27 routes including the provider manifest, OAuth-start API, and callback.
 - `npm run lint` — PASS, 0 errors and 113 repository warnings; targeted lint on changed application source also passes.
-- `python3` TOML parse of `supabase/config.toml` — PASS; required local services are Auth, PostgreSQL, Storage, Edge Runtime, and API/PostgREST plumbing.
+- `python3` TOML parse of `supabase/config.toml` — PASS; required local services are Auth, PostgreSQL, Storage, and API/PostgREST plumbing; Edge Runtime is disabled because no local Edge Function is used.
 - No-credential UI smoke preview — `/login` returned HTTP 200 and `/api/auth/providers` returned `{ "providers": [] }`.
 - `npx tsc --noEmit --pretty false` — still reports pre-existing failures in the Redis cache adapter/module, docs/public page component types, and `src/services/store.ts`; it reports no errors in the changed auth/OAuth files.
 

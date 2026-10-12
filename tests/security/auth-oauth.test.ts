@@ -105,7 +105,7 @@ describe('OAuth provider configuration and server flow', () => {
     assert.match(localConfig, /http:\/\/localhost:3000\/auth\/callback/);
     assert.match(localConfig, /\[auth\]\s*[\s\S]*?enabled = true/);
     assert.match(localConfig, /\[storage\]\s*[\s\S]*?enabled = true/);
-    assert.match(localConfig, /\[edge_runtime\]\s*enabled = true/);
+    assert.match(localConfig, /\[edge_runtime\]\s*enabled = false/);
     assert.match(localConfig, /\[realtime\]\s*enabled = false/);
     assert.match(localConfig, /\[studio\]\s*enabled = false/);
     assert.match(localConfig, /\[local_smtp\]\s*enabled = false/);

@@ -12,7 +12,7 @@ From the repository root in PowerShell:
 .\scripts\supabase-local.ps1 -Action up -WriteAppEnv
 ```
 
-This uses the existing minimal local stack configuration and writes a development-only `.env.local` if one does not already exist. It refuses to overwrite an existing file. The selected services remain Auth, PostgreSQL, Storage, Edge Runtime, and required API/PostgREST plumbing; this guide does not enable Studio, Realtime, Analytics, a local SMTP UI, or other optional services.
+This uses the existing minimal local stack configuration and writes a development-only `.env.local` if one does not already exist. It refuses to overwrite an existing file. The local stack keeps Auth, PostgreSQL, Storage, and required API/PostgREST plumbing; Edge Runtime remains disabled because this repository has no application-owned Edge Function. This guide does not enable Studio, Realtime, Analytics, a local SMTP UI, or other optional services.
 
 ## 2. Create the provider applications
 

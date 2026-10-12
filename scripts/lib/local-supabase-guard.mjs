@@ -62,7 +62,7 @@ export function assertExpectedLocalSupabaseConfig(config) {
     ['auth.email', 'enable_confirmations', 'false'],
     ['auth.external.google', 'enabled', 'false'],
     ['auth.external.github', 'enabled', 'false'],
-    ['edge_runtime', 'enabled', 'true'],
+    ['edge_runtime', 'enabled', 'false'],
     ['analytics', 'enabled', 'false'],
   ];
 

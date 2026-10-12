@@ -22,7 +22,7 @@ The target is **not** merely “the app has Supabase keys.” A production-ready
 - Service-role credentials cannot leak to a browser or be used for ordinary user-scoped queries.
 - Migrations, failure behavior, backups, monitoring, and security tests work against a real local Supabase stack before staging rollout.
 
-The existing local Windows stack setup in `LOCAL-SUPABASE-WINDOWS.md` is the development target. A plain PostgreSQL process by itself does **not** provide Supabase Auth, Storage, PostgREST, or Edge Runtime; use the local Supabase stack when testing those services.
+The existing local Windows stack setup in `LOCAL-SUPABASE-WINDOWS.md` is the development target. A plain PostgreSQL process by itself does **not** provide Supabase Auth, Storage, or PostgREST; use the local Supabase stack when testing those services. Edge Runtime is disabled locally because no application-owned Edge Function is currently used.
 
 ## 2. Recommended architecture
 
@@ -147,13 +147,13 @@ The following source changes are present in this branch; none of the live behavi
 
 **Work**
 
-- The local config already starts Edge Runtime, but the repository has no Edge Function code. Do not claim it is “integrated” merely because the container runs.
+- The local config disables Edge Runtime because the repository has no Edge Function code. Do not enable it or claim it is “integrated” merely because the Supabase CLI supports it.
 - Keep existing Next.js API routes as the default application boundary. Only add a production Edge Function for a concrete latency/deployment need, with an explicit API contract, verified user JWT, least-privilege database/storage operations, Deno-compatible dependencies, tests, and observability. Do not duplicate Auth or bypass Next.js authorization.
 - If Edge Runtime is required for the first production milestone, include one small, non-sensitive smoke function and test it in local and staging. It must not return secrets, user data, database URLs, or environment contents.
 
 **Exit gate**
 
-- Either a documented decision that Edge Runtime is enabled but unused pending a business use case, or one concrete Edge Function with positive and negative auth/RLS tests and a staging deployment check.
+- Either keep Edge Runtime disabled pending a concrete business use case, or add one concrete Edge Function with positive and negative auth/RLS tests and a staging deployment check.
 
 ### Phase 6 — Release readiness, migration rehearsal, and cutover
 
@@ -200,7 +200,7 @@ If you need to share test evidence, use synthetic fixtures and provide redacted 
 
 1. **Identity provider:** Supabase Auth is canonical for application credentials; the old custom bcrypt flow is not a fallback. Existing custom-password accounts are not linked automatically by email. Any real legacy-account cutover requires a separately verified import/invitation and password-reset plan.
 2. **Migration authority:** `supabase/migrations/` and the Supabase CLI are authoritative for this integration. The absent `src/lib/migrate.ts` runner is stale and must not be used; do not maintain a second migration ledger.
-3. **Edge Runtime:** it remains enabled in local config but has no application-owned function and is not part of the current application request path.
+3. **Edge Runtime:** it is disabled in local config because there is no application-owned function and it is not part of the current application request path.
 4. **Storage uploads:** server-proxied uploads are the initial approach at a 10 MiB cap. Browser signed uploads require a separate threat/performance review.
 5. **Before rollout:** execute the live Windows integration test, migrate an empty local database, rehearse upgrade from the current head, verify SMTP/recovery, catalog grants and RLS, verify the Supabase-mode overview and legacy-view gate, and run failure-injection/cleanup tests. These gates are still open.
 

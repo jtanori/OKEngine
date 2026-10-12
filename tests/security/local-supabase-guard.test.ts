@@ -66,7 +66,7 @@ describe('local Supabase destructive-test target guard', () => {
 });
 
 describe('checked-in local Supabase config guard', () => {
-  it('accepts only the intended API/Auth/PostgreSQL/Storage/Edge footprint and safe provider defaults', () => {
+  it('accepts only the intended Auth/PostgreSQL/Storage and required API footprint with safe provider defaults', () => {
     assert.equal(assertExpectedLocalSupabaseConfig(localConfig), true);
   });
 
@@ -87,8 +87,14 @@ describe('checked-in local Supabase config guard', () => {
       '$1true$2',
     );
     const withEmailConfirmations = windowsConfig.replace('enable_confirmations = false', 'enable_confirmations = true');
+    const withEdgeRuntimeEnabled = windowsConfig.replace(
+      /^(\[edge_runtime\]\r?\nenabled = )false(\r?)$/m,
+      '$1true$2',
+    );
     assert.notEqual(withStudioEnabled, windowsConfig, 'The CRLF fixture must actually enable Studio.');
+    assert.notEqual(withEdgeRuntimeEnabled, windowsConfig, 'The CRLF fixture must actually enable Edge Runtime.');
     assert.throws(() => assertExpectedLocalSupabaseConfig(withStudioEnabled), /studio/i);
+    assert.throws(() => assertExpectedLocalSupabaseConfig(withEdgeRuntimeEnabled), /edge_runtime/i);
     assert.throws(() => assertExpectedLocalSupabaseConfig(withEmailConfirmations), /confirmations/i);
 
     const testConfig = enableLocalEmailConfirmationsForTest(windowsConfig);

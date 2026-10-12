@@ -9,10 +9,9 @@ The requested local services are enabled in `supabase/config.toml`:
 - PostgreSQL **15** on host port `54322` (the migrations require PostgreSQL 15+).
 - Supabase Auth, needed for the local Supabase auth schema/functions used by the RLS migrations.
 - Supabase Storage, with the image-transformation service disabled. The migrations create the private `workspace-files` bucket with the repository's 10 MiB limit.
-- Supabase Edge Runtime.
-- The Supabase API gateway and PostgREST. These are required plumbing: OKEngine's Supabase client calls `/rest/v1`, `/auth/v1`, `/storage/v1`, and `/functions/v1` through the local API URL. They cannot be removed while using those local APIs.
+- The Supabase API gateway (Kong) and PostgREST. These are required plumbing: OKEngine's Supabase client calls `/rest/v1`, `/auth/v1`, and `/storage/v1` through the local API URL. They cannot be removed while using those local APIs.
 
-Studio, the local SMTP mail-catcher, Realtime, Analytics, the DB pooler, Storage's S3 protocol/vector/analytics extensions, and image transformations are disabled. The exact helper-container names can vary with Supabase CLI versions.
+Edge Runtime is disabled because this repository has no application-owned Edge Functions. Studio, the local SMTP mail-catcher, Realtime, Analytics, the DB pooler, Storage's S3 protocol/vector/analytics extensions, and image transformations are also disabled. The CLI may still start helper/dependency containers required by Auth, PostgREST, or Storage; exact names vary by Supabase CLI version.
 
 **Resource-limit distinction:** this config minimizes the services/containers. Supabase CLI's `config.toml` does not provide dependable per-container CPU/RAM caps. Set an overall budget in **Docker Desktop → Settings → Resources**; per-container limits would require a separately managed Compose setup and are not covered by this script.
 
@@ -65,7 +64,6 @@ To manage the local stack:
 | PostgreSQL | `127.0.0.1:54322`, database `postgres`, user `postgres` |
 | Auth API | `http://127.0.0.1:54321/auth/v1` |
 | Storage API | `http://127.0.0.1:54321/storage/v1` |
-| Edge Functions API | `http://127.0.0.1:54321/functions/v1` |
 
 Use the generated `DB_URL` and `API_URL`, plus the local public/server keys from `supabase status -o env`. Depending on CLI version, those keys may be named `ANON_KEY` / `SERVICE_ROLE_KEY` or `PUBLISHABLE_KEY` / `SECRET_KEY`; the setup script normalizes either pair to OKEngine's names (`SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`). It maps `DB_URL` and `API_URL` to `DATABASE_URL` and `SUPABASE_URL`. These are **local development credentials**, not your hosted-project credentials.
 
@@ -83,7 +81,7 @@ The application now has a Supabase-backed path for the core integration:
 - Private `workspace-files` uploads are limited by the Storage bucket to 10 MiB and Markdown, plain text, or PDF. Uploads create a pending metadata row, upload the object, and finalize through a narrow permission-checked RPC. Downloads use short-lived signed URLs; deletion checks both Storage and row permissions.
 - Scope boundary: the legacy dashboard components (`CollectionsView`, embed/settings/conversation views, and the client `store`) still use the local demo store and are **not yet connected** to Postgres CRUD. Supabase-mode workspace routes are gated away from those demo-backed pages and show a tenant-backed overview of RLS-visible collections, documents, and private files; the overview supports private upload/download. The Auth/session, chat retrieval, billing authorization, and file APIs are server-backed, but the legacy `UploadDropzone` and CRUD/editing views remain unconnected. Do not treat successful login as proof that every dashboard page has been migrated.
 - The current Supabase chat route deliberately rejects the legacy custom HMAC embed token. Anonymous public RLS retrieval works, but protected embed identities and embed-bound collection narrowing have not yet been bridged to Supabase Auth/RLS. Do not enable third-party embeds in Supabase mode until that boundary is implemented and tested.
-- The Edge Runtime is enabled, but this checkout does not yet contain an application-owned Edge Function. It is available for later functions without enabling Studio, Realtime, Analytics, or a mail-catcher.
+- The Edge Runtime is disabled because this checkout has no application-owned Edge Function and the current Auth/RLS/Storage path does not call `/functions/v1`. Enable it only when a concrete Edge Function is added and tested.
 - Migrations create the schema, RLS, Auth profile trigger, workspace provisioning RPC (including a private starter collection), and private Storage policies. They do **not** import OKEngine's TypeScript demo documents or demo workspaces into PostgreSQL. The public demo and legacy dashboard code still have client-side demo data, but the workspace layout hides those legacy pages in Supabase mode and loads a separate tenant-backed overview instead. Server API routes in enforced Supabase mode do not silently fall back to seed arrays.
 - Manual local Auth email confirmations are disabled in the checked-in config so ordinary local signup does not require a mail service. During `npm run test:auth-local`, the runner temporarily enables real Auth confirmation for its local stack, uses Auth Admin-generated one-time links in the tests, and restores the checked-in default afterward. Supabase Auth uses its no-op mailer when no SMTP host is configured, so this adds no SMTP container or outbound email. The password-recovery flow itself is wired to the Auth callback; delivery of recovery email outside the test harness still requires an SMTP provider/configuration.
 - `scripts/supabase-local.ps1 -Action up` applies pending migrations with `supabase migration up --local`. `supabase db reset` is destructive. `supabase db push` targets a **linked hosted project**, not this local-only workflow.

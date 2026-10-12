@@ -83,8 +83,9 @@ redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 skip_nonce_check = false
 email_optional = false
 
+# This checkout has no application-owned Edge Functions; keep the runtime off.
 [edge_runtime]
-enabled = true
+enabled = false
 
 [analytics]
 enabled = false
