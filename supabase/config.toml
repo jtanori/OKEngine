@@ -62,23 +62,24 @@ enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
 
-# Provider credentials are injected by the local environment. The app advertises
-# a provider only when both its client ID and secret are non-empty.
+# OAuth is disabled in the checked-in baseline config so `supabase start` works
+# without third-party credentials. The Windows helper temporarily enables only
+# providers whose complete server-only credential pair is present in .env.local.
 [auth.external.google]
-enabled = true
+enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
-redirect_uri = ""
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 # Supabase's local Google flow requires nonce checking to be skipped; PKCE/state
 # and the server-managed callback/session cookies remain enabled.
 skip_nonce_check = true
 email_optional = false
 
 [auth.external.github]
-enabled = true
+enabled = false
 client_id = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
-redirect_uri = ""
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
 skip_nonce_check = false
 email_optional = false
 

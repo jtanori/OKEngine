@@ -97,8 +97,9 @@ describe('OAuth provider configuration and server flow', () => {
     const localConfig = read('supabase/config.toml');
     const localScript = read('scripts/supabase-local.ps1');
 
-    assert.match(localConfig, /\[auth\.external\.google\]/);
-    assert.match(localConfig, /\[auth\.external\.github\]/);
+    assert.match(localConfig, /\[auth\.external\.google\][\s\S]*?enabled = false/);
+    assert.match(localConfig, /\[auth\.external\.github\][\s\S]*?enabled = false/);
+    assert.match(localConfig, /redirect_uri = "http:\/\/127\.0\.0\.1:54321\/auth\/v1\/callback"/);
     assert.match(localConfig, /env\(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID\)/);
     assert.match(localConfig, /env\(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET\)/);
     assert.match(localConfig, /http:\/\/localhost:3000\/auth\/callback/);
@@ -112,6 +113,11 @@ describe('OAuth provider configuration and server flow', () => {
     assert.match(localConfig, /\[db\.pooler\]\s*enabled = false/);
     assert.match(localScript, /Import-LocalOAuthEnv/);
     assert.match(localScript, /ReadAllLines\(\$envFile\)/);
+    assert.match(localScript, /foreach \(\$name in \$providerEnvNames\)[\s\S]*?SetEnvironmentVariable\(\$name, \$null, 'Process'\)/);
+    assert.match(localScript, /Set-LocalOAuthProviderState/);
+    assert.match(localScript, /Invoke-LocalSupabaseStart/);
+    assert.match(localScript, /'db', 'reset', '--local', '--yes'/);
+    assert.match(localScript, /@\('migration', 'up', '--local'\)/);
     assert.doesNotMatch(localScript, /Invoke-Expression/);
   });
 

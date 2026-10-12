@@ -26,7 +26,7 @@ Studio, the local SMTP mail-catcher, Realtime, Analytics, the DB pooler, Storage
    scoop install supabase
    ```
 
-3. Install the repository's Node dependencies (`npm install`) if they are not installed already.
+3. Install the repository's Node dependencies (`npm ci`) from the repository root.
 
 ## Start the stack
 
@@ -86,26 +86,58 @@ The application now has a Supabase-backed path for the core integration:
 - The Edge Runtime is enabled, but this checkout does not yet contain an application-owned Edge Function. It is available for later functions without enabling Studio, Realtime, Analytics, or a mail-catcher.
 - Migrations create the schema, RLS, Auth profile trigger, workspace provisioning RPC (including a private starter collection), and private Storage policies. They do **not** import OKEngine's TypeScript demo documents or demo workspaces into PostgreSQL. The public demo and legacy dashboard code still have client-side demo data, but the workspace layout hides those legacy pages in Supabase mode and loads a separate tenant-backed overview instead. Server API routes in enforced Supabase mode do not silently fall back to seed arrays.
 - Local Auth email confirmations are disabled so signup can be tested without an SMTP container. The password-recovery flow itself is wired to the Auth callback, but delivery of recovery email requires an SMTP provider/configuration; the local stack config intentionally leaves SMTP disabled.
-- `scripts/supabase-local.ps1 -Action up` applies pending migrations with `supabase migration up`. `supabase db reset` is destructive. `supabase db push` targets a **linked hosted project**, not this local-only workflow.
+- `scripts/supabase-local.ps1 -Action up` applies pending migrations with `supabase migration up --local`. `supabase db reset` is destructive. `supabase db push` targets a **linked hosted project**, not this local-only workflow.
 - The `npm run migrate` package script still points to `src/lib/migrate.ts`, which is absent in this checkout. Use the Supabase CLI commands in this guide instead.
 
 ## Verify the integration
 
-With Node dependencies installed, run the fast security-contract suite (it does not need Docker or Supabase):
+Install dependencies once from the repository root:
 
 ```powershell
-npm run test:supabase-integration
+npm ci
 ```
 
-After starting the local stack and creating/updating the ignored `.env.local`, the live test creates synthetic Auth users, verifies the UUID profile trigger and idempotent workspace RPC, checks anonymous and cross-workspace RLS, and proves a same-workspace non-owner cannot read `admins` collections, documents, versions, chunks, snapshots, file metadata, or Storage objects that the owner can read. It also verifies a formerly public snapshot stops being public after collection visibility is tightened, then exercises private upload, signed download, delete, and abort cleanup. It refuses non-loopback Supabase URLs and deletes its synthetic workspace/users afterward using the local `DATABASE_URL`: prior to deleting test tenants it temporarily disables only the local last-owner guard trigger inside a transaction so membership cascades can complete safely.
+Run the **fast** security and route-contract suite. It requires Node/npm only—no Docker, Supabase CLI, local `.env.local`, or provider credentials:
 
 ```powershell
-$env:OKENG_RUN_SUPABASE_INTEGRATION = '1'
-npm run test:supabase-live
-Remove-Item Env:OKENG_RUN_SUPABASE_INTEGRATION
+npm run test:auth-fast
 ```
 
-The live test is optional and has not been executed in the Arena sandbox. If it fails locally, keep the redacted error code/message and migration status output; do not paste keys or tokens.
+Run the **local-stack runtime** suite with one command:
+
+```powershell
+npm run test:auth-local
+```
+
+The local command checks Docker, the Supabase CLI, the checked-in service config, Node dependencies, and that every live suite file exists before touching the stack. It starts only the enabled local services, reads `API_URL` and `DB_URL` from `supabase status -o env`, and verifies both are on the expected loopback ports/database **before** issuing `supabase db reset --local --yes --no-seed`. It then reads only the generated local keys and runs the suites. It does not load `.env.local`, ask for keys, use a linked project, or connect to a hosted database. Query-string overrides on the PostgreSQL URL are rejected, and the PowerShell helper also uses explicit `--local` for migration up/reset. Missing Docker/CLI, a safety-check failure, or a migration failure produces a non-zero exit and an actionable `[NOT RUN]` / failure message—live tests are never silently skipped. If a preflight or target safety check fails, no test database reset has been issued.
+
+**Destructive warning:** every `npm run test:auth-local` run resets the local database before tests; all data in the local Supabase project is erased. Do not use it with hosted keys or a production project. The fixture users/workspaces/files are cleaned up afterward; the stack remains running so you can inspect status or logs. To stop containers without intentionally deleting local volumes/data:
+
+```powershell
+.\scripts\supabase-local.ps1 -Action down
+```
+
+To manually reset (separate from the test command), use the helper's confirmation prompt:
+
+```powershell
+.\scripts\supabase-local.ps1 -Action reset
+```
+
+### Test matrix and execution record
+
+| Area | Fast suite | Local runtime suite | Status in this Arena session |
+| :--- | :--- | :--- | :--- |
+| Clean migrations, expected columns, constraints, function security/grants, Auth triggers, RLS catalog, Storage bucket/policies | — | PostgreSQL catalog assertions after clean reset | Authored; not run here (Docker/Supabase CLI unavailable) |
+| UUID profile trigger, signup/login/logout, magic-link callback retries, concurrent/idempotent provisioning, recovery/reset, fail-closed profile errors | Mocked confirmation-required branch + route policy | Real local Auth, PostgreSQL, callback and API requests | Mock suite executed; local runtime authored, not run here |
+| Cookie persistence, expiry refresh/rotation through session/protected routes, cookie clear on rejected refresh | Existing deterministic refresh unit tests | Real local Auth session refresh and outgoing Set-Cookie assertions | Mock suite executed; local runtime authored, not run here |
+| Workspace/profile/membership/collection/document/file isolation, permission escalation, relevant RPC grants | Contract/unit checks | Real PostgREST requests as anon and multiple Auth users | Local runtime authored, not run here |
+| Metadata-bound private upload, same-/cross-tenant read restrictions, signed download, delete, retryable complete/abort/orphan | Contract/unit checks | Real Storage API, metadata rows, RLS and RPCs | Local runtime authored, not run here |
+| OAuth consent/CSRF/rate-limit/state/redirect validation | Handler tests with mocked Supabase responses | Unconfigured local provider returns no providers / fails closed | Mock suite executed; baseline local runtime authored, not run here |
+| Real Google/GitHub provider account | — | Optional manual smoke; never required by baseline | See OAuth Windows guide |
+
+Execution record for this Arena session (2026-10-11): `npm run test:auth-fast` **PASS, 62/62 tests**. A focused TypeScript check of all six local integration suites, their shared helper, and the route-runtime tests also passed. `npm run lint` passed with 0 errors and 113 repository warnings. The full-repository `npx tsc --noEmit --pretty false` remains blocked by 25 unrelated existing errors in Redis cache types, docs/public component types, and `src/services/store.ts`; the focused harness type-check has no errors.
+
+`npm run test:auth-local` was attempted and returned exit code 2 with `[NOT RUN]` because Docker was not found. It stopped during prerequisite checks—before `supabase start`, status lookup, or the destructive reset. The global Supabase CLI and local PostgreSQL/Storage services are also unavailable here. Do not interpret authored local tests, fast mocks, static checks, or TypeScript validation as passing live migration/RLS/Auth-session/Storage behavior. The Windows live command will fail with an actionable prerequisite message rather than silently skip.
 
 ## If `.env.local` already exists
 

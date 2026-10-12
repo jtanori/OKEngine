@@ -318,7 +318,7 @@ npm run dev
 
 **Hosted development/staging project:** configure that project's URL, database URL, anon key, and service-role key privately in `.env.local` or a secrets manager. `supabase db push` targets a linked remote project; confirm the project reference before using it. Never put service-role keys in Git, client-side variables, or chat. Do not use production for local experiments.
 
-The PowerShell setup script applies pending local migrations with `supabase migration up`. `supabase db reset` is destructive; `supabase db push` is for a linked hosted database, not the local setup. Note: the existing `npm run migrate` still points to `src/lib/migrate.ts`, which is absent from this checkout; do not rely on it until that migration-runner contract is fixed.
+The PowerShell setup script applies pending local migrations with `supabase migration up --local`. `supabase db reset` is destructive; `supabase db push` is for a linked hosted database, not the local setup. Note: the existing `npm run migrate` still points to `src/lib/migrate.ts`, which is absent from this checkout; do not rely on it until that migration-runner contract is fixed. For the separate fast and fail-closed local Auth/RLS/Storage verification commands and their destructive-reset warning, see [`LOCAL-SUPABASE-WINDOWS.md`](./LOCAL-SUPABASE-WINDOWS.md).
 
 **Tables** (canonical schema):
 - `workspaces` id slug name public_key signing_secret_hash created_at updated_at + plan fields starter/pro/escala plan_interval monthly/annual stripe_customer_id stripe_subscription_id
@@ -673,12 +673,13 @@ npm run lint
 npm run clean
 # Local Supabase (Windows): see docs/LOCAL-SUPABASE-WINDOWS.md
 # npm run migrate is not configured in this checkout (src/lib/migrate.ts is absent)
-# Fast integration contract checks
-npm run test:supabase-integration
+# Fast auth/security contract checks (Node/npm only; no Docker)
+npm run test:auth-fast
+# Local Supabase Auth/RLS/Storage runtime suite (Windows; destructive local reset)
+npm run test:auth-local
+# Other readiness suites
 npm run test:homepage-tour-readiness # 52/52
 npm run test:embed-authorization # 29/29
-# Optional local-stack Auth/RLS/Storage E2E (PowerShell):
-# $env:OKENG_RUN_SUPABASE_INTEGRATION = '1'; npm run test:supabase-live
 ```
 
 **Key routes to verify manually after setup:**

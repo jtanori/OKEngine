@@ -1,13 +1,11 @@
-import { config as loadEnv } from 'dotenv';
 import { randomUUID } from 'node:crypto';
 import { Client } from 'pg';
 import { createClient } from '@supabase/supabase-js';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { queryLocalDatabase, requireLocalSupabase } from './helpers/localSupabase';
 
-loadEnv({ path: '.env.local' });
-
-const runLive = process.env.OKENG_RUN_SUPABASE_INTEGRATION === '1';
+const local = requireLocalSupabase();
 const BUCKET = 'workspace-files';
 
 function makeClient(url: string, key: string) {
@@ -33,20 +31,8 @@ async function createUser(url: string, anonKey: string, suffix: string) {
   return { client, user: data.user };
 }
 
-test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { skip: !runLive }, async () => {
-  const url = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
-  const anonKey = process.env.SUPABASE_ANON_KEY;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const databaseUrl = process.env.DATABASE_URL;
-  assert.ok(anonKey, 'SUPABASE_ANON_KEY is required in ignored .env.local');
-  assert.ok(serviceKey, 'SUPABASE_SERVICE_ROLE_KEY is required in ignored .env.local');
-  assert.ok(databaseUrl, 'DATABASE_URL is required in ignored .env.local for test cleanup');
-  const isLoopbackHost = (hostname: string) => ['localhost', '127.0.0.1', '::1', '[::1]'].includes(hostname);
-  const parsedUrl = new URL(url);
-  const parsedDatabaseUrl = new URL(databaseUrl);
-  assert.ok(isLoopbackHost(parsedUrl.hostname), 'This test is local-only; refusing a non-loopback Supabase URL');
-  assert.ok(isLoopbackHost(parsedDatabaseUrl.hostname), 'This test is local-only; refusing a non-loopback DATABASE_URL');
-
+test('runtime tenant RLS, collection visibility, and private Storage policies on local Supabase', async () => {
+  const { url, anonKey, serviceRoleKey: serviceKey, databaseUrl } = local;
   const admin = makeClient(url, serviceKey);
   const userIds: string[] = [];
   const workspaceIds: string[] = [];
@@ -65,11 +51,19 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
     assert.equal(firstProfile.id, first.user.id);
     assert.equal(firstProfile.account_status, 'ACTIVE');
 
-    const { data: firstProvision, error: firstProvisionError } = await first.client.rpc('provision_initial_workspace');
-    assert.equal(firstProvisionError, null, firstProvisionError?.message);
-    const firstWorkspace = Array.isArray(firstProvision) ? firstProvision[0] : firstProvision;
+    const concurrentProvisioning = await Promise.all(
+      Array.from({ length: 6 }, () => first.client.rpc('provision_initial_workspace')),
+    );
+    for (const result of concurrentProvisioning) assert.equal(result.error, null, result.error?.message);
+    const provisionedRows = concurrentProvisioning.map(({ data }) => Array.isArray(data) ? data[0] : data);
+    const firstWorkspace = provisionedRows[0];
     assert.ok(firstWorkspace?.workspace_id);
     assert.ok(firstWorkspace?.workspace_slug);
+    assert.deepEqual(
+      new Set(provisionedRows.map((row) => row?.workspace_id)).size,
+      1,
+      'Concurrent callback/signup attempts must serialize on one initial workspace.',
+    );
     workspaceIds.push(firstWorkspace.workspace_id);
 
     const { data: starterCollections, error: starterCollectionError } = await first.client
@@ -106,7 +100,7 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
     const { error: documentInsertError } = await first.client.from('documents').insert(documentRows);
     assert.equal(documentInsertError, null, documentInsertError?.message);
 
-    const adminDocumentId = `doc_admin_${suffix}`;
+    const adminDocumentId = `doc_admins_${suffix}`;
     const { error: versionInsertError } = await first.client.from('document_versions').insert({
       id: `ver_admin_${suffix}`,
       workspace_id: firstWorkspace.workspace_id,
@@ -166,6 +160,15 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
       .from('shared_snapshots').select('id').eq('id', flippedPublicSnapshotId);
     assert.equal(anonymousSnapshotError, null, anonymousSnapshotError?.message);
     assert.deepEqual(anonymousPublicSnapshot?.map((row) => row.id), [flippedPublicSnapshotId]);
+    const anonymousProvisioning = await anonymous.rpc('provision_initial_workspace');
+    assert.ok(anonymousProvisioning.error, 'Anonymous callers must not execute workspace provisioning.');
+    const anonymousWorkspaces = await anonymous.from('workspaces').select('id').eq('id', firstWorkspace.workspace_id);
+    assert.ok(
+      anonymousWorkspaces.error || anonymousWorkspaces.data?.length === 0,
+      'Anonymous callers must not read private tenant roots whether denied by table grants or RLS.',
+    );
+    const anonymousProfiles = await anonymous.from('users').select('id').eq('id', first.user.id);
+    assert.ok(anonymousProfiles.error || anonymousProfiles.data?.length === 0, 'Anonymous callers must not enumerate profiles.');
 
     const invalidIdentity = createClient(url, anonKey, {
       auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -184,6 +187,21 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
     const secondWorkspace = Array.isArray(secondProvision) ? secondProvision[0] : secondProvision;
     assert.ok(secondWorkspace?.workspace_id);
     workspaceIds.push(secondWorkspace.workspace_id);
+    assert.notEqual(secondWorkspace.workspace_id, firstWorkspace.workspace_id);
+
+    const secondPrivateWorkspace = await second.client.from('workspaces').select('id').eq('id', firstWorkspace.workspace_id);
+    assert.equal(secondPrivateWorkspace.error, null, secondPrivateWorkspace.error?.message);
+    assert.deepEqual(secondPrivateWorkspace.data, [], 'Workspace RLS must hide a different tenant root.');
+    const secondOtherProfile = await second.client.from('users').select('id').eq('id', first.user.id);
+    assert.equal(secondOtherProfile.error, null, secondOtherProfile.error?.message);
+    assert.deepEqual(secondOtherProfile.data, [], 'Profile RLS must hide unrelated users.');
+    const forgedCollection = await second.client.from('collections').insert({
+      id: `col_forged_${randomUUID().replace(/-/g, '')}`,
+      workspace_id: firstWorkspace.workspace_id,
+      name: 'Forged cross-tenant collection',
+      visibility: 'everyone',
+    }).select('id');
+    assert.ok(forgedCollection.error || forgedCollection.data?.length === 0, 'A tenant cannot insert a collection into another workspace.');
 
     const member = await createUser(url, anonKey, randomUUID());
     userIds.push(member.user.id);
@@ -202,6 +220,49 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
       permissions: ['workspace.read', 'collection.read', 'content.read'],
     });
     assert.equal(membershipInsertError, null, membershipInsertError?.message);
+
+    const editor = await createUser(url, anonKey, randomUUID());
+    userIds.push(editor.user.id);
+    const { data: editorProvision, error: editorProvisionError } = await editor.client.rpc('provision_initial_workspace');
+    assert.equal(editorProvisionError, null, editorProvisionError?.message);
+    const editorWorkspace = Array.isArray(editorProvision) ? editorProvision[0] : editorProvision;
+    assert.ok(editorWorkspace?.workspace_id);
+    workspaceIds.push(editorWorkspace.workspace_id);
+    const { error: editorMembershipError } = await first.client.from('workspace_memberships').insert({
+      id: `wm_editor_${suffix}`,
+      workspace_id: firstWorkspace.workspace_id,
+      user_id: editor.user.id,
+      role: 'WORKSPACE_USER',
+      status: 'ACTIVE',
+      permissions: ['workspace.read', 'collection.read', 'content.read', 'content.write'],
+    });
+    assert.equal(editorMembershipError, null, editorMembershipError?.message);
+
+    const roleEscalation = await member.client.from('workspace_memberships')
+      .update({ role: 'WORKSPACE_OWNER', permissions: ['workspace.settings.manage', 'content.write', 'content.delete'] })
+      .eq('workspace_id', firstWorkspace.workspace_id)
+      .eq('user_id', member.user.id)
+      .select('role, permissions');
+    assert.ok(roleEscalation.error || roleEscalation.data?.length === 0, 'A member cannot escalate its own workspace role or permissions.');
+    const platformEscalation = await member.client.from('users')
+      .update({ platform_role: 'PLATFORM_OWNER' })
+      .eq('id', member.user.id)
+      .select('platform_role');
+    assert.ok(platformEscalation.error || platformEscalation.data?.length === 0, 'A user cannot grant itself platform privileges.');
+    const protectedMembership = await first.client.from('workspace_memberships')
+      .select('role, permissions')
+      .eq('workspace_id', firstWorkspace.workspace_id)
+      .eq('user_id', member.user.id)
+      .single();
+    assert.equal(protectedMembership.error, null, protectedMembership.error?.message);
+    assert.equal(protectedMembership.data.role, 'WORKSPACE_USER');
+    assert.deepEqual(protectedMembership.data.permissions, ['workspace.read', 'collection.read', 'content.read']);
+    const protectedProfile = await first.client.from('users')
+      .select('platform_role')
+      .eq('id', member.user.id)
+      .single();
+    assert.equal(protectedProfile.error, null, protectedProfile.error?.message);
+    assert.equal(protectedProfile.data.platform_role, null);
 
     const { error: visibilityTightenError } = await first.client.from('collections')
       .update({ visibility: 'admins' }).eq('id', publicCollectionId);
@@ -272,6 +333,14 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
     assert.equal(crossTenantError, null, crossTenantError?.message);
     assert.deepEqual(crossTenantDocs, []);
 
+    const untrackedPath = `${firstWorkspace.workspace_id}/${membersCollectionId}/${randomUUID()}-untracked.txt`;
+    const untrackedUpload = await first.client.storage.from(BUCKET).upload(
+      untrackedPath,
+      new Blob(['No metadata reservation.'], { type: 'text/plain' }),
+      { contentType: 'text/plain', upsert: false },
+    );
+    assert.ok(untrackedUpload.error, 'Storage INSERT must reject an object with no matching pending metadata row.');
+
     const adminFileId = `file_admin_${suffix}`;
     const adminStoragePath = `${firstWorkspace.workspace_id}/${adminsCollectionId}/${randomUUID()}-admin.txt`;
     storagePaths.push(adminStoragePath);
@@ -287,6 +356,26 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
       uploaded_by: first.user.id,
     });
     assert.equal(adminFileMetadataError, null, adminFileMetadataError?.message);
+    const wrongPath = `${firstWorkspace.workspace_id}/${adminsCollectionId}/${randomUUID()}-wrong-path.txt`;
+    const wrongPathUpload = await first.client.storage.from(BUCKET).upload(
+      wrongPath,
+      new Blob(['Path does not match metadata.'], { type: 'text/plain' }),
+      { contentType: 'text/plain', upsert: false },
+    );
+    assert.ok(wrongPathUpload.error, 'Storage INSERT must require an exact path bound to pending file metadata.');
+    const otherUploader = await editor.client.storage.from(BUCKET).upload(
+      adminStoragePath,
+      new Blob(['Wrong uploader.'], { type: 'text/plain' }),
+      { contentType: 'text/plain', upsert: false },
+    );
+    assert.ok(otherUploader.error, 'A workspace editor cannot upload into another user\'s pending metadata reservation.');
+    const otherCompletion = await editor.client.rpc('complete_file_upload', {
+      p_file_id: adminFileId,
+      p_storage_path: adminStoragePath,
+    });
+    assert.ok(otherCompletion.error || otherCompletion.data !== true, 'Only the metadata uploader may complete its pending upload.');
+    const pendingSignedUrl = await first.client.storage.from(BUCKET).createSignedUrl(adminStoragePath, 60);
+    assert.ok(pendingSignedUrl.error || !pendingSignedUrl.data?.signedUrl, 'Pending objects must not be readable or signed.');
     const { error: adminUploadError } = await first.client.storage.from(BUCKET).upload(
       adminStoragePath,
       new Blob(['Admins-only fixture.'], { type: 'text/plain' }),
@@ -334,7 +423,7 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
       storage_path: storagePath,
       filename: 'sample.txt',
       mime_type: 'text/plain',
-      size_bytes: 24,
+      size_bytes: Buffer.byteLength('Private local fixture.'),
       upload_status: 'pending_upload',
       uploaded_by: first.user.id,
     });
@@ -363,6 +452,15 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
     const { data: signed, error: signedError } = await first.client.storage.from(BUCKET).createSignedUrl(storagePath, 60);
     assert.equal(signedError, null, signedError?.message);
     assert.ok(signed?.signedUrl);
+    const ownerDownload = await first.client.storage.from(BUCKET).download(storagePath);
+    assert.equal(ownerDownload.error, null, ownerDownload.error?.message);
+    assert.equal(await ownerDownload.data?.text(), 'Private local fixture.');
+    const memberDownload = await member.client.storage.from(BUCKET).download(storagePath);
+    assert.equal(memberDownload.error, null, memberDownload.error?.message);
+    assert.equal(await memberDownload.data?.text(), 'Private local fixture.');
+    const editorSignedUrl = await editor.client.storage.from(BUCKET).createSignedUrl(storagePath, 60);
+    assert.equal(editorSignedUrl.error, null, editorSignedUrl.error?.message);
+    assert.ok(editorSignedUrl.data?.signedUrl, 'A same-workspace content reader can access a members-tier file.');
 
     const { data: crossTenantFile, error: crossTenantFileError } = await second.client
       .from('files')
@@ -410,6 +508,59 @@ test('local Supabase Auth, RLS visibility, and private Storage lifecycle', { ski
     const { data: cleanupRows, error: cleanupLookupError } = await first.client.from('files').select('id').eq('id', cleanupFileId);
     assert.equal(cleanupLookupError, null, cleanupLookupError?.message);
     assert.deepEqual(cleanupRows, []);
+
+    // If Storage still has an object, abort must retain a non-readable orphan
+    // marker rather than pretending cleanup succeeded or exposing the object.
+    const orphanFileId = `file_orphan_${suffix}`;
+    const orphanPath = `${firstWorkspace.workspace_id}/${membersCollectionId}/${randomUUID()}-orphan.txt`;
+    storagePaths.push(orphanPath);
+    const { error: orphanMetadataError } = await first.client.from('files').insert({
+      id: orphanFileId,
+      workspace_id: firstWorkspace.workspace_id,
+      collection_id: membersCollectionId,
+      storage_path: orphanPath,
+      filename: 'orphan.txt',
+      mime_type: 'text/plain',
+      size_bytes: Buffer.byteLength('Orphan fixture.'),
+      upload_status: 'pending_upload',
+      uploaded_by: first.user.id,
+    });
+    assert.equal(orphanMetadataError, null, orphanMetadataError?.message);
+    const { error: orphanUploadError } = await first.client.storage.from(BUCKET).upload(
+      orphanPath,
+      new Blob(['Orphan fixture.'], { type: 'text/plain' }),
+      { contentType: 'text/plain', upsert: false },
+    );
+    assert.equal(orphanUploadError, null, orphanUploadError?.message);
+    const orphanAbort = await first.client.rpc('abort_file_upload', {
+      p_file_id: orphanFileId,
+      p_storage_path: orphanPath,
+    });
+    assert.equal(orphanAbort.error, null, orphanAbort.error?.message);
+    assert.equal(orphanAbort.data, 'orphaned');
+    const orphanSignedUrl = await first.client.storage.from(BUCKET).createSignedUrl(orphanPath, 60);
+    assert.ok(orphanSignedUrl.error || !orphanSignedUrl.data?.signedUrl, 'An orphaned object must remain unreadable.');
+    const cleanupDatabase = new Client({ connectionString: databaseUrl });
+    try {
+      await cleanupDatabase.connect();
+      const orphanState = await cleanupDatabase.query('SELECT upload_status FROM public.files WHERE id = $1', [orphanFileId]);
+      assert.equal(orphanState.rows[0]?.upload_status, 'orphaned');
+    } finally {
+      await cleanupDatabase.end().catch(() => undefined);
+    }
+
+    const orphanObjectCleanup = await first.client.storage.from(BUCKET).remove([orphanPath]);
+    assert.equal(orphanObjectCleanup.error, null, orphanObjectCleanup.error?.message);
+    const orphanMetadataCleanup = await first.client.from('files').delete().eq('id', orphanFileId).select('id');
+    assert.equal(orphanMetadataCleanup.error, null, orphanMetadataCleanup.error?.message);
+    assert.deepEqual(orphanMetadataCleanup.data?.map((row) => row.id), [orphanFileId]);
+    const orphanCleanupState = await queryLocalDatabase<{ metadata_count: string; object_count: string }>(local, `
+      SELECT
+        (SELECT COUNT(*)::text FROM public.files WHERE id = $1) AS metadata_count,
+        (SELECT COUNT(*)::text FROM storage.objects WHERE bucket_id = $2 AND name = $3) AS object_count
+    `, [orphanFileId, BUCKET, orphanPath]);
+    assert.deepEqual(orphanCleanupState[0], { metadata_count: '0', object_count: '0' }, 'Orphan cleanup must remove both the private object and its metadata.');
+    storagePaths.splice(storagePaths.indexOf(orphanPath), 1);
   } finally {
     for (const storagePath of storagePaths) {
       await admin.storage.from(BUCKET).remove([storagePath]).catch(() => undefined);

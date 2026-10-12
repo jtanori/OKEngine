@@ -177,11 +177,29 @@ describe('Supabase Auth, RLS, and private Storage integration', () => {
     assert.doesNotMatch(migration, /c\.visibility = 'admins'[\s\S]{0,200}is_active_platform_admin/);
   });
 
-  it('keeps destructive live-test cleanup restricted to loopback services', () => {
-    const liveTest = read('tests/integration/supabase-local.e2e.test.ts');
-    assert.match(liveTest, /isLoopbackHost\(parsedUrl\.hostname\)/);
-    assert.match(liveTest, /isLoopbackHost\(parsedDatabaseUrl\.hostname\)/);
-    assert.match(liveTest, /refusing a non-loopback DATABASE_URL/);
+  it('keeps destructive local-test cleanup behind a loopback/port guard and explicit --local reset', () => {
+    const guard = read('scripts/lib/local-supabase-guard.mjs');
+    const helper = read('tests/integration/helpers/localSupabase.ts');
+    const runner = read('scripts/test-supabase-local.mjs');
+    const localSetup = read('scripts/supabase-local.ps1');
+    const configGuard = read('scripts/lib/local-supabase-guard.mjs');
+    assert.match(guard, /LOOPBACK_HOSTS\.has/);
+    assert.match(configGuard, /export function assertExpectedLocalSupabaseConfig/);
+    assert.match(runner, /assertExpectedLocalSupabaseConfig/);
+    assert.match(guard, /api\.port === String\(apiPort\)/);
+    assert.match(guard, /database\.port === String\(databasePort\)/);
+    assert.match(guard, /!database\.search/);
+    assert.match(helper, /assertLocalSupabaseTarget\(\{ apiUrl: url, databaseUrl \}\)/);
+    assert.match(helper, /OKENG_LOCAL_SUPABASE_RUNNER !== '1'/);
+    assert.match(runner, /'db', 'reset', '--local', '--yes', '--no-seed'/);
+    assert.match(runner, /tests\/integration\/private-storage\.live\.test\.ts/);
+    const preflightIndex = runner.indexOf('assertLocalHarnessReady();');
+    const targetGuardIndex = runner.indexOf('makeTestEnvironment(status)');
+    const resetIndex = runner.indexOf("run('supabase', ['db', 'reset', '--local', '--yes', '--no-seed'");
+    assert.ok(preflightIndex >= 0 && preflightIndex < resetIndex, 'The runner must verify dependencies and every suite file before its destructive reset.');
+    assert.ok(targetGuardIndex >= 0 && targetGuardIndex < resetIndex, 'The runner must validate the CLI-reported loopback endpoints before the destructive reset.');
+    assert.match(localSetup, /@\('migration', 'up', '--local'\)/);
+    assert.match(runner, /never uses a linked\/hosted database/);
   });
 
   it('maps new Auth users only by Auth UUID and provisions workspaces using auth.uid()', () => {

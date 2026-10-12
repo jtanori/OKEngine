@@ -32,9 +32,21 @@ function Invoke-Supabase {
 }
 
 function Import-LocalOAuthEnv {
-  # Supabase CLI config env interpolation reads the process environment. Load only
-  # the four OAuth provider entries from the ignored app env file; never print
-  # credential values or execute the file as PowerShell.
+  # Do not accidentally pass provider credentials inherited from a hosted/dev
+  # shell into the local Auth container. Only values explicitly in ignored
+  # .env.local are eligible for this local stack.
+  $providerEnvNames = @(
+    'SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID',
+    'SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET',
+    'SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID',
+    'SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET'
+  )
+  foreach ($name in $providerEnvNames) {
+    [System.Environment]::SetEnvironmentVariable($name, $null, 'Process')
+  }
+
+  # Load only the four OAuth provider entries from the ignored app env file;
+  # never print credential values or execute the file as PowerShell.
   if (-not (Test-Path -LiteralPath $envFile)) {
     return
   }
@@ -49,6 +61,55 @@ function Import-LocalOAuthEnv {
         $value = $value.Substring(1, $value.Length - 2)
       }
       [System.Environment]::SetEnvironmentVariable($name, $value, 'Process')
+    }
+  }
+}
+
+function Set-LocalOAuthProviderState {
+  param(
+    [Parameter(Mandatory)][string]$ConfigText,
+    [Parameter(Mandatory)][ValidateSet('google', 'github')][string]$Provider
+  )
+
+  $prefix = "SUPABASE_AUTH_EXTERNAL_$($Provider.ToUpperInvariant())"
+  $clientId = [System.Environment]::GetEnvironmentVariable("${prefix}_CLIENT_ID", 'Process')
+  $secret = [System.Environment]::GetEnvironmentVariable("${prefix}_SECRET", 'Process')
+  $enabled = if (-not [string]::IsNullOrWhiteSpace($clientId) -and -not [string]::IsNullOrWhiteSpace($secret)) { 'true' } else { 'false' }
+
+  # The provider section is changed only in-memory for the CLI invocation. The
+  # committed/default config remains disabled and requires no OAuth credentials.
+  $pattern = "(?ms)(^\[auth\.external\.$Provider\]\r?\n(?:(?!^\[).)*?^\s*enabled\s*=\s*)[^\r\n]+"
+  $regex = [System.Text.RegularExpressions.Regex]::new($pattern)
+  if (-not $regex.IsMatch($ConfigText)) {
+    throw "Could not locate the [auth.external.$Provider] enabled setting in supabase/config.toml."
+  }
+  $replacement = [System.Text.RegularExpressions.MatchEvaluator]{
+    param($match)
+    return $match.Groups[1].Value + $enabled
+  }
+  return $regex.Replace($ConfigText, $replacement, 1)
+}
+
+function Invoke-LocalSupabaseStart {
+  $configPath = Join-Path $repoRoot 'supabase/config.toml'
+  $originalConfig = [System.IO.File]::ReadAllText($configPath)
+  $localConfig = $originalConfig
+  $changedOnDisk = $false
+
+  try {
+    $localConfig = Set-LocalOAuthProviderState -ConfigText $localConfig -Provider 'google'
+    $localConfig = Set-LocalOAuthProviderState -ConfigText $localConfig -Provider 'github'
+    if ($localConfig -cne $originalConfig) {
+      $changedOnDisk = $true
+      $encoding = [System.Text.UTF8Encoding]::new($false)
+      [System.IO.File]::WriteAllText($configPath, $localConfig, $encoding)
+    }
+    Invoke-Supabase -CliArgs @('start')
+  }
+  finally {
+    if ($changedOnDisk) {
+      $encoding = [System.Text.UTF8Encoding]::new($false)
+      [System.IO.File]::WriteAllText($configPath, $originalConfig, $encoding)
     }
   }
 }
@@ -165,9 +226,10 @@ try {
   switch ($Action) {
     'up' {
       Import-LocalOAuthEnv
-      Invoke-Supabase -CliArgs @('start')
-      # Apply only pending migrations. Unlike `db reset`, this preserves local data.
-      Invoke-Supabase -CliArgs @('migration', 'up')
+      Invoke-LocalSupabaseStart
+      # Apply only pending local migrations. The explicit flag is a second safety
+      # barrier if this checkout is linked to a hosted Supabase project.
+      Invoke-Supabase -CliArgs @('migration', 'up', '--local')
       Invoke-Supabase -CliArgs @('status')
       if ($WriteAppEnv) {
         $localEnv = Get-LocalSupabaseEnv
@@ -190,8 +252,8 @@ try {
         break
       }
       Import-LocalOAuthEnv
-      Invoke-Supabase -CliArgs @('start')
-      Invoke-Supabase -CliArgs @('db', 'reset')
+      Invoke-LocalSupabaseStart
+      Invoke-Supabase -CliArgs @('db', 'reset', '--local', '--yes')
       Invoke-Supabase -CliArgs @('status')
     }
   }

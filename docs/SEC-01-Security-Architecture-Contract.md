@@ -8,7 +8,7 @@
 | **Authority** | Blocking Gate — Phase 01 & Phase 02 |
 | **Dependencies** | `AUTH-01`, `AUTH-02`, `AUTH-03`, `AUTH-04`, `AUTH-05`, `EMBED-01`, `DB-01` |
 | **Source of Truth** | `src/proxy.ts`, `src/lib/auth.ts`, `src/lib/supabase/*`, `src/app/api/auth/*`, `src/app/auth/callback/route.ts`, `src/services/embedAuthorization.ts` |
-| **Revision** | `2.3 (2026-10-11)` — Supabase SSR session refresh/rotation cookies are required on outgoing session responses |
+| **Revision** | `2.4 (2026-10-11)` — Fail-closed clean-local Auth/PostgreSQL/RLS/Storage/session verification harness and explicit non-hosted test boundary |
 
 ---
 

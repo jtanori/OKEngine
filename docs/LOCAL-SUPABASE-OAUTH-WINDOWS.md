@@ -1,6 +1,6 @@
 # Local Google/GitHub OAuth Setup — Windows
 
-This guide adds optional Google and GitHub sign-in to the existing local Supabase Auth stack. It does not link, modify, or require a hosted Supabase project. No credentials are needed when testing email/password authentication; with no complete provider credential pair, the app hides that provider's button and the separator.
+This guide adds optional Google and GitHub sign-in to the existing local Supabase Auth stack. It does not link, modify, or require a hosted Supabase project. The checked-in local config disables both external providers by default, so baseline Auth/email tests start without third-party credentials. The PowerShell helper enables a provider only for the local CLI start when its complete client ID/secret pair is present; the app also hides providers without a complete pair.
 
 The provider client ID/secret must stay in ignored `.env.local` and are consumed by the local Supabase Auth service through `supabase/config.toml`. The browser never receives these values. The browser does follow the server-generated OAuth authorization redirect, as required by OAuth; application JavaScript does not initialize a Supabase browser client or call Supabase Auth APIs.
 
@@ -53,7 +53,7 @@ SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET=
 
 Leave both values for a provider blank to keep that provider unavailable. Do not add a `NEXT_PUBLIC_` prefix. Do not paste credentials into an issue, pull request, or chat.
 
-The PowerShell setup script imports only these four allow-listed variables into its process environment before invoking the Supabase CLI. It does not execute `.env.local` as PowerShell and does not print the values.
+The PowerShell setup script imports only these four allow-listed variables into its process environment; it does not execute `.env.local` as PowerShell or print the values. On `-Action up`, it temporarily flips only a provider with both non-blank values to `enabled = true` in the local config for the `supabase start` command, then restores the checked-in config file (whose defaults remain `enabled = false`). With a missing/partial pair the provider stays disabled, so Auth can start without credentials. Keep `redirect_uri` set to `http://127.0.0.1:54321/auth/v1/callback` and do not enable either provider manually without a complete local credential pair.
 
 ## 4. Restart local Auth without resetting the database
 
@@ -106,9 +106,21 @@ Then:
 4. Confirm `/api/auth/session` reports the safe user/workspace projection and contains no access or refresh token.
 5. Sign out and verify the Supabase session and Remember me preference are cleared.
 
+## Optional real-provider smoke checklist
+
+A real Google/GitHub login is **optional** and never gates `npm run test:auth-fast` or `npm run test:auth-local`. The fast suite uses mocked Supabase responses for configured-provider success, consent/CSRF/rate-limit failures, rejected authorization URLs, callback state/replay failures, and fail-closed redirects. The local baseline suite clears provider credentials and verifies that the real local app routes advertise no providers and reject OAuth start before calling Auth.
+
+For a provider-console smoke after configuring a complete local credential pair:
+
+1. Confirm the app's `/api/auth/providers` response contains only the configured safe provider name(s), never IDs or secrets.
+2. Verify missing Terms/Privacy consent and missing/invalid CSRF are rejected before Auth; complete consent, then observe the browser go first to the local Supabase authorize endpoint and return only to the same-origin `/auth/callback`.
+3. Confirm PKCE/state errors, replays, missing provider email, and provisioning failures fail closed without a partial app session or external `next` redirect.
+4. Confirm success links the provider Auth UUID to one profile and exactly one owner workspace, then `/api/auth/session` returns only the safe projection (no access/refresh token).
+5. Sign out and confirm the Auth and Remember-me cookies are cleared. Never copy an OAuth token, client secret, service-role key, or full callback URL into a test report.
+
 ## Troubleshooting
 
-- **Provider button is missing:** confirm both values for that provider are non-blank in `.env.local`, then stop/start the local stack and restart `npm run dev`.
+- **Provider button is missing:** confirm both values for that provider are non-blank in `.env.local`, then stop/start using `scripts/supabase-local.ps1 -Action down` followed by `-Action up`; restart `npm run dev`. Running `supabase start` directly uses the safe checked-in defaults and leaves external providers disabled.
 - **Supabase provider is unavailable:** confirm the client ID/secret are from the same provider app and check the local CLI output for config errors. Do not print or share the secret while troubleshooting.
 - **Redirect URI mismatch:** the provider console callback must be exactly `http://127.0.0.1:54321/auth/v1/callback`; the separate app callback is `http://localhost:3000/auth/callback` and is allow-listed in the local Supabase config.
 - **GitHub returns no usable email:** verify the requested `user:email` scope and the account's email availability. The callback intentionally refuses to provision a partial session.

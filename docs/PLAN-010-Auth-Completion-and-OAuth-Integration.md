@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Implemented — offline checks passed; live local Supabase/OAuth round-trip remains unverified |
+| Status | Auth/OAuth feature implemented; verification harness authored. Fast suite 62/62 passed on 2026-10-11; local Supabase runtime tests not run (Docker/Supabase CLI unavailable) |
 | Date | 2026-10-11 |
 | Scope | Complete the current email-auth/session surface with optional Google and GitHub OAuth; prepare the existing session/workspace guard as the handoff for a later dashboard initiative |
 | Out of scope | Dashboard UI, MFA, SAML, a new passwordless flow, account-settings UI, and custom social-account-linking UI |
@@ -90,7 +90,7 @@ Implemented: conditional server-discovered Google/GitHub UI and safe no-provider
 
 Offline verification:
 
-- `npm run test:supabase-integration` — PASS, 44/44 tests (includes OAuth/client/UI/Auth UUID/session/workspace/Storage checks).
+- `npm run test:auth-fast` — PASS, 62/62 tests in the verification-harness follow-up (includes OAuth/client/UI/Auth UUID/session/workspace/Storage checks; supersedes the earlier 44/44 baseline).
 - `npm run build` — PASS, 27 routes including the provider manifest, OAuth-start API, and callback.
 - `npm run lint` — PASS, 0 errors and 113 repository warnings; targeted lint on changed application source also passes.
 - `python3` TOML parse of `supabase/config.toml` — PASS; required local services are Auth, PostgreSQL, Storage, Edge Runtime, and API/PostgREST plumbing.
@@ -98,3 +98,13 @@ Offline verification:
 - `npx tsc --noEmit --pretty false` — still reports pre-existing failures in the Redis cache adapter/module, docs/public page component types, and `src/services/store.ts`; it reports no errors in the changed auth/OAuth files.
 
 Limitations: Docker and the Supabase CLI are absent in this environment, so local Auth startup with blank provider credentials, migrations/RLS against live Postgres, and real Google/GitHub provider round-trips could not be exercised. The local Google provider retains `skip_nonce_check = true` as a documented local-only Supabase tradeoff; do not carry that setting to a hosted environment without security review.
+
+## Verification-harness follow-up — 2026-10-11
+
+- **Fast suite:** `npm run test:auth-fast` — **PASS, 62/62**. The confirmation-pending signup branch, OAuth validation, session-cookie propagation, and local-target guard were exercised without external services.
+- **Authored local runtime suite:** `npm run test:auth-local` is one Windows-friendly command for clean migration/catalog assertions, real local Auth lifecycle and callback/retry flows, session refresh/cookie rotation, multi-tenant RLS/RPC escalation attempts, private Storage routes/abort/orphan cleanup, and unconfigured OAuth routes. The local Auth callback and confirmed-user flows are real-runtime tests; the confirmation-required signup branch remains covered by the fast route-runtime test because the checked-in local Auth config intentionally disables email confirmations and SMTP.
+- **Local run status:** The command was attempted and exited 2 with `[NOT RUN]` because Docker was not found. It stopped at prerequisite checks before `supabase start`, status lookup, or database reset. Therefore **none** of the new migration, Auth, session, RLS, Storage, or local OAuth suites is claimed as executed.
+- **Focused type-check:** the shared local helper, all six local integration files, and auth-route runtime tests passed a temporary TypeScript project check; the temporary config was removed.
+- **Lint:** `npm run lint` — **PASS**, 0 errors and 113 repository warnings.
+- **Repository TypeScript check:** `npx tsc --noEmit --pretty false` still reports 25 unrelated existing errors in the Redis cache adapter, docs/public component types, and `src/services/store.ts`; it reports no errors in the auth/OAuth application sources. The focused harness check above passes.
+- The earlier initial-feature production build result (`npm run build`, 27 routes) predates this harness-only follow-up and was not rerun here. Run the local stack from [LOCAL-SUPABASE-WINDOWS.md](./LOCAL-SUPABASE-WINDOWS.md) on Windows to execute the live runtime gates; the optional real-provider smoke checklist remains non-gating.
