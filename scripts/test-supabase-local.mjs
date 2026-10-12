@@ -183,12 +183,12 @@ async function main() {
   stopExistingLocalStackIfRunning();
 
   let suiteStatus = 0;
-  let stackMayBeRunning = false;
+  let testStackStarted = false;
   try {
-    stackMayBeRunning = true;
     console.log('Starting the configured local stack (Auth, PostgreSQL, Storage, Edge Runtime and required API gateway).');
     console.log('The runner temporarily enables Auth email confirmation; no SMTP container or provider credentials are used.');
     const startOutput = startLocalStackWithEmailConfirmation();
+    testStackStarted = true;
     printCaptured(startOutput);
 
     const status = parseEnvironment(run('supabase', ['status', '-o', 'env'], { capture: true }));
@@ -212,9 +212,11 @@ async function main() {
     if (child.error) throw new Error(`Live integration test runner failed to start: ${child.error.message}`);
     suiteStatus = child.status ?? 1;
   } finally {
-    if (stackMayBeRunning) {
-      console.log('Restoring the stack to the checked-in local Auth defaults; the local database volume is preserved.');
+    if (testStackStarted) {
+      console.log('Restarting the local stack with the checked-in Auth defaults.');
       restoreLocalStackDefaults();
+    } else {
+      console.warn('Local Supabase startup did not complete. config.toml was restored; no automatic second start will be attempted. Inspect the CLI health-check output. An unhealthy start may prune this project\'s local Docker volumes.');
     }
   }
 

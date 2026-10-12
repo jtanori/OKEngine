@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Auth/OAuth feature implemented; verification harness authored. Fast suite 62/62 passed on 2026-10-11; local Supabase runtime tests not run (Docker/Supabase CLI unavailable) |
+| Status | Auth/OAuth feature and verification harness implemented. Latest Arena fast suite 63/63 passed on 2026-10-12. Windows local Supabase runtime suite remains not run because the Storage container fails its health check during startup. |
 | Date | 2026-10-11 |
 | Scope | Complete the current email-auth/session surface with optional Google and GitHub OAuth; prepare the existing session/workspace guard as the handoff for a later dashboard initiative |
 | Out of scope | Dashboard UI, MFA, SAML, a new passwordless flow, account-settings UI, and custom social-account-linking UI |
@@ -105,6 +105,12 @@ Limitations: Docker and the Supabase CLI are absent in this environment, so loca
 - **Authored local runtime suite:** `npm run test:auth-local` is one Windows-friendly command for clean migration/catalog assertions, real local Auth signup/confirmation and callback/retry flows, session refresh/cookie rotation, multi-tenant RLS/RPC escalation attempts, private Storage routes/abort/orphan cleanup, and unconfigured OAuth routes. The runner temporarily enables Auth email confirmations only for the disposable local test stack; tests use Auth Admin-generated one-time links and no SMTP container/provider credentials. It restores the checked-in config and restarts the stack with its manual-development defaults afterward.
 - **Local run status:** The command was attempted and exited 2 with `[NOT RUN]` because Docker was not found. It stopped at prerequisite checks before `supabase start`, status lookup, or database reset. Therefore **none** of the new migration, Auth, session, RLS, Storage, or local OAuth suites is claimed as executed.
 - **Focused type-check:** the shared local helper, all six local integration files, and auth-route runtime tests passed a temporary TypeScript project check; the temporary config was removed.
+
+## Windows validation update — 2026-10-12
+
+- The Windows checkout's fast suite passed after commit `f531cb9`; that run exposed an LF-only config fixture, which has since been made CRLF-safe. The latest Arena fast suite is **63/63** after adding a regression guard for startup cleanup.
+- `npm run test:auth-local` is **NOT RUN**: `supabase start` applied local migrations but marked `supabase_storage_okengine-local` unhealthy before the suite or its explicit `db reset` began. A manual `supabase start --debug` logged Storage “Started Successfully” but still reported unhealthy and pruned local project containers/volumes/network. The Docker health-check log is needed to identify the root cause. The checked-in email-confirmation setting was restored to `false`; no hosted target was used.
+- The runner now avoids an automatic second `supabase start` after the test-config startup itself fails. A failed Supabase CLI health check may still prune local volumes; treat the local test project as disposable.
 - **Lint:** `npm run lint` — **PASS**, 0 errors and 113 repository warnings.
 - **Repository TypeScript check:** `npx tsc --noEmit --pretty false` still reports 25 unrelated existing errors in the Redis cache adapter, docs/public component types, and `src/services/store.ts`; it reports no errors in the auth/OAuth application sources. The focused harness check above passes.
 - The earlier initial-feature production build result (`npm run build`, 27 routes) predates this harness-only follow-up and was not rerun here. Run the local stack from [LOCAL-SUPABASE-WINDOWS.md](./LOCAL-SUPABASE-WINDOWS.md) on Windows to execute the live runtime gates; the optional real-provider smoke checklist remains non-gating.

@@ -204,6 +204,13 @@ describe('Supabase Auth, RLS, and private Storage integration', () => {
     assert.match(runner, /never uses a linked\/hosted database/);
   });
 
+  it('does not retry the stack after an unsuccessful test-config startup', () => {
+    const runner = read('scripts/test-supabase-local.mjs');
+    assert.match(runner, /let testStackStarted = false/);
+    assert.match(runner, /const startOutput = startLocalStackWithEmailConfirmation\(\);\s*testStackStarted = true;/);
+    assert.match(runner, /if \(testStackStarted\) \{[\s\S]*?restoreLocalStackDefaults\(\);[\s\S]*?\} else \{[\s\S]*?no automatic second start will be attempted/i);
+  });
+
   it('maps new Auth users only by Auth UUID and provisions workspaces using auth.uid()', () => {
     const migration = read('supabase/migrations/20261011000008_supabase_auth_storage_integration.sql');
     assert.match(migration, /auth_user_id UUID/);
