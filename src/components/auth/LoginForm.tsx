@@ -8,27 +8,39 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Checkbox } from '../ui/Checkbox';
 import { PasswordInput } from '../ui/PasswordInput';
-import { AuthDivider } from '../ui/AuthDivider';
 import { SsoButtons } from './SsoButtons';
 import { validateEmailInput, validatePasswordInput, containsUnsafePayload } from '../../services/formSecurity';
-import { useRouter } from '../../app/router';
 import { authService } from '../../services/auth';
+import { getAuthApiErrorMessage, navigateToAuthPath, postAuthApi } from '../../services/authApi';
+import { useLocationSearch } from '../../services/useLocationSearch';
 import { useI18n } from '../../i18n/I18nContext';
 
 export interface LoginFormProps {
   onSubmit?: (email: string, password: string) => Promise<void>;
+  authRedirectMessage?: string;
 }
 
-export function LoginForm({ onSubmit }: LoginFormProps) {
-  const { push } = useRouter();
+export function LoginForm({ onSubmit, authRedirectMessage }: LoginFormProps) {
   const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [remember, setRemember] = useState(false);
+  const [oauthTermsAccepted, setOAuthTermsAccepted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ email?: string; password?: string }>({});
   const [isLoading, setIsLoading] = useState(false);
   const [devOpen, setDevOpen] = useState(false);
+  const search = useLocationSearch();
+  const searchParams = new URLSearchParams(search);
+  const authError = searchParams.get('authError');
+  const routeError = authError === 'callback'
+    ? 'No se pudo verificar el enlace. Solicita uno nuevo o inicia sesión.'
+    : authError === 'workspace'
+      ? 'Tu cuenta se verificó, pero no se pudo cargar el espacio de trabajo. Inténtalo de nuevo.'
+      : null;
+  const notice = authRedirectMessage
+    || (searchParams.get('confirmed') === '1' ? 'Correo confirmado. Ya puedes iniciar sesión.' : null)
+    || (searchParams.get('passwordReset') === '1' ? 'Contraseña actualizada. Inicia sesión con tu nueva contraseña.' : null);
 
   const validate = () => {
     const errors: { email?: string; password?: string } = {};
@@ -65,7 +77,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
       try {
         authService.switchPersona(userId);
       } catch {}
-      window.location.href = '/workspaces/okeng/collections';
+      navigateToAuthPath('/workspaces/okeng/collections', '/workspaces/okeng/collections');
       return;
     } catch {
       setError('Error en dev login');
@@ -83,20 +95,12 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
     try {
       if (onSubmit) await onSubmit(email, password);
       else {
-        const csrfRes = await fetch('/api/csrf-token');
-        const { csrfToken } = await csrfRes.json();
-        const res = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
-          body: JSON.stringify({ email, password }),
-        });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          if (res.status === 429) setError(`Demasiados intentos, intenta en ${data.retryAfter || 60}s`);
-          else setError('Credenciales inválidas');
+        const { response, data } = await postAuthApi('login', { email, password, remember });
+        if (!response.ok) {
+          setError(getAuthApiErrorMessage(response.status, data, 'Credenciales inválidas'));
           return;
         }
-        push('/workspaces/okeng/collections');
+        navigateToAuthPath(data.redirectTo, '/workspaces/okeng/collections');
       }
     } catch {
       setError('Error interno, intenta de nuevo');
@@ -136,15 +140,23 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         </div>
       }
     >
-      {/* SSO top per locked v2 */}
-      <SsoButtons />
-      <AuthDivider label="o continúa con correo" />
+      {/* Remember me applies to both email/password and provider sign-in. */}
+      <div className="mb-3">
+        <Checkbox id="remember" checked={remember} onChange={setRemember} label="Recordarme" />
+      </div>
+      <SsoButtons
+        remember={remember}
+        termsAccepted={oauthTermsAccepted}
+        onTermsAcceptedChange={setOAuthTermsAccepted}
+        showTermsConsent
+      />
 
+      {notice && <div role="status" className="bg-success-subtle border border-line rounded-sm p-3 text-xs text-success">{notice}</div>}
       <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-        {error && (
+        {(error || routeError) && (
           <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-start gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{error}</span>
+            <span>{error || routeError}</span>
           </div>
         )}
         <Input
@@ -161,8 +173,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
           leadingIcon={<span className="text-ink-muted">✉</span>}
         />
         <PasswordInput label="Contraseña" value={password} onChange={setPassword} error={fieldErrors.password} id="password" hint={fieldErrors.password ? undefined : 'Tu contraseña'} />
-        <div className="flex items-center justify-between -mt-1">
-          <Checkbox id="remember" checked={remember} onChange={setRemember} label="Recordarme" />
+        <div className="flex justify-end -mt-1">
           <a href="/forgot-password" className="text-xs text-accent hover:underline">
             ¿Olvidaste tu contraseña?
           </a>

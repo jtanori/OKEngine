@@ -5,9 +5,10 @@
 // Enforces 5-Link Authorization Chain before rendering any /workspaces/[slug]/* route
 // ============================================================================
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ShieldAlert, KeyRound, UserCheck, Globe } from 'lucide-react';
 import { AppShell } from '../../../../components/AppShell';
+import { SupabaseWorkspaceOverview } from '../../../../components/SupabaseWorkspaceOverview';
 import { Card, Box, Badge, Text, Button, InfoPopover } from '../../../../components/ui';
 import { authService } from '../../../../services/auth';
 import { useParams, useAppRoute, useRouter } from '../../../router';
@@ -27,8 +28,27 @@ export default function WorkspaceLayout({
   const { t } = useI18n();
 
   const workspaceSlug = propSlug || params.workspaceSlug || 'okeng';
+  const [sessionReady, setSessionReady] = useState(authService.isSessionResolved());
 
-  // Enforce 5-Link Workspace Authorization Chain (AUTH-05 §3)
+  useEffect(() => {
+    let active = true;
+    void authService.refreshServerSession().finally(() => {
+      if (active) setSessionReady(true);
+    });
+    return () => { active = false; };
+  }, []);
+
+  if (!sessionReady && !authService.isSessionResolved()) {
+    return (
+      <div role="status" className="min-h-screen flex items-center justify-center text-sm text-ink-secondary">
+        Verifying your workspace session…
+      </div>
+    );
+  }
+
+  // Enforce the server-hydrated session for UI navigation. Mutations still
+  // reauthorize independently in the API and RLS; this client guard is not the
+  // database security boundary.
   const enforcement = authService.enforceWorkspaceAccess(workspaceSlug);
   const currentUser = authService.getCurrentUser();
 
@@ -102,31 +122,35 @@ export default function WorkspaceLayout({
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5 pt-2">
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => authService.switchPersona('usr_sarah_102')}
-              >
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>{t('auth_gate.switch_owner', 'Switch to Sarah Chen (Workspace Owner)')}</span>
-              </Button>
+              {!authService.isSupabaseSessionMode() && (
+                <>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => authService.switchPersona('usr_sarah_102')}
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>{t('auth_gate.switch_owner', 'Switch to Sarah Chen (Workspace Owner)')}</span>
+                  </Button>
 
-              {currentUser?.platformRole === 'PLATFORM_ADMIN' && (
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    authService.grantExceptionalAccess(
-                      currentUser.id,
-                      'Emergency support investigation approved by Platform Owner'
-                    );
-                  }}
-                >
-                  <KeyRound className="w-3.5 h-3.5 text-accent" />
-                  <span>
-                    {t('auth_gate.simulate_grant', 'Simulate Owner-Approved Temporary Access (30m)')}
-                  </span>
-                </Button>
+                  {currentUser?.platformRole === 'PLATFORM_ADMIN' && (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        authService.grantExceptionalAccess(
+                          currentUser.id,
+                          'Emergency support investigation approved by Platform Owner'
+                        );
+                      }}
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-accent" />
+                      <span>
+                        {t('auth_gate.simulate_grant', 'Simulate Owner-Approved Temporary Access (30m)')}
+                      </span>
+                    </Button>
+                  )}
+                </>
               )}
 
               <Button
@@ -144,7 +168,22 @@ export default function WorkspaceLayout({
     );
   }
 
-  // State 4 (AUTH-05 §17): Authenticated and Authorized Workspace Member
+  // Supabase Auth sessions must never fall through to the legacy localStorage
+  // dashboard. Show only the tenant-backed overview until each dashboard module
+  // has a Supabase repository/API adapter.
+  if (authService.isSupabaseSessionMode()) {
+    return (
+      <SupabaseWorkspaceOverview
+        workspaceSlug={workspaceSlug}
+        workspaceName={authService.getActiveWorkspace()?.name || workspaceSlug}
+        userEmail={currentUser?.email || ''}
+        workspaceRole={enforcement.context?.workspaceRole || 'WORKSPACE_USER'}
+        workspacePermissions={enforcement.context?.permissions || []}
+      />
+    );
+  }
+
+  // State 4 (AUTH-05 §17): Authenticated and Authorized memory/demo workspace
   return (
     <AppShell
       currentRoute={appRoute}

@@ -258,7 +258,7 @@ src/app/api/
 ```ts
 // Example: src/app/api/collections/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { getSession, requireSystemRole } from '@/lib/auth';
+import { getSessionContext, requireSystemRole } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
 import { createCollectionSchema } from '@/lib/validation';
 import { checkLimit, increment } from '@/lib/usage';
@@ -269,12 +269,13 @@ export async function GET(request: NextRequest) {
   const rl = await rateLimit(request, 'READ');
   if (!rl.success) return NextResponse.json({ error: "rate_limit_exceeded", message: "Too many requests", retryAfter: rl.retryAfter }, { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } });
 
-  // Session
-  const session = await getSession(request);
-  if (!session) return NextResponse.json({ error: "unauthorized", message: "No autorizado" }, { status: 401 });
+  // Session; retain SSR refresh/rotation cookie updates for every response.
+  const { session, applyToResponse } = await getSessionContext(request);
+  const respond = (body: unknown, init?: ResponseInit) => applyToResponse(NextResponse.json(body, init));
+  if (!session) return respond({ error: "unauthorized", message: "No autorizado" }, { status: 401 });
 
   // Privilege
-  try { requireSystemRole(session.role, 'member'); } catch { return NextResponse.json({ error: "forbidden", message: "No tienes permiso" }, { status: 403 }); }
+  try { requireSystemRole(session.role, 'member'); } catch { return respond({ error: "forbidden", message: "No tienes permiso" }, { status: 403 }); }
 
   // Business logic
   // ...

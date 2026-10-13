@@ -264,6 +264,7 @@ export const AppRouterProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const [, setTick] = useState(0);
 
   useEffect(() => {
+    void authService.refreshServerSession();
     const unsubStore = store.subscribe(() => setTick((t) => t + 1));
     const unsubAuth = authService.subscribe(() => setTick((t) => t + 1));
     const onPopState = () => {

@@ -7,6 +7,7 @@ import { AuthCard } from '../ui/AuthCard';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { validateEmailInput } from '../../services/formSecurity';
+import { getAuthApiErrorMessage, postAuthApi } from '../../services/authApi';
 import { useI18n } from '../../i18n/I18nContext';
 
 export function ForgotPasswordForm() {
@@ -28,13 +29,11 @@ export function ForgotPasswordForm() {
     setIsLoading(true);
     setError(null);
     try {
-      const csrfRes = await fetch('/api/csrf-token');
-      const { csrfToken } = await csrfRes.json();
-      await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
-        body: JSON.stringify({ email }),
-      });
+      const { response, data } = await postAuthApi('forgotPassword', { email });
+      if (!response.ok) {
+        setError(getAuthApiErrorMessage(response.status, data, 'No se pudo enviar el enlace. Inténtalo de nuevo.'));
+        return;
+      }
       setSuccess(true);
     } catch {
       setError('Error interno');

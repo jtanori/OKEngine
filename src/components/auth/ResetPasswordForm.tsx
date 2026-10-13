@@ -7,11 +7,11 @@ import { AuthCard } from '../ui/AuthCard';
 import { Button } from '../ui/Button';
 import { PasswordInput } from '../ui/PasswordInput';
 import { validatePasswordInput } from '../../services/formSecurity';
-import { useRouter } from '../../app/router';
+import { getAuthApiErrorMessage, navigateToAuthPath, postAuthApi } from '../../services/authApi';
+import { useLocationSearch } from '../../services/useLocationSearch';
 import { useI18n } from '../../i18n/I18nContext';
 
 export function ResetPasswordForm() {
-  const { push } = useRouter();
   const { t } = useI18n();
   const [newPassword, setNewPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -19,6 +19,9 @@ export function ResetPasswordForm() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const search = useLocationSearch();
+  const invalidLink = new URLSearchParams(search).get('error') === 'invalid-link';
+  const visibleError = error || (invalidLink ? 'El enlace de restablecimiento es inválido o expiró. Solicita uno nuevo.' : null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,26 +39,13 @@ export function ResetPasswordForm() {
     setIsLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams(window.location.search);
-      const token = params.get('token');
-      if (!token) {
-        setError('Token faltante o inválido');
-        return;
-      }
-      const csrfRes = await fetch('/api/csrf-token');
-      const { csrfToken } = await csrfRes.json();
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
-        body: JSON.stringify({ token, newPassword, confirmPassword: confirm }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.message || 'Token inválido o expirado');
+      const { response, data } = await postAuthApi('resetPassword', { newPassword, confirmPassword: confirm });
+      if (!response.ok) {
+        setError(getAuthApiErrorMessage(response.status, data, 'Token inválido o expirado'));
         return;
       }
       setSuccess(true);
-      setTimeout(() => push('/login'), 2000);
+      window.setTimeout(() => navigateToAuthPath('/login?passwordReset=1', '/login'), 2000);
     } catch {
       setError('Error interno');
     } finally {
@@ -94,7 +84,7 @@ export function ResetPasswordForm() {
         <div className="bg-success-subtle border border-line rounded-sm p-4 text-sm text-success">Contraseña restablecida, redirigiendo a login...</div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-          {error && <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{error}</div>}
+          {visibleError && <div role="alert" className="bg-danger-subtle border border-danger/30 rounded-sm p-3 text-xs text-danger flex items-center gap-2"><AlertCircle className="w-4 h-4 shrink-0" />{visibleError}</div>}
           <PasswordInput label="Nueva contraseña" value={newPassword} onChange={setNewPassword} error={errors.newPassword} id="newPassword" showStrength />
           <PasswordInput label="Confirma contraseña" value={confirm} onChange={setConfirm} error={errors.confirm} id="confirm" />
           <Button type="submit" variant="primary" size="md" isLoading={isLoading} className="w-full bg-gradient-to-r from-accent-indigo to-accent-violet hover:opacity-90 text-white border-0 shadow-md">

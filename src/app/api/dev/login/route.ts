@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createSessionResponse } from '@/lib/auth';
+import { createSessionResponse, getAuthDataMode } from '@/lib/auth';
 import { getEnv } from '@/lib/env';
 
 // Dev-only login that bypasses DB — sets httpOnly session cookie
@@ -34,8 +34,12 @@ const DEV_USERS: Record<string, { email: string; role: 'super_admin' | 'admin' |
 };
 
 function isProduction(): boolean {
-  // Fail closed: any production indicator blocks, even if flag is misconfigured or VERCEL_ENV missing
-  return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+  // Fail closed across framework and application deployment labels.
+  const environment = (process.env.OKENG_ENV || '').toLowerCase();
+  return process.env.NODE_ENV === 'production'
+    || process.env.VERCEL_ENV === 'production'
+    || environment === 'production'
+    || environment === 'staging';
 }
 
 export async function POST(request: NextRequest) {
@@ -44,7 +48,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'not_available_in_production' }, { status: 403 });
   }
 
-  // 2. Require explicit server-controlled flag — missing/malformed = blocked (fail closed)
+  // 2. This legacy mock session belongs only to the memory demo adapter.
+  // Never mint it when Supabase Auth/RLS is the selected identity source.
+  if (getAuthDataMode() !== 'memory') {
+    return NextResponse.json({ error: 'dev_login_not_available_in_supabase_mode' }, { status: 403 });
+  }
+
+  // 3. Require explicit server-controlled flag — missing/malformed = blocked (fail closed)
   if (process.env.ENABLE_DEV_LOGIN !== 'true') {
     return NextResponse.json({ error: 'dev_login_disabled', hint: 'Set ENABLE_DEV_LOGIN=true in server env to enable' }, { status: 403 });
   }

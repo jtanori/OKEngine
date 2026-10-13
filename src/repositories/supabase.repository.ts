@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { getSupabaseServerClient } from '../lib/supabase/server';
 import type {
 	ChatMessage,
 	ChatSession,
@@ -23,12 +22,6 @@ async function unwrap<T>(query: PromiseLike<any>): Promise<T> {
 	const { data, error } = await query;
 	if (error) throw new Error(error.message);
 	return data as T;
-}
-
-function client(): SupabaseClient {
-	const supabase = getSupabaseServerClient();
-	if (!supabase) throw new Error('Supabase server client is not configured.');
-	return supabase;
 }
 
 function toWorkspace(row: DatabaseRow): Workspace {
@@ -159,7 +152,9 @@ function rankChunks(
 		.slice(0, query.limit ?? 6);
 }
 
-export const supabaseRepositories: RepositoryRegistry = {
+export function createSupabaseRepositories(supabaseClient: SupabaseClient): RepositoryRegistry {
+	const client = () => supabaseClient;
+	const supabaseRepositories: RepositoryRegistry = {
 	workspaces: {
 		getBySlug: async (slug) => {
 			const row = await unwrap<DatabaseRow | null>(
@@ -531,4 +526,6 @@ export const supabaseRepositories: RepositoryRegistry = {
 			return rankChunks(query, documents, chunksByDocument);
 		},
 	},
-};
+	};
+	return supabaseRepositories;
+}

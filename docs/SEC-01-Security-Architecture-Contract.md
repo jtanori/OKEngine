@@ -7,8 +7,8 @@
 | **Owner** | Platform Security Engineering |
 | **Authority** | Blocking Gate — Phase 01 & Phase 02 |
 | **Dependencies** | `AUTH-01`, `AUTH-02`, `AUTH-03`, `AUTH-04`, `AUTH-05`, `EMBED-01`, `DB-01` |
-| **Source of Truth** | `server.ts`, `src/services/auth.ts`, `src/services/embedAuthorization.ts` |
-| **Revision** | `2.1 (2026-10-09)` |
+| **Source of Truth** | `src/proxy.ts`, `src/lib/auth.ts`, `src/lib/supabase/*`, `src/app/api/auth/*`, `src/app/auth/callback/route.ts`, `src/services/embedAuthorization.ts` |
+| **Revision** | `2.4 (2026-10-11)` — Fail-closed clean-local Auth/PostgreSQL/RLS/Storage/session verification harness and explicit non-hosted test boundary |
 
 ---
 
@@ -16,7 +16,7 @@
 
 OKEng enforces a **Zero-Trust Multi-Tenant Security Architecture** across its SaaS dashboard and embedded knowledge runtime. No single layer is trusted in isolation:
 
-1. **Server-Mediated Access Only**: All authentication, database persistence, file storage, and AI model invocations execute strictly through the Express API gateway. Browser bundles never initialize `@supabase/supabase-js` or communicate directly with Supabase Auth, PostgREST, or Storage endpoints.
+1. **Server-Mediated Access Only**: Authentication, database persistence, file storage, and AI model invocations execute through same-origin Next.js App Router server handlers. Supabase Auth and user-scoped PostgREST/Storage access use request-scoped server clients; browser bundles do not initialize Supabase clients or call Supabase Auth/PostgREST/Storage directly.
 2. **Note on Public vs. Secret Keys**: While hiding the Supabase project URL and publishable `anon` key from the browser reduces direct client discovery, those values are not cryptographic secrets by themselves. The actual security boundary is enforced by (a) server-side 5-Link authorization, (b) request-scoped PostgreSQL `FORCE ROW LEVEL SECURITY` (`auth.uid()`), (c) composite cross-tenant foreign keys, and (d) narrow `service_role` isolation.
 3. **Pre-Retrieval Authorization Invariant (`SECURITY-001`)**: Collection scope and caller identity are verified **before** any document or chunk query executes. Unauthorized documents never enter the BM25 retrieval index, the response compiler, the cache lookup key, or the Gemini LLM prompt context.
 
@@ -30,7 +30,7 @@ OKEng separates authentication and session management into three non-overlapping
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ DOMAIN A: OKENG DASHBOARD SESSION (First-Party Workspace Operators)                    │
 │  Browser ──► [HttpOnly; Secure; SameSite=Lax Cookie + Session-Bound X-CSRF-Token]      │
-│          ──► Express Auth Guard ──► 5-Link Workspace Guard ──► User-Scoped RLS Client  │
+│          ──► Next.js Auth/API Route ──► Workspace Guard ──► User-Scoped RLS Client      │
 ├────────────────────────────────────────────────────────────────────────────────────────┤
 │ DOMAIN B: HOST APPLICATION IDENTITY (Customer Backend Assertions)                      │
 │  Customer Server ──► [Short-Lived Signed HS256 Assertion (`iss`,`aud`,`sub`,`jti`)]    │
@@ -45,26 +45,27 @@ OKEng separates authentication and session management into three non-overlapping
 ### 2.1 Domain A — OKEng Dashboard Session Contract
 
 - **Purpose**: Authenticates human workspace owners, editors, read-only members, and platform administrators operating the OKEng web application.
-- **Opaque / Encrypted `HttpOnly` Cookie Transport**:
-  - Upon successful `/api/auth/login`, `/api/auth/signup`, or `/api/auth/refresh`, the Express server sets cookie `__Host-okeng_session` (in HTTPS staging/production; `okeng_session` in localhost HTTP dev) with attributes:
-    - `HttpOnly` (prevents `document.cookie` access by JavaScript)
-    - `Secure` (mandatory in `staging` and `production`)
-    - `SameSite=Lax`
-    - `Path=/api`
-    - `Max-Age=3600` (1 hour access lifetime; paired with rotating refresh token stored server-side or in `/api/auth/refresh`-scoped cookie)
-  - Raw Supabase `access_token` and `refresh_token` values are **never** written to `localStorage`, `sessionStorage`, or non-`HttpOnly` cookies.
+- **Supabase Auth `HttpOnly` Cookie Transport (current Next.js implementation)**:
+  - Request-scoped Supabase SSR clients store Auth session data in the `okeng-auth` cookie namespace (which may be chunked), with `HttpOnly`, `SameSite=Lax`, `Path=/`, and `Secure` when `NODE_ENV=production`.
+  - The default is a browser-session cookie. When Remember me is selected, the Auth cookie and the HttpOnly `okeng.remember` preference use a 30-day `Max-Age`; the Next.js proxy refreshes Auth tokens server-side.
+  - Raw Auth access/refresh tokens are never written to `localStorage`, `sessionStorage`, or JavaScript-readable cookies. No custom `__Host-okeng_session` cookie or `/api/auth/refresh` endpoint is used for the Supabase Auth path.
+  - `getSessionContext()` preserves the request-scoped SSR response applier alongside the safe app-session projection. Every API handler that resolves a session applies queued Auth cookie/header updates to its outgoing response—including post-resolution errors—so a refreshed session is not lost after a request.
+- **Optional Google/GitHub OAuth flow**:
+  - `/api/auth/providers` returns only the allow-listed provider names whose server-side client-ID/secret pairs are complete; provider secrets are never returned to the browser.
+  - `/api/auth/oauth/start` is POST-only, rate-limited, CSRF-validated, requires Terms/Privacy consent, uses a request-scoped PKCE Supabase SSR client, and returns only a validated Supabase `/auth/v1/authorize` URL. The app callback is fixed to the configured same-origin `/auth/callback`.
+  - `/auth/callback` exchanges the Auth code/allowed OTP, verifies the user, rejects missing usable email, and provisions the initial workspace by Auth UUID through the `auth.uid()`-bound RPC. Provisioning/email failures sign out and return a generic error. Only safe internal post-auth paths are accepted; provider metadata never assigns app roles.
+  - No application-level email merging/custom social linking is implemented. The browser only performs the top-level navigation to the validated authorization URL and never stores provider credentials or Auth tokens in JavaScript storage.
 - **Precise Cookie, CSRF & XSS Security Guarantees**:
   - **What `HttpOnly` Guarantees**: Prevents an injected script from reading the raw session cookie value and exfiltrating it to an external server for offline replay.
   - **What `HttpOnly` Does NOT Guarantee Alone**: An active in-page XSS payload running inside the origin can still trigger authenticated `fetch()` requests that automatically attach cookies. Therefore, OKEng enforces six mandatory controls alongside `HttpOnly`:
-    1. **Exact-Origin Validation**: Every state-changing request (`POST`, `PUT`, `PATCH`, `DELETE`) on Domain A routes validates that the `Origin` header (or `Referer` origin if `Origin` is absent) matches an exact entry in `OKENG_ALLOWED_ORIGINS`. Requests with missing or mismatched origins are rejected with `403 CSRF_ORIGIN_MISMATCH` before body parsing completes.
-    2. **Session-Bound HMAC Synchronizer CSRF Token**:
-       - `GET /api/auth/session` returns a CSRF token constructed as:
-         $$\text{csrfToken} = \text{nonce} \mathbin{\Vert} \text{"."} \mathbin{\Vert} \text{HMAC-SHA256}(\text{OKENG\_CSRF\_SECRET}, \text{sessionId} \mathbin{\Vert} \text{":"} \mathbin{\Vert} \text{csrfEpoch} \mathbin{\Vert} \text{":"} \mathbin{\Vert} \text{nonce})$$
-       - Every state-changing Domain A request must supply this token in the `X-CSRF-Token` header, verified in constant time (`crypto.timingSafeEqual`).
-    3. **CSRF Rotation & Concurrent Tab Grace Window**: The `csrfEpoch` rotates upon login, privilege change, password reset, and session refresh. To prevent false-positive failures across concurrent browser requests during a refresh transition, the verifier accepts `csrfEpoch` and `csrfEpoch - 1` for a bounded 30-second grace window.
+    1. **Origin/CORS and CSRF (current implementation)**: `src/proxy.ts` applies exact matching against `CORS_ALLOWED_ORIGINS` when that list is configured; an API request with a disallowed `Origin` is rejected. Independently, mutating auth routes require the CSRF cookie/header pair checked by `validateCsrf()`. CORS configuration is not a substitute for the CSRF check.
+    2. **Double-submit CSRF token (current implementation)**:
+       - `GET /api/csrf-token` generates 32 random bytes encoded as hex, sets `okeng.csrf` (or `__Host-okeng.csrf`) as a JavaScript-readable, `SameSite=Strict` cookie with a one-hour max age, and returns the token in JSON.
+       - Mutating API requests must send the same value in `X-CSRF-Token` or `X-OKENG-CSRF`; `validateCsrf()` compares the cookie/header pair using `crypto.timingSafeEqual`.
+    3. **CSRF lifetime and rotation**: The current implementation relies on the one-hour cookie lifetime and a fresh `/api/csrf-token` response when needed. It does not implement a session-bound `csrfEpoch` or previous-epoch concurrency grace window.
     4. **Zero State Mutation on `GET`/`HEAD`/`OPTIONS`**: Read methods are strictly side-effect-free.
-    5. **Strict Content-Security-Policy (CSP) & Output Encoding**: The Express gateway emits `Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'self'`, and all Markdown/HTML output passes through the deterministic AST sanitizer (`src/content/sanitizer`).
-    6. **Strict CORS Separation**: CORS (`Access-Control-Allow-Origin`) is never set to `*` with `Access-Control-Allow-Credentials: true`, and never reflects arbitrary caller `Origin` values.
+    5. **Content-Security-Policy (CSP) & Output Encoding**: `src/proxy.ts` emits the Next.js response CSP and restricts framing outside explicitly allowed embed-preview routes. Markdown/HTML output continues through the deterministic AST sanitizer (`src/content/sanitizer`).
+    6. **CORS separation**: When `CORS_ALLOWED_ORIGINS` is configured, `src/proxy.ts` emits credentialed CORS headers only for an exact listed origin and rejects disallowed API origins. It never emits wildcard credentials or reflects arbitrary origins.
 
 ### 2.2 Domain B — Host Application Identity Protocol
 

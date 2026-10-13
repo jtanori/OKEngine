@@ -3,11 +3,15 @@
 | Field | Value |
 | :--- | :--- |
 | **Document ID** | `01_ui_foundation` |
-| **Status** | `APPROVED — v3.1` |
+| **Status** | `APPROVED — v3.5` |
 | **Owner** | Design System |
 | **Authority** | Blocking |
 | **Dependencies** | `00_product_contract`, `SEC-01`, `PLAN-001`, `PLAN-002`, `PLAN-003`, `PLAN-006` |
-| **Revision** | `3.4 (2026-10-11)` — Auth defects 1-4: single Globe, corporate footer About·TOS·Privacy·Contact, hidden dev |
+| **Revision** | `3.5 (2026-10-11)` — OAuth providers are optional/configuration-driven; no empty provider section or divider |
+
+## v3.5 Changelog (from v3.4)
+
+- **Optional OAuth controls**: Login and signup may show Google and/or GitHub only when the server advertises that provider as configured. The complete provider area, including its email divider, is absent while discovery is pending, unavailable, or empty. Login provider use shares the Remember me state and requires Terms/Privacy consent; signup reuses its required terms checkbox. Email/password, recovery, and reset remain available regardless of provider configuration. No new design tokens.
 
 ## v3.4 Changelog (from v3.3)
 

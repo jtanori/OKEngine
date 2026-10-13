@@ -12,12 +12,13 @@ export type AuthPageType = 'login' | 'signup' | 'forgot-password' | 'reset-passw
 
 export interface AuthViewProps {
   initialPage: AuthPageType;
+  authRedirectMessage?: string;
 }
 
-export function AuthView({ initialPage }: AuthViewProps) {
+export function AuthView({ initialPage, authRedirectMessage }: AuthViewProps) {
   return (
     <AuthShell variant={initialPage}>
-      {initialPage === 'login' && <LoginForm />}
+      {initialPage === 'login' && <LoginForm authRedirectMessage={authRedirectMessage} />}
       {initialPage === 'signup' && <SignupForm />}
       {initialPage === 'forgot-password' && <ForgotPasswordForm />}
       {initialPage === 'reset-password' && <ResetPasswordForm />}

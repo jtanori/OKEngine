@@ -1,0 +1,91 @@
+# Local-only Supabase stack for OKEngine.
+# This config is consumed by `supabase start`; it does not configure a hosted project.
+project_id = "okengine-local"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[db.pooler]
+enabled = false
+
+[db.migrations]
+enabled = true
+
+[db.seed]
+enabled = false
+
+# Keep only the services requested for the local application stack, plus the
+# API gateway/PostgREST required by supabase-js. Optional UI/infra services are off.
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+
+[local_smtp]
+enabled = false
+
+[storage]
+enabled = true
+file_size_limit = "10MiB"
+
+[storage.s3_protocol]
+enabled = false
+
+[storage.image_transformation]
+enabled = false
+
+[storage.vector]
+enabled = false
+
+[storage.analytics]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3000/auth/callback", "http://127.0.0.1:3000/auth/callback", "http://localhost:3000/**", "http://127.0.0.1:3000/**"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+# OAuth is disabled in the checked-in baseline config so `supabase start` works
+# without third-party credentials. The Windows helper temporarily enables only
+# providers whose complete server-only credential pair is present in .env.local.
+[auth.external.google]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+# Supabase's local Google flow requires nonce checking to be skipped; PKCE/state
+# and the server-managed callback/session cookies remain enabled.
+skip_nonce_check = true
+email_optional = false
+
+[auth.external.github]
+enabled = false
+client_id = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET)"
+redirect_uri = "http://127.0.0.1:54321/auth/v1/callback"
+skip_nonce_check = false
+email_optional = false
+
+# This checkout has no application-owned Edge Functions; keep the runtime off.
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false

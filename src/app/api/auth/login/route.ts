@@ -1,81 +1,133 @@
-// POST /api/auth/login — Login with rate limiting, CSRF, validation, session regeneration, primary workspace deterministic (P1 Phase 5)
-// Implements: primary workspace most recent active membership ORDER BY created_at DESC LIMIT 1, populate session workspaceId and workspaceRole
-
 import { NextRequest, NextResponse } from 'next/server';
 import { loginSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rateLimit';
-import { validateCsrf, createSessionResponse } from '@/lib/auth';
-import { getPool } from '@/lib/db';
-import { getPrimaryWorkspaceForUser } from '@/lib/workspaceAuth';
-import bcrypt from 'bcryptjs';
+import { validateCsrf } from '@/lib/auth';
+import {
+  AUTH_SESSION_PERSISTENCE_COOKIE_NAME,
+  clearSupabaseAuthSessionCookies,
+  createRouteSupabaseClient,
+  getAuthSessionPersistenceCookieOptions,
+} from '@/lib/supabase/server';
+import type { RouteSupabaseClient } from '@/lib/supabase/server';
 
-export async function POST(request: NextRequest) {
-  // Rate limiting AUTH
-  const rl = await rateLimit(request, 'AUTH');
-  if (!rl.success) {
-    return NextResponse.json(
-      { error: 'rate_limit_exceeded', message: `Demasiados intentos, intenta en ${rl.retryAfter}s`, retryAfter: rl.retryAfter },
-      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
-    );
-  }
+export const runtime = 'nodejs';
 
-  // CSRF
-  if (!validateCsrf(request)) {
-    return NextResponse.json({ error: 'csrf_invalid', message: 'Invalid CSRF token' }, { status: 403 });
-  }
+export interface LoginDependencies {
+  rateLimit: typeof rateLimit;
+  validateCsrf: typeof validateCsrf;
+  createRouteSupabaseClient: typeof createRouteSupabaseClient;
+}
 
-  // Validation
-  let body: any;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'bad_request', message: 'Invalid JSON' }, { status: 400 });
-  }
+function authErrorStatus(error: { status?: number }): number {
+  return error.status && error.status >= 500 ? 503 : 401;
+}
 
-  const parsed = loginSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: 'validation_error', message: 'Error de validación', details: parsed.error.flatten() }, { status: 422 });
-  }
+export function createLoginHandler(
+  overrides: Partial<LoginDependencies> = {},
+): (request: NextRequest) => Promise<NextResponse> {
+  const dependencies: LoginDependencies = {
+    rateLimit,
+    validateCsrf,
+    createRouteSupabaseClient,
+    ...overrides,
+  };
 
-  const { email, password } = parsed.data;
-
-  try {
-    const pool = getPool();
-    const res = await pool.query('SELECT id, email, password_hash, name, role FROM users WHERE email = $1', [email]);
-    if (res.rows.length === 0) {
-      // Generic 401, no enumeration
-      return NextResponse.json({ error: 'unauthorized', message: 'Credenciales inválidas' }, { status: 401 });
+  return async function POST(request: NextRequest) {
+    const rl = await dependencies.rateLimit(request, 'AUTH');
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'rate_limit_exceeded', message: `Demasiados intentos, intenta en ${rl.retryAfter}s`, retryAfter: rl.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } }
+      );
     }
 
-    const user = res.rows[0];
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-      return NextResponse.json({ error: 'unauthorized', message: 'Credenciales inválidas' }, { status: 401 });
+    if (!dependencies.validateCsrf(request)) {
+      return NextResponse.json({ error: 'csrf_invalid', message: 'Invalid CSRF token' }, { status: 403 });
     }
 
-    // Phase 5: Get primary workspace — most recent active membership ORDER BY created_at DESC LIMIT 1
-    // Deterministic default but not proof for billing — billing operations still validate membership
-    let primaryWorkspace: { workspaceId: string; role: string } | null = null;
+    let body: unknown;
     try {
-      primaryWorkspace = await getPrimaryWorkspaceForUser(user.id);
-    } catch (err) {
-      console.warn('[auth/login] Failed to get primary workspace, continuing without', err);
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: 'bad_request', message: 'Invalid JSON' }, { status: 400 });
     }
 
-    // Session creation with regeneration, including workspaceId and workspaceRole
-    const sessionData = {
-      userId: user.id,
-      email: user.email,
-      role: user.role || 'member',
-      workspaceId: primaryWorkspace?.workspaceId,
-      workspaceRole: primaryWorkspace?.role,
-      createdAt: Date.now(),
+    const parsed = loginSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'validation_error', message: 'Error de validación', details: parsed.error.flatten() }, { status: 422 });
+    }
+
+    let applyToResponse = (response: NextResponse) => response;
+    let authSessionCreated = false;
+    const finalizeFailure = (response: NextResponse) => {
+      const withPendingCookies = applyToResponse(response);
+      return authSessionCreated ? clearSupabaseAuthSessionCookies(withPendingCookies) : withPendingCookies;
     };
 
-    const response = createSessionResponse(sessionData);
-    return response;
-  } catch (err: any) {
-    console.error('[auth/login] Error', err);
-    return NextResponse.json({ error: 'internal_error', message: 'Error interno' }, { status: 500 });
-  }
+    try {
+      const scopedClient: RouteSupabaseClient = dependencies.createRouteSupabaseClient(request, { rememberSession: parsed.data.remember });
+      applyToResponse = scopedClient.applyToResponse;
+      const { client } = scopedClient;
+      const { data, error } = await client.auth.signInWithPassword(parsed.data);
+      if (error || !data.user) {
+        const status = error ? authErrorStatus(error) : 401;
+        const response = NextResponse.json(
+          { error: status === 503 ? 'auth_unavailable' : 'unauthorized', message: status === 503 ? 'Autenticación no disponible' : 'Credenciales inválidas' },
+          { status }
+        );
+        response.headers.set('Cache-Control', 'no-store');
+        return finalizeFailure(response);
+      }
+      authSessionCreated = Boolean(data.session);
+
+      // Do not trust a submitted workspace ID. Provisioning returns the caller's
+      // own existing or newly created default workspace under auth.uid().
+      const { data: provisioned, error: provisionError } = await client.rpc('provision_initial_workspace');
+      if (provisionError) {
+        console.error('[auth/login] Workspace provisioning failed', provisionError.message);
+        await client.auth.signOut({ scope: 'local' });
+        const response = NextResponse.json({ error: 'workspace_unavailable', message: 'No se pudo cargar el espacio de trabajo' }, { status: 503 });
+        response.headers.set('Cache-Control', 'no-store');
+        return finalizeFailure(response);
+      }
+
+      const workspace = Array.isArray(provisioned) ? provisioned[0] : provisioned;
+      if (!workspace?.workspace_id || !workspace?.workspace_slug) {
+        await client.auth.signOut({ scope: 'local' });
+        const response = NextResponse.json({ error: 'workspace_unavailable', message: 'No se pudo cargar el espacio de trabajo' }, { status: 503 });
+        response.headers.set('Cache-Control', 'no-store');
+        return finalizeFailure(response);
+      }
+
+      const verified = await client.auth.getUser();
+      if (verified.error || !verified.data.user || verified.data.user.id !== data.user.id) {
+        await client.auth.signOut({ scope: 'local' });
+        const response = NextResponse.json({ error: 'unauthorized', message: 'Credenciales inválidas' }, { status: 401 });
+        response.headers.set('Cache-Control', 'no-store');
+        return finalizeFailure(response);
+      }
+
+      const redirectTo = `/workspaces/${encodeURIComponent(workspace.workspace_slug)}/collections`;
+      const response = NextResponse.json({
+        success: true,
+        user: { id: verified.data.user.id, email: verified.data.user.email },
+        workspace: { id: workspace.workspace_id, slug: workspace.workspace_slug },
+        redirectTo,
+      });
+      response.headers.set('Cache-Control', 'no-store');
+      response.cookies.set(
+        AUTH_SESSION_PERSISTENCE_COOKIE_NAME,
+        parsed.data.remember ? '1' : '',
+        getAuthSessionPersistenceCookieOptions(parsed.data.remember),
+      );
+      return applyToResponse(response);
+    } catch (error) {
+      console.error('[auth/login] Supabase Auth request failed', error instanceof Error ? error.message : 'unknown error');
+      const response = NextResponse.json({ error: 'auth_unavailable', message: 'Autenticación no disponible' }, { status: 503 });
+      response.headers.set('Cache-Control', 'no-store');
+      return finalizeFailure(response);
+    }
+  };
 }
+
+export const POST = createLoginHandler();

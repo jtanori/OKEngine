@@ -2,8 +2,10 @@
 // Order: env (build time) → trust proxy → headers → CORS → session → CSRF → rate limiting
 // Phase 6: Sanitize forwarding headers in prod, document trust boundary for TRUST_PROXY
 
+import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { AUTH_SESSION_PERSISTENCE_COOKIE_NAME, SUPABASE_AUTH_COOKIE_NAME, getSupabaseAuthCookieOptions } from './lib/supabase/cookies';
 
 /**
  * Trust Proxy Boundary Documentation (PLAN-008 Phase 6)
@@ -32,12 +34,39 @@ function isTrustProxy(): boolean {
 }
 
 export async function proxy(request: NextRequest) {
-  const response = NextResponse.next();
+  let response = NextResponse.next({ request });
+
+  // Refresh Supabase Auth tokens before route handling. Updating both the
+  // forwarded request cookie jar and the outgoing response keeps downstream
+  // route handlers on the same verified session without exposing tokens to JS.
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+  const supabasePublicKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+  const hasSupabaseAuthCookie = request.cookies.getAll().some(({ name }) => name.startsWith(SUPABASE_AUTH_COOKIE_NAME));
+  if (supabaseUrl && supabasePublicKey && hasSupabaseAuthCookie) {
+    const supabase = createServerClient(supabaseUrl, supabasePublicKey, {
+      cookieOptions: getSupabaseAuthCookieOptions(request.cookies.get(AUTH_SESSION_PERSISTENCE_COOKIE_NAME)?.value === '1'),
+      auth: { autoRefreshToken: true, persistSession: true, detectSessionInUrl: false },
+      cookies: {
+        getAll: () => request.cookies.getAll(),
+        setAll: (cookiesToSet, headers) => {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          response = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options));
+          for (const [name, value] of Object.entries(headers)) response.headers.set(name, value);
+        },
+      },
+    });
+    try {
+      await supabase.auth.getUser();
+    } catch {
+      // Authentication is checked again by route handlers. A transient Auth
+      // failure must not grant access or break public pages.
+    }
+  }
 
   // Phase 6: Sanitize forwarding headers in prod if not behind trusted proxy
   const trustProxy = isTrustProxy();
   const xForwardedFor = request.headers.get('x-forwarded-for');
-  const xRealIp = request.headers.get('x-real-ip');
 
   if (!trustProxy && xForwardedFor) {
     if (process.env.NODE_ENV === 'production' || process.env.OKENG_ENV === 'production') {

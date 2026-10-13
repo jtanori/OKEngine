@@ -96,14 +96,16 @@ function getClientIp(request: NextRequest): { ip: string; trusted: boolean } {
  * Returns hash of session token for privacy, or 'no-session' if none
  */
 function getTrustworthySessionId(request: NextRequest): { sessionId: string; hasSession: boolean } {
-  const cookieValue = request.cookies.get('okeng.sid')?.value || request.cookies.get('__Host-okeng.sid')?.value;
+  const supabaseCookies = request.cookies.getAll()
+    .filter(({ name }) => name.startsWith('okeng-auth'))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const cookieValue = supabaseCookies.length > 0
+    ? supabaseCookies.map(({ name, value }) => `${name}=${value}`).join(';')
+    : request.cookies.get('okeng.sid')?.value || request.cookies.get('__Host-okeng.sid')?.value;
 
-  if (!cookieValue) {
-    return { sessionId: 'no-session', hasSession: false };
-  }
+  if (!cookieValue) return { sessionId: 'no-session', hasSession: false };
 
-  // For privacy and stability, hash the session token and use first 16 chars
-  // This is trustworthy because cookie is httpOnly and signed, not spoofable via headers
+  // Hash the HttpOnly session cookie(s) so raw Auth tokens never enter Redis keys.
   try {
     const hash = crypto.createHash('sha256').update(cookieValue).digest('hex').slice(0, 16);
     return { sessionId: `sess_${hash}`, hasSession: true };

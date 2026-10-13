@@ -15,6 +15,11 @@ export interface EnvConfig {
 
 let cachedEnv: EnvConfig | null = null;
 
+/** Clears the memoized environment snapshot for isolated tests and config reloads. */
+export function clearEnvCache(): void {
+  cachedEnv = null;
+}
+
 export function validateEnv(): EnvConfig {
   if (cachedEnv) return cachedEnv;
 

@@ -135,7 +135,10 @@ export const AppShell: React.FC<AppShellProps> = ({
   onRouteChange,
   children,
 }) => {
-  const workspace = store.getWorkspace();
+  const isSupabaseMode = authService.isSupabaseSessionMode();
+  const workspace = authService.getActiveWorkspace() || (isSupabaseMode
+    ? { id: '', name: 'Workspace', slug: '', publicKey: '', createdAt: '' }
+    : store.getWorkspace());
   const { t } = useI18n();
   const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
@@ -277,13 +280,13 @@ export const AppShell: React.FC<AppShellProps> = ({
       id: 'collections' as AppRoute,
       label: t('nav.collections', 'Collections'),
       icon: FolderKanban,
-      count: store.getCollections().length,
+      count: isSupabaseMode ? undefined : store.getCollections().length,
     },
     {
       id: 'files' as AppRoute,
       label: t('nav.files', 'Files'),
       icon: FileText,
-      count: store.getDocuments().length,
+      count: isSupabaseMode ? undefined : store.getDocuments().length,
     },
     { id: 'embed' as AppRoute, label: t('nav.embed', 'Embed'), icon: Code2 },
     { id: 'test' as AppRoute, label: t('nav.test', 'Test Console'), icon: FlaskConical },
@@ -291,7 +294,7 @@ export const AppShell: React.FC<AppShellProps> = ({
       id: 'conversations' as AppRoute,
       label: t('nav.conversations', 'Conversations'),
       icon: MessageSquare,
-      count: store.getConversations().length,
+      count: isSupabaseMode ? undefined : store.getConversations().length,
     },
     { id: 'settings' as AppRoute, label: t('nav.settings', 'Settings & Auth'), icon: Settings },
   ];
@@ -592,41 +595,44 @@ export const AppShell: React.FC<AppShellProps> = ({
 
                 <Divider className="my-1" />
 
-                {/* 4. Quick Persona Switcher (Owner / Member / Admin) */}
-                <div className="px-2 pt-1 pb-0.5 text-2xs font-mono uppercase tracking-wider text-ink-muted">
-                  {t('nav.switch_persona', 'Switch Persona')}
-                </div>
-                <div className="space-y-0.5">
-                  {personas.map((persona) => {
-                    const isCurrent = currentUser?.id === persona.id;
-                    return (
-                      <button
-                        key={persona.id}
-                        type="button"
-                        role="menuitem"
-                        onClick={() => {
-                          authService.switchPersona(persona.id);
-                          setIsAccountMenuOpen(false);
-                        }}
-                        className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-xs transition-colors cursor-pointer text-left ${
-                          isCurrent
-                            ? 'bg-subtle text-ink font-medium'
-                            : 'text-ink-secondary hover:text-ink hover:bg-subtle'
-                        }`}
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-xs">{cleanUserName(persona.name)}</div>
-                          <div className="truncate text-2xs font-mono text-ink-muted">
-                            {getPersonaRoleLabel(persona.name)}
-                          </div>
-                        </div>
-                        {isCurrent && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <Divider className="my-1" />
+                {personas.length > 0 && (
+                  <>
+                    {/* Demo-only persona switching; Supabase identities cannot impersonate client-side. */}
+                    <div className="px-2 pt-1 pb-0.5 text-2xs font-mono uppercase tracking-wider text-ink-muted">
+                      {t('nav.switch_persona', 'Switch Persona')}
+                    </div>
+                    <div className="space-y-0.5">
+                      {personas.map((persona) => {
+                        const isCurrent = currentUser?.id === persona.id;
+                        return (
+                          <button
+                            key={persona.id}
+                            type="button"
+                            role="menuitem"
+                            onClick={() => {
+                              authService.switchPersona(persona.id);
+                              setIsAccountMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-xs transition-colors cursor-pointer text-left ${
+                              isCurrent
+                                ? 'bg-subtle text-ink font-medium'
+                                : 'text-ink-secondary hover:text-ink hover:bg-subtle'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="truncate text-xs">{cleanUserName(persona.name)}</div>
+                              <div className="truncate text-2xs font-mono text-ink-muted">
+                                {getPersonaRoleLabel(persona.name)}
+                              </div>
+                            </div>
+                            {isCurrent && <Check className="w-3.5 h-3.5 text-accent shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <Divider className="my-1" />
+                  </>
+                )}
 
                 {/* 5. Sign Out Action */}
                 <button
@@ -635,8 +641,10 @@ export const AppShell: React.FC<AppShellProps> = ({
                   onClick={() => {
                     setIsAccountMenuOpen(false);
                     requestNavigation(() => {
-                      authService.switchPersona(null);
-                      onRouteChange('public-surface');
+                      void authService.signOut().then((success) => {
+                        if (success) onRouteChange('public-surface');
+                        else console.warn('[auth/logout] Could not complete server sign-out');
+                      });
                     });
                   }}
                   className="w-full flex items-center gap-2 px-2 py-1.5 rounded-xs text-danger hover:bg-danger-subtle transition-colors cursor-pointer text-left font-medium"

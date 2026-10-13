@@ -23,6 +23,15 @@ export const loginSchema = z
   .object({
     email: z.string().email().max(255).toLowerCase().trim().refine((v) => !containsDangerous(v), { message: 'Contenido no permitido' }),
     password: z.string().max(128).refine((v) => !containsDangerous(v), { message: 'Contenido no permitido' }),
+    remember: z.boolean().optional().default(false),
+  })
+  .strict();
+
+export const oauthStartSchema = z
+  .object({
+    provider: z.enum(['google', 'github']),
+    remember: z.boolean().optional().default(false),
+    termsAccepted: z.boolean(),
   })
   .strict();
 
@@ -43,7 +52,6 @@ export const forgotPasswordSchema = z
 
 export const resetPasswordSchema = z
   .object({
-    token: z.string().min(1),
     newPassword: z.string().min(8).max(128),
     confirmPassword: z.string().min(8).max(128),
   })

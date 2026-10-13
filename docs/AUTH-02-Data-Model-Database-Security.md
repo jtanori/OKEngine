@@ -78,6 +78,13 @@ User
 
 Constraint: `UNIQUE(normalized_email)`. References must always use `user.id`, never `user.email`.
 
+### Supabase Auth identity mapping (current implementation)
+
+- `public.users.auth_user_id` is a unique UUID foreign key to `auth.users.id`; Auth-backed profile `public.users.id` is the Auth UUID encoded as text. Application joins and provisioning use these identifiers, never email as a key.
+- The Auth profile-sync trigger may copy a normalized email and display name, but its idempotency key is `auth_user_id`; it does not merge application users or resolve conflicts by email. A nonblank email is required by the current profile/workspace model. The OAuth callback signs out and fails closed if the provider returns no usable email.
+- `public.provision_initial_workspace()` derives identity only from `auth.uid()`, requires an active profile, serializes retries for that Auth UUID, returns the existing active membership when present, and creates one initial owner workspace otherwise. Caller-supplied user/workspace IDs are not accepted.
+- Workspace role, platform role, and account status are read from application tables/RLS-protected rows. Provider metadata is not an authorization source. Custom email-based account linking is out of scope.
+
 ## 3.2 Workspace
 
 | Field        | Type      | Rules                            |
