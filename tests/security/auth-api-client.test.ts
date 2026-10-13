@@ -14,6 +14,7 @@ import {
   AUTH_SESSION_PERSISTENCE_COOKIE_NAME,
   getAuthSessionPersistenceCookieOptions,
   getSupabaseAuthCookieOptions,
+  normalizeSupabaseAuthCookieOptions,
 } from '../../src/lib/supabase/cookies';
 
 const originalFetch = globalThis.fetch;
@@ -116,6 +117,26 @@ describe('same-origin auth API client', () => {
     assert.equal(getAuthSessionPersistenceCookieOptions(true).maxAge, AUTH_SESSION_PERSISTENCE_MAX_AGE);
     assert.equal(getAuthSessionPersistenceCookieOptions(true).httpOnly, true);
     assert.equal(getAuthSessionPersistenceCookieOptions(false).maxAge, 0);
+  });
+
+  it('overrides Supabase SSR cookie lifetime defaults with the requested session policy', () => {
+    const libraryDefaults = {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 400,
+      expires: new Date('2027-11-16T00:00:00.000Z'),
+    };
+
+    const remembered = normalizeSupabaseAuthCookieOptions(libraryDefaults, true);
+    assert.equal(remembered.maxAge, AUTH_SESSION_PERSISTENCE_MAX_AGE);
+    assert.equal(Object.hasOwn(remembered, 'expires'), false);
+
+    const browserSession = normalizeSupabaseAuthCookieOptions(libraryDefaults, false);
+    assert.equal(Object.hasOwn(browserSession, 'maxAge'), false);
+    assert.equal(Object.hasOwn(browserSession, 'expires'), false);
+    assert.equal(browserSession.path, '/');
+
+    const deletion = normalizeSupabaseAuthCookieOptions({ path: '/', maxAge: 0 }, true);
+    assert.equal(deletion.maxAge, 0, 'Session-cookie clearing must not be turned back into a persistent cookie.');
   });
 
   it('preserves API errors for rate-limit feedback and rejects external redirect destinations', async () => {

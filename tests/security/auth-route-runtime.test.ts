@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { NextRequest, NextResponse } from 'next/server';
 import { createOAuthStartHandler } from '../../src/app/api/auth/oauth/start/route';
 import { createAuthCallbackHandler } from '../../src/app/auth/callback/route';
+import { createLoginHandler } from '../../src/app/api/auth/login/route';
 import { createSignupHandler } from '../../src/app/api/auth/signup/route';
 
 const ENV_KEYS = [
@@ -66,6 +67,50 @@ afterEach(() => {
     if (value === undefined) delete process.env[key];
     else process.env[key] = value;
   }
+});
+
+describe('Auth login server route runtime behavior', () => {
+  it('clears every newly-issued Supabase cookie when workspace provisioning fails', async () => {
+    process.env.NODE_ENV = 'test';
+    process.env.SUPABASE_URL = 'http://127.0.0.1:54321';
+    let signOutCalls = 0;
+    const fake = mockRouteClient({
+      async signInWithPassword() {
+        return {
+          data: { user: { id: 'auth-uuid', email: 'user@example.test' }, session: { access_token: 'local-test-token' } },
+          error: null,
+        };
+      },
+      async signOut() {
+        signOutCalls++;
+        return { error: null };
+      },
+    }, async () => ({ data: null, error: new Error('Active application profile required') }));
+    const applyToResponse = fake.routeClient.applyToResponse;
+    fake.routeClient.applyToResponse = (response: NextResponse) => {
+      response.cookies.set('okeng-auth.0', 'new-session-chunk-0', { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 400 });
+      response.cookies.set('okeng-auth.1', 'new-session-chunk-1', { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 400 });
+      return applyToResponse(response);
+    };
+
+    const response = await createLoginHandler({
+      rateLimit: passRateLimit,
+      validateCsrf: () => true,
+      createRouteSupabaseClient: (() => fake.routeClient) as any,
+    })(makeRequest('/api/auth/login', {
+      body: { email: 'user@example.test', password: 'Local-Test-Password-9!', remember: true },
+    }));
+
+    assert.equal(response.status, 503);
+    assert.equal(signOutCalls, 1);
+    const authCookies = response.cookies.getAll().filter(({ name }) => name === 'okeng-auth' || name.startsWith('okeng-auth.'));
+    assert.equal(authCookies.length, 3, 'The base cookie and both chunks of the newly-created session must be expired.');
+    for (const cookie of authCookies) {
+      assert.equal(cookie.value, '');
+      assert.equal(cookie.maxAge, 0);
+      assert.equal(cookie.httpOnly, true);
+    }
+  });
 });
 
 describe('OAuth server route runtime behavior', () => {
@@ -234,12 +279,26 @@ describe('Auth callback server route runtime behavior', () => {
     assert.equal(noEmail.status, 307);
     assert.equal(new URL(noEmail.headers.get('location')!).searchParams.get('authError'), 'callback');
 
-    const failedProvisionFake = mockRouteClient(baseAuth, async () => ({ data: null, error: new Error('database unavailable') }));
+    let callbackSignOutCalls = 0;
+    const failedProvisionFake = mockRouteClient({
+      ...baseAuth,
+      async signOut() { callbackSignOutCalls++; return { error: null }; },
+    }, async () => ({ data: null, error: new Error('database unavailable') }));
+    const applyCallbackCookies = failedProvisionFake.routeClient.applyToResponse;
+    failedProvisionFake.routeClient.applyToResponse = (response: NextResponse) => {
+      response.cookies.set('okeng-auth.0', 'new-callback-session', { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 400 });
+      return applyCallbackCookies(response);
+    };
     const failedProvision = await createAuthCallbackHandler({
       createRouteSupabaseClient: (() => failedProvisionFake.routeClient) as any,
     })(new NextRequest('http://localhost:3000/auth/callback?token_hash=local-otp&type=signup'));
     assert.equal(failedProvision.status, 307);
     assert.equal(new URL(failedProvision.headers.get('location')!).searchParams.get('authError'), 'workspace');
+    assert.equal(callbackSignOutCalls, 1);
+    const failedCallbackCookies = failedProvision.cookies.getAll()
+      .filter(({ name }) => name === 'okeng-auth' || name.startsWith('okeng-auth.'));
+    assert.equal(failedCallbackCookies.length, 2);
+    assert.ok(failedCallbackCookies.every(({ value, maxAge }) => value === '' && maxAge === 0));
     assert.ok(failedProvisionFake.applied.length > 0);
   });
 
@@ -300,5 +359,43 @@ describe('Signup confirmation-pending runtime behavior', () => {
     assert.equal(signOutCalls, 0);
     assert.ok(response.cookies.getAll().some(({ name }) => name === 'mock-auth-response-applied'));
     assert.doesNotMatch(JSON.stringify(body), /access_token|refresh_token|pending-auth-uuid/);
+  });
+
+  it('clears a newly issued Auth session when signup workspace provisioning fails', async () => {
+    process.env.NODE_ENV = 'test';
+    process.env.NEXT_PUBLIC_APP_URL = 'http://localhost:3000';
+    let signOutCalls = 0;
+    const fake = mockRouteClient({
+      async signUp() {
+        return {
+          data: {
+            user: { id: 'active-auth-uuid', email: 'active@example.test' },
+            session: { access_token: 'local-test-token' },
+          },
+          error: null,
+        };
+      },
+      async signOut() { signOutCalls++; return { error: null }; },
+    }, async () => ({ data: null, error: new Error('profile unavailable') }));
+    const applySignupCookies = fake.routeClient.applyToResponse;
+    fake.routeClient.applyToResponse = (response: NextResponse) => {
+      response.cookies.set('okeng-auth.0', 'new-signup-session', { httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 400 });
+      return applySignupCookies(response);
+    };
+
+    const response = await createSignupHandler({
+      rateLimit: passRateLimit,
+      validateCsrf: () => true,
+      createRouteSupabaseClient: (() => fake.routeClient) as any,
+    })(makeRequest('/api/auth/signup', {
+      body: { name: 'Active User', email: 'active@example.test', password: 'Valid-Pass-123!', terms: true },
+    }));
+
+    assert.equal(response.status, 503);
+    assert.equal(signOutCalls, 1);
+    const authCookies = response.cookies.getAll()
+      .filter(({ name }) => name === 'okeng-auth' || name.startsWith('okeng-auth.'));
+    assert.equal(authCookies.length, 2);
+    assert.ok(authCookies.every(({ value, maxAge }) => value === '' && maxAge === 0));
   });
 });

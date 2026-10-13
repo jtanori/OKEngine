@@ -97,7 +97,9 @@ test('fresh local migrations produce the required schema, security catalog, gran
   try {
     const identity = await database.query('SELECT current_database() AS database_name, inet_server_port() AS port');
     assert.equal(identity.rows[0]?.database_name, 'postgres');
-    assert.equal(Number(identity.rows[0]?.port), 54322);
+    // inet_server_port() reports PostgreSQL's in-container listener (5432),
+    // not the host-side port 54322 validated from DATABASE_URL by the runner.
+    assert.equal(Number(identity.rows[0]?.port), 5432);
 
     const migrationLedger = await database.query<{ version: string }>(
       'SELECT version FROM supabase_migrations.schema_migrations ORDER BY version',

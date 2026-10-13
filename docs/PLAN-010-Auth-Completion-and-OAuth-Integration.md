@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Auth/OAuth feature and verification harness implemented. Latest Arena fast suite 63/63 passed on 2026-10-12. Windows local Supabase runtime suite remains not run because the Storage container fails its health check during startup. |
+| Status | Auth/OAuth feature and verification harness implemented. Latest Arena fast suite 66/66 passed on 2026-10-12. Windows local Supabase runtime started and ran 13 tests (5 passed, 8 failed); fixes are in the Arena working tree and a Windows rerun is pending. |
 | Date | 2026-10-11 |
 | Scope | Complete the current email-auth/session surface with optional Google and GitHub OAuth; prepare the existing session/workspace guard as the handoff for a later dashboard initiative |
 | Out of scope | Dashboard UI, MFA, SAML, a new passwordless flow, account-settings UI, and custom social-account-linking UI |
@@ -20,7 +20,7 @@ The browser must not instantiate a Supabase client or send Supabase Auth API cal
 3. The provider-list response contains only provider names. Empty or failed configuration produces no provider buttons and no SSO divider.
 4. OAuth initiation is same-origin, CSRF-protected, rate-limited, provider-allowlisted, and uses a fixed same-origin callback. The route returns only a server-generated authorization URL and applies the required PKCE/cookie updates.
 5. OAuth callback handling exchanges the code, verifies the user with Supabase Auth, provisions/loads the user's workspace under the Auth UUID/RLS model, and fails closed without a usable profile/workspace. It never derives roles from OAuth metadata or joins application users by email.
-6. Remember me applies to password and OAuth login. OAuth initiation requires explicit Terms/Privacy consent because it may create a first-time account from either auth page; the existing sign-up terms checkbox is reused for sign-up, and login exposes a consent control only when an OAuth provider is configured.
+6. Remember me applies to password and OAuth login: the default Auth cookie is browser-session-only, while an explicit Remember me choice is capped at 30 days. Normalize Supabase SSR's emitted cookie attributes at the response boundary; on any post-auth verification/provisioning failure, apply queued SDK changes and then expire the issued Auth cookie chunks. OAuth initiation requires explicit Terms/Privacy consent because it may create a first-time account from either auth page; the existing sign-up terms checkbox is reused for sign-up, and login exposes a consent control only when an OAuth provider is configured.
 7. `/api/auth/session` remains a safe user/workspace projection with no access or refresh tokens. Existing workspace protection remains the authorization boundary for the future dashboard.
 8. The local stack keeps Auth, PostgreSQL, Storage, and required API/PostgREST plumbing. Edge Runtime is disabled because no application-owned Edge Function exists; OAuth remains optional, and no provider secrets are requested in chat or committed.
 
@@ -108,8 +108,8 @@ Limitations: Docker and the Supabase CLI are absent in this environment, so loca
 
 ## Windows validation update — 2026-10-12
 
-- The Windows checkout's fast suite passed after commit `f531cb9`; that run exposed an LF-only config fixture, which has since been made CRLF-safe. The latest Arena fast suite is **63/63** after adding a regression guard for startup cleanup.
-- `npm run test:auth-local` is **NOT RUN**: `supabase start` applied local migrations but marked `supabase_storage_okengine-local` unhealthy before the suite or its explicit `db reset` began. A manual `supabase start --debug` logged Storage “Started Successfully” but still reported unhealthy and pruned local project containers/volumes/network. The Docker health-check log is needed to identify the root cause. The checked-in email-confirmation setting was restored to `false`; no hosted target was used.
+- The Windows checkout's fast suite passed after commit `f531cb9`; that run exposed an LF-only config fixture, which has since been made CRLF-safe. After the latest runtime-failure regressions were added and fixed, the Arena fast suite is **66/66**.
+- Latest Windows `npm run test:auth-local` reached a healthy stack, completed its guarded local reset, and ran 13 runtime tests: **5 passed, 8 failed**. Failures exposed mismatched cache-header expectations, Supabase SSR's 400-day cookie lifetime overriding the intended session/30-day policy, auth-cookie cleanup on failed provisioning, missing workspace tracking during teardown, an RLS-filtered DELETE RETURNING assertion, and an incorrect in-container PostgreSQL port expectation. Fixes are in the Arena working tree; the Windows suite must be rerun before this gate can pass. This is a partial live run, not a green result.
 - The runner now avoids an automatic second `supabase start` after the test-config startup itself fails. A failed Supabase CLI health check may still prune local volumes; treat the local test project as disposable.
 - **Lint:** `npm run lint` — **PASS**, 0 errors and 113 repository warnings.
 - **Repository TypeScript check:** `npx tsc --noEmit --pretty false` still reports 25 unrelated existing errors in the Redis cache adapter, docs/public component types, and `src/services/store.ts`; it reports no errors in the auth/OAuth application sources. The focused harness check above passes.

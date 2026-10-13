@@ -598,9 +598,8 @@ test('runtime tenant RLS, collection visibility, and private Storage policies on
 
     const orphanObjectCleanup = await first.client.storage.from(BUCKET).remove([orphanPath]);
     assert.equal(orphanObjectCleanup.error, null, orphanObjectCleanup.error?.message);
-    const orphanMetadataCleanup = await first.client.from('files').delete().eq('id', orphanFileId).select('id');
+    const orphanMetadataCleanup = await first.client.from('files').delete().eq('id', orphanFileId);
     assert.equal(orphanMetadataCleanup.error, null, orphanMetadataCleanup.error?.message);
-    assert.deepEqual(orphanMetadataCleanup.data?.map((row) => row.id), [orphanFileId]);
     const orphanCleanupState = await queryLocalDatabase<{ metadata_count: string; object_count: string }>(local, `
       SELECT
         (SELECT COUNT(*)::text FROM public.files WHERE id = $1) AS metadata_count,

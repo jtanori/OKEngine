@@ -125,6 +125,8 @@ test('protected success and post-auth 404 responses preserve real refresh-token 
     }));
     const loginBody = await loginResponse.json();
     assert.equal(loginResponse.status, 200, JSON.stringify(loginBody));
+    cleanup.trackUser(loginBody.user.id);
+    cleanup.trackWorkspace(loginBody.workspace.id);
     const initialCookies = getResponseCookies(loginResponse);
     const initialSession = readAuthSessionCookie(initialCookies);
     let currentCookies = expiredSessionCookies(initialCookies);
@@ -184,6 +186,8 @@ test('expired access-session metadata with invalid refresh credentials fails clo
     }));
     const loginBody = await loginResponse.json();
     assert.equal(loginResponse.status, 200, JSON.stringify(loginBody));
+    cleanup.trackUser(loginBody.user.id);
+    cleanup.trackWorkspace(loginBody.workspace.id);
     const invalidCookies = expiredSessionCookies(getResponseCookies(loginResponse), `invalid-refresh-${randomUUID()}`);
 
     const sessionResponse = await sessionRoute(makeApiRequest('/api/auth/session', { cookies: invalidCookies }));

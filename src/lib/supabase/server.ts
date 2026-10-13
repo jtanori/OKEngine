@@ -5,9 +5,11 @@ import type { CookieOptions } from '@supabase/ssr';
 import {
   AUTH_SESSION_PERSISTENCE_COOKIE_NAME,
   getSupabaseAuthCookieOptions,
+  normalizeSupabaseAuthCookieOptions,
 } from './cookies';
 export {
   AUTH_SESSION_PERSISTENCE_COOKIE_NAME,
+  clearSupabaseAuthSessionCookies,
   getAuthSessionPersistenceCookieOptions,
   getSupabaseAuthCookieOptions,
   SUPABASE_AUTH_COOKIE_NAME,
@@ -90,7 +92,10 @@ export function createRouteSupabaseClient(
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (cookiesToSet, headers) => {
-        pendingCookies.push(...cookiesToSet);
+        pendingCookies.push(...cookiesToSet.map((cookie) => ({
+          ...cookie,
+          options: normalizeSupabaseAuthCookieOptions(cookie.options, rememberSession),
+        })));
         for (const [name, value] of Object.entries(headers)) pendingHeaders.set(name, value);
       },
     },

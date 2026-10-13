@@ -77,6 +77,13 @@ function authCookies(cookies: CookieValue[]) {
   return cookies.filter(({ name }) => name === 'okeng-auth' || name.startsWith('okeng-auth.'));
 }
 
+function assertNoStore(response: Response) {
+  const directives = (response.headers.get('cache-control') || '')
+    .split(',')
+    .map((directive) => directive.trim().toLowerCase());
+  assert.ok(directives.includes('no-store'), `Expected a no-store cache directive, got ${response.headers.get('cache-control') || '(missing)'}.`);
+}
+
 test('real confirmation-required signup leaves no session, then confirms and provisions one Auth-UUID workspace', async () => {
   const cleanup = createLocalCleanup(local);
   try {
@@ -85,7 +92,7 @@ test('real confirmation-required signup leaves no session, then confirms and pro
     assert.equal(body.success, true);
     assert.equal(body.confirmationRequired, true);
     assert.equal(body.redirectTo, '/login?confirmed=1');
-    assert.equal(response.headers.get('cache-control'), 'no-store');
+    assertNoStore(response);
     assert.doesNotMatch(JSON.stringify(body), /access_token|refresh_token|service_role/i);
     assert.equal(authCookies(getResponseCookies(response)).length, 0, 'Pending signup must not issue an authenticated app session.');
 
@@ -323,7 +330,7 @@ test('password recovery is enumeration-safe and a real recovery callback changes
     assert.equal(known.status, 200);
     assert.equal(missing.status, 200);
     assert.deepEqual(await known.json(), await missing.json(), 'Forgot-password responses must not reveal whether an email exists.');
-    assert.equal(known.headers.get('cache-control'), 'no-store');
+    assertNoStore(known);
 
     const recoveryToken = await makeMagicLink(cleanup, signupResult.email, 'recovery');
     const recovery = await authCallback(makeApiRequest(

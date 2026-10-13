@@ -42,8 +42,8 @@ Canonical security specification consolidating all hardening introduced for stag
 
 **Supabase Auth-backed session contract (production/Supabase mode)**:
 - Supabase SSR session cookies use the `okeng-auth` name (chunking may append suffixes), `HttpOnly: true`, `Secure` in production, `SameSite: Lax`, and `Path: /`.
-- Without Remember me, no persistent cookie max-age is set (browser-session cookie). With Remember me, the session and HttpOnly `okeng.remember` preference use a 30-day max-age. The Next.js proxy refreshes tokens server-side.
-- Auth verification uses Supabase `auth.getUser()` on request-scoped server clients. The browser receives only a safe session/profile/workspace projection; it never receives access/refresh tokens through application APIs or JavaScript storage.
+- Without Remember me, no persistent cookie max-age or absolute expiry is set (browser-session cookie). With Remember me, the session and HttpOnly `okeng.remember` preference use a 30-day max-age. The server normalizes Supabase SSR's emitted cookie attributes at the response boundary so SDK defaults cannot extend this policy; the Next.js proxy refreshes tokens server-side.
+- Fail-closed post-auth verification/provisioning paths apply queued SSR cookie updates and then expire the newly issued Auth cookie and any emitted chunks. Auth verification uses Supabase `auth.getUser()` on request-scoped server clients. The browser receives only a safe session/profile/workspace projection; it never receives access/refresh tokens through application APIs or JavaScript storage.
 - Profile identity is tied to the Supabase Auth UUID. Active profile, workspace membership, and roles are resolved from database rows/RLS; the user-to-workspace authorization chain remains enforced before resource access.
 - Logout calls Supabase `signOut` and clears Auth/persistence cookies. Redis is not the Supabase session store.
 

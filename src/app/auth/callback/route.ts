@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { EmailOtpType } from '@supabase/supabase-js';
-import { createRouteSupabaseClient } from '@/lib/supabase/server';
+import { clearSupabaseAuthSessionCookies, createRouteSupabaseClient } from '@/lib/supabase/server';
 import type { RouteSupabaseClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -24,11 +24,13 @@ function getSafeNext(value: string | null): string {
 function redirectWithClient(
   request: NextRequest,
   path: string,
-  applyToResponse: (response: NextResponse) => NextResponse
+  applyToResponse: (response: NextResponse) => NextResponse,
+  clearAuthSession = false,
 ): NextResponse {
   const response = NextResponse.redirect(new URL(path, request.nextUrl.origin));
   response.headers.set('Cache-Control', 'no-store');
-  return applyToResponse(response);
+  const withPendingCookies = applyToResponse(response);
+  return clearAuthSession ? clearSupabaseAuthSessionCookies(withPendingCookies) : withPendingCookies;
 }
 
 export function createAuthCallbackHandler(
@@ -41,6 +43,7 @@ export function createAuthCallbackHandler(
 
   return async function GET(request: NextRequest) {
     let applyToResponse = (response: NextResponse) => response;
+    let authSessionCreated = false;
     const next = getSafeNext(request.nextUrl.searchParams.get('next'));
 
     try {
@@ -53,21 +56,25 @@ export function createAuthCallbackHandler(
 
       let error: Error | null = null;
       if (tokenHash && otpType && ALLOWED_OTP_TYPES.has(otpType)) {
-        ({ error } = await client.auth.verifyOtp({ token_hash: tokenHash, type: otpType }));
+        const result = await client.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
+        error = result.error;
+        authSessionCreated = Boolean(result.data.session);
       } else if (code) {
-        ({ error } = await client.auth.exchangeCodeForSession(code));
+        const result = await client.auth.exchangeCodeForSession(code);
+        error = result.error;
+        authSessionCreated = Boolean(result.data.session);
       } else {
         error = new Error('Missing or invalid authentication callback parameters');
       }
 
       if (error) {
         const destination = next === '/reset-password' ? '/reset-password?error=invalid-link' : '/login?authError=callback';
-        return redirectWithClient(request, destination, applyToResponse);
+        return redirectWithClient(request, destination, applyToResponse, authSessionCreated);
       }
 
       const { data: authData, error: authError } = await client.auth.getUser();
       if (authError || !authData.user) {
-        return redirectWithClient(request, '/login?authError=callback', applyToResponse);
+        return redirectWithClient(request, '/login?authError=callback', applyToResponse, authSessionCreated);
       }
 
       // Recovery callbacks need only establish the recovery session; the password
@@ -80,7 +87,7 @@ export function createAuthCallbackHandler(
       // a provider with no usable email must not receive a partial Auth session.
       if (!authData.user.email?.trim()) {
         await client.auth.signOut({ scope: 'local' });
-        return redirectWithClient(request, '/login?authError=callback', applyToResponse);
+        return redirectWithClient(request, '/login?authError=callback', applyToResponse, authSessionCreated);
       }
 
       const { data: provisioned, error: provisionError } = await client.rpc('provision_initial_workspace');
@@ -88,7 +95,7 @@ export function createAuthCallbackHandler(
       if (provisionError || !workspace?.workspace_slug) {
         console.error('[auth/callback] Workspace provisioning failed', provisionError?.message || 'missing workspace');
         await client.auth.signOut({ scope: 'local' });
-        return redirectWithClient(request, '/login?authError=workspace', applyToResponse);
+        return redirectWithClient(request, '/login?authError=workspace', applyToResponse, authSessionCreated);
       }
 
       const workspacePath = `/workspaces/${encodeURIComponent(workspace.workspace_slug)}/collections`;
@@ -98,7 +105,8 @@ export function createAuthCallbackHandler(
       return redirectWithClient(
         request,
         next === '/reset-password' ? '/reset-password?error=invalid-link' : '/login?authError=callback',
-        applyToResponse
+        applyToResponse,
+        authSessionCreated,
       );
     }
   };

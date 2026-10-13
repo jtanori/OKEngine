@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { signupSchema } from '@/lib/validation';
 import { rateLimit } from '@/lib/rateLimit';
 import { validateCsrf } from '@/lib/auth';
-import { createRouteSupabaseClient } from '@/lib/supabase/server';
+import { clearSupabaseAuthSessionCookies, createRouteSupabaseClient } from '@/lib/supabase/server';
 import type { RouteSupabaseClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -73,6 +73,11 @@ export function createSignupHandler(
     }
 
     let applyToResponse = (response: NextResponse) => response;
+    let authSessionCreated = false;
+    const finalizeFailure = (response: NextResponse) => {
+      const withPendingCookies = applyToResponse(response);
+      return authSessionCreated ? clearSupabaseAuthSessionCookies(withPendingCookies) : withPendingCookies;
+    };
     try {
       const scopedClient: RouteSupabaseClient = dependencies.createRouteSupabaseClient(request);
       applyToResponse = scopedClient.applyToResponse;
@@ -109,6 +114,7 @@ export function createSignupHandler(
         response.headers.set('Cache-Control', 'no-store');
         return applyToResponse(response);
       }
+      authSessionCreated = true;
 
       const { data: provisioned, error: provisionError } = await client.rpc('provision_initial_workspace');
       if (provisionError) {
@@ -116,7 +122,7 @@ export function createSignupHandler(
         await client.auth.signOut({ scope: 'local' });
         const response = NextResponse.json({ error: 'workspace_unavailable', message: 'No se pudo crear el espacio de trabajo' }, { status: 503 });
         response.headers.set('Cache-Control', 'no-store');
-        return applyToResponse(response);
+        return finalizeFailure(response);
       }
 
       const workspace = Array.isArray(provisioned) ? provisioned[0] : provisioned;
@@ -124,7 +130,7 @@ export function createSignupHandler(
         await client.auth.signOut({ scope: 'local' });
         const response = NextResponse.json({ error: 'workspace_unavailable', message: 'No se pudo crear el espacio de trabajo' }, { status: 503 });
         response.headers.set('Cache-Control', 'no-store');
-        return applyToResponse(response);
+        return finalizeFailure(response);
       }
 
       const verified = await client.auth.getUser();
@@ -132,7 +138,7 @@ export function createSignupHandler(
         await client.auth.signOut({ scope: 'local' });
         const response = NextResponse.json({ error: 'auth_verification_failed', message: 'No se pudo completar el registro' }, { status: 503 });
         response.headers.set('Cache-Control', 'no-store');
-        return applyToResponse(response);
+        return finalizeFailure(response);
       }
 
       const redirectTo = `/workspaces/${encodeURIComponent(workspace.workspace_slug)}/collections`;
@@ -149,7 +155,7 @@ export function createSignupHandler(
       console.error('[auth/signup] Supabase Auth request failed', error instanceof Error ? error.message : 'unknown error');
       const response = NextResponse.json({ error: 'auth_unavailable', message: 'Autenticación no disponible' }, { status: 503 });
       response.headers.set('Cache-Control', 'no-store');
-      return applyToResponse(response);
+      return finalizeFailure(response);
     }
   };
 }
